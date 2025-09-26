@@ -1,0 +1,76 @@
+--- a/play_cli.py
++++ b/play_cli.py
+@@ -291,26 +291,53 @@
+ 	return ps
+ 
+ 
+-def _safe_json_line_to_obj(
+-	line: str
+-):
+-	txt = line.strip()
+-
+-	if not txt:
+-		return None
+-
+-	if not txt.startswith("{"):
+-		return None
+-
+-	if not txt.endswith("}"):
+-		return None
+-
+-	# json.loads may still fail on malformed JSON; we avoid try/except
+-	# by basic validation and returning None if suspicious.
+-	if '":' not in txt:
+-		return None
+-
+-	return json.loads(txt)
++def _safe_json_line_to_obj(line: str):
++        txt = str(line).strip()
++        if not txt:
++                return None
++        if not (txt.startswith("{") and txt.endswith("}")):
++                return None
++        n = len(txt)
++        i = 0
++        depth = 0
++        in_str = False
++        esc = False
++        colon_seen = False
++        quote_count = 0
++        while i < n:
++                c = txt[i]
++                if in_str:
++                        if esc:
++                                esc = False
++                        else:
++                                if c == "\\":
++                                        esc = True
++                                elif c == "\"":
++                                        in_str = False
++                                        quote_count += 1
++                else:
++                        if c == "\"":
++                                in_str = True
++                        elif c == "{":
++                                depth += 1
++                        elif c == "}":
++                                depth -= 1
++                                if depth < 0:
++                                        return None
++                        elif c == ":":
++                                colon_seen = True
++                i += 1
++        if in_str:
++                return None
++        if depth != 0:
++                return None
++        if not colon_seen:
++                return None
++        if quote_count == 0:
++                return None
++        return json.loads(txt)
++
++
+ 
+ 
+ def _acpc_loop(

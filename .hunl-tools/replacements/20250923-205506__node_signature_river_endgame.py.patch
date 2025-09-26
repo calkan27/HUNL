@@ -1,0 +1,21 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -236,10 +236,11 @@
+         out = {int(cid): float(ev_p_by_cluster.get(int(cid), 0.0) * scale) for cid in my_range.keys()}
+         return out
+ 
+-	def _node_signature(self, node, my_range, opp_range):
+-		board = tuple(node.public_state.board_cards)
+-		pot = float(node.public_state.pot_size)
+-		cb = (float(node.public_state.current_bets[0]), float(node.public_state.current_bets[1]))
+-		r1 = tuple(sorted((int(k), float(v)) for k, v in dict(my_range).items()))
+-		r2 = tuple(sorted((int(k), float(v)) for k, v in dict(opp_range).items()))
+-		return (board, pot, cb, r1, r2)
++    def _node_signature(self, node, my_range, opp_range):
++        board = tuple(node.public_state.board_cards)
++        pot = float(node.public_state.pot_size)
++        cb = (float(node.public_state.current_bets[0]), float(node.public_state.current_bets[1]))
++        r1 = tuple(sorted((int(k), float(v)) for k, v in dict(my_range).items()))
++        r2 = tuple(sorted((int(k), float(v)) for k, v in dict(opp_range).items()))
++        return (board, pot, cb, r1, r2)
++

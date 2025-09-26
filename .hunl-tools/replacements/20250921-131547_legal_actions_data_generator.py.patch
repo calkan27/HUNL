@@ -1,0 +1,102 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -188,48 +188,57 @@
+ 
+ 
+ 
+-	def legal_actions(self, ps):
+-		p = ps.current_player
+-		o = (p + 1) % 2
+-		my_bet = ps.current_bets[p]
+-		opp_bet = ps.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		legal = []
+-		if to_call == 0:
+-			legal.append(ActionType.CALL)
+-			if ps.stacks[p] > 0:
+-				legal.append(ActionType.HALF_POT_BET)
+-				legal.append(ActionType.POT_SIZED_BET)
+-				legal.append(ActionType.ALL_IN)
+-				min_raise_inc = ps._min_raise_size()
+-				pot_after_call = ps.pot_size
+-				required_inc_2p = pot_after_call * 2.0
+-				if ps.stacks[p] >= max(min_raise_inc, required_inc_2p):
+-					legal.append(ActionType.TWO_POT_BET)
+-			return legal
+-		legal.append(ActionType.FOLD)
+-		if ps.stacks[p] >= to_call:
+-			legal.append(ActionType.CALL)
+-		if ps.stacks[p] > 0:
+-			legal.append(ActionType.ALL_IN)
+-		remaining_after_call = ps.stacks[p] - to_call
+-		if remaining_after_call > 0:
+-			min_raise_inc = ps._min_raise_size()
+-			pot_after_call = ps.pot_size + to_call
+-			required_inc_half = max(min_raise_inc, pot_after_call * 0.5)
+-			required_inc_pot = max(min_raise_inc, pot_after_call)
+-			if remaining_after_call >= required_inc_half:
+-				legal.append(ActionType.HALF_POT_BET)
+-			if remaining_after_call >= required_inc_pot:
+-				legal.append(ActionType.POT_SIZED_BET)
+-			required_inc_2p = max(min_raise_inc, pot_after_call * 2.0)
+-			if remaining_after_call >= required_inc_2p:
+-				legal.append(ActionType.TWO_POT_BET)
+-		return legal
+-
+-
++    def legal_actions(self, ps):
++        p = ps.current_player
++        o = (p + 1) % 2
++        my_bet = ps.current_bets[p]
++        opp_bet = ps.current_bets[o]
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        legal = []
++        if to_call == 0:
++            legal.append(ActionType.CALL)
++            if ps.stacks[p] > 0:
++                min_raise_inc = ps._min_raise_size()
++                half = max(min_raise_inc, int(ps.pot_size * 0.5))
++                if ps.stacks[p] >= half and half > 0:
++                    legal.append(ActionType.HALF_POT_BET)
++                pot = max(min_raise_inc, int(ps.pot_size))
++                if ps.stacks[p] >= pot and pot > 0:
++                    legal.append(ActionType.POT_SIZED_BET)
++                mode = getattr(self, "cfr_solver", None)
++                mode = getattr(mode, "_config", None)
++                mode = getattr(mode, "bet_size_mode", "sparse_2")
++                if mode == "sparse_3":
++                    two = max(min_raise_inc, int(ps.pot_size * 2.0))
++                    if ps.stacks[p] >= two and two > 0:
++                        legal.append(ActionType.TWO_POT_BET)
++                legal.append(ActionType.ALL_IN)
++            return legal
++        legal.append(ActionType.FOLD)
++        if ps.stacks[p] >= to_call:
++            legal.append(ActionType.CALL)
++        if ps.stacks[p] > 0:
++            legal.append(ActionType.ALL_IN)
++        remaining_after_call = ps.stacks[p] - to_call
++        if remaining_after_call > 0:
++            min_raise_inc = ps._min_raise_size()
++            pot_after_call = ps.pot_size + to_call
++            half = max(min_raise_inc, int(pot_after_call * 0.5))
++            if remaining_after_call >= half and half > 0:
++                legal.append(ActionType.HALF_POT_BET)
++            pot = max(min_raise_inc, int(pot_after_call))
++            if remaining_after_call >= pot and pot > 0:
++                legal.append(ActionType.POT_SIZED_BET)
++            mode = getattr(self, "cfr_solver", None)
++            mode = getattr(mode, "_config", None)
++            mode = getattr(mode, "bet_size_mode", "sparse_2")
++            if mode == "sparse_3":
++                two = max(min_raise_inc, int(pot_after_call * 2.0))
++                if remaining_after_call >= two and two > 0:
++                    legal.append(ActionType.TWO_POT_BET)
++        return legal
+ 
+ 	def state_invariants_ok(self, ps):
+ 

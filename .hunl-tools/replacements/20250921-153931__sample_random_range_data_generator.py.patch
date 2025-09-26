@@ -1,0 +1,45 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -202,16 +202,32 @@
+ 		orig = snap.get("orig", None)
+ 		if key is not None and orig is not None:
+ 			self.cfr_solver.models[key] = orig
+-	def _sample_random_range(self, cluster_ids):
+-		K = len(cluster_ids)
+-		if K <= 0:
+-			return {}
+-		alpha = _np.ones(K, dtype=float)
+-		draw = _np.random.dirichlet(alpha)
+-		out = {}
+-		for i, cid in enumerate(cluster_ids):
+-			out[int(cid)] = float(draw[i])
+-		return out
++    def _sample_random_range(self, cluster_ids):
++        def _rec(ids, p):
++            if not ids:
++                return {}
++            if len(ids) == 1:
++                return {int(ids[0]): float(p)}
++            sids = sorted(ids)
++            m = len(sids) // 2
++            left = sids[:m]
++            right = sids[m:]
++            p1 = random.random() * float(p)
++            p2 = float(p) - p1
++            a = _rec(left, p1)
++            b = _rec(right, p2)
++            for k, v in b.items():
++                a[int(k)] = a.get(int(k), 0.0) + float(v)
++            return a
++        K = int(self.num_clusters)
++        ids = list(cluster_ids) if cluster_ids else list(range(K))
++        r = _rec(ids, 1.0)
++        s = sum(r.values()) or 0.0
++        if s > 0.0:
++            for k in list(r.keys()):
++                r[k] = float(r[k]) / float(s)
++        return r
++
+ 	def _sample_random_range(self, cluster_ids):
+ 		K = len(cluster_ids)
+ 		if K <= 0:

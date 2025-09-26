@@ -1,0 +1,74 @@
+--- a/public_state_actions.py
++++ b/public_state_actions.py
+@@ -378,38 +378,39 @@
+ 		self._assert_invariants(prev_pot=prev_pot)
+ 		return self
+ 
+-	def apply_exogenous_opponent_bet(self, bettor, kind):
+-		if self.is_terminal:
+-			return self
+-		if bettor not in (0, 1):
+-			return self
+-		if kind == ActionType.ALL_IN:
+-			return self.apply_exogenous_opponent_all_in(bettor)
+-		if kind not in (ActionType.HALF_POT_BET, ActionType.POT_SIZED_BET, ActionType.TWO_POT_BET):
+-			return self
+-		if self.current_player is None or int(self.current_player) != int(bettor):
+-			return self
+-		legal = set(self.legal_actions())
+-		if kind not in legal:
+-			return self
+-		prev_pot = float(self.pot_size)
+-		self.last_refund_amount = 0.0
+-		p = int(bettor)
+-		o = (p + 1) % 2
+-		my_bet = self.current_bets[p]
+-		opp_bet = self.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		if kind == ActionType.HALF_POT_BET:
+-			self._apply_half_pot_bet(self, p, to_call)
+-		elif kind == ActionType.POT_SIZED_BET:
+-			self._apply_pot_sized_bet(self, p, to_call)
+-		elif kind == ActionType.TWO_POT_BET:
+-			self._apply_two_pot_bet(self, p, to_call)
+-		self.last_action = ("EXOGENOUS_BET", int(kind.value))
+-		self._assert_invariants(prev_pot=prev_pot)
+-		return self
++    def apply_exogenous_opponent_bet(self, bettor, kind):
++        if self.is_terminal:
++            return self
++        if bettor not in (0, 1):
++            return self
++        if kind == ActionType.ALL_IN:
++            return self.apply_exogenous_opponent_all_in(bettor)
++        if kind not in (ActionType.HALF_POT_BET, ActionType.POT_SIZED_BET, ActionType.TWO_POT_BET):
++            return self
++        if self.current_player is None or int(self.current_player) != int(bettor):
++            return self
++        legal = set(self.legal_actions())
++        if kind not in legal:
++            return self
++        prev_pot = float(self.pot_size)
++        self.last_refund_amount = 0.0
++        p = int(bettor)
++        o = (p + 1) % 2
++        my_bet = self.current_bets[p]
++        opp_bet = self.current_bets[o]
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        if kind == ActionType.HALF_POT_BET:
++            self._apply_half_pot_bet(self, p, to_call)
++        elif kind == ActionType.POT_SIZED_BET:
++            self._apply_pot_sized_bet(self, p, to_call)
++        elif kind == ActionType.TWO_POT_BET:
++            self._apply_two_pot_bet(self, p, to_call)
++        self.last_raiser = (p,)
++        self.last_action = ("EXOGENOUS_BET", int(kind.value))
++        self._assert_invariants(prev_pot=prev_pot)
++        return self
+ 
+ 	def apply_exogenous_opponent_all_in(self, bettor):
+ 		if self.is_terminal:

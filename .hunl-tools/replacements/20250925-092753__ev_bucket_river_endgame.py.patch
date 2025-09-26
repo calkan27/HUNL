@@ -1,0 +1,111 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -179,57 +179,57 @@
+         bmap, B = self._bucketize(all_strengths)
+         return bmap, B
+ 
+-	def _ev_bucket(self, clusters, board_list_lower, board_set_upper, my_range, opp_range, best_hand_fn, hand_rank_fn, resolved_pot):
+-		bmap, B = self._bucket_mixes(clusters, list(my_range.keys()) + list(opp_range.keys()), list(board_list_lower), board_set_upper, best_hand_fn, hand_rank_fn)
+-		if bmap is None:
+-			return None, None
+-		opp_bucket_mix = [0.0] * B
+-		for oid, oprob in opp_range.items():
+-			if float(oprob) <= 0.0:
+-				continue
+-			hf = self._filtered_hands_for_cluster(clusters, oid, board_set_upper)
+-			hs = self._sample(hf, self.max_sample_per_cluster, 4000 + int(oid))
+-			if not hs:
+-				continue
+-			for s in self._cluster_distribution(hs, list(board_list_lower), best_hand_fn, hand_rank_fn):
+-				opp_bucket_mix[bmap[s]] += float(oprob)
+-		t = sum(opp_bucket_mix)
+-		if t > 0:
+-			for i in range(B):
+-				opp_bucket_mix[i] = opp_bucket_mix[i] / t
+-		ev_p_by_cluster = {}
+-		ev_o_by_cluster = {}
+-		for cid in my_range.keys():
+-			hf = self._filtered_hands_for_cluster(clusters, cid, board_set_upper)
+-			hs = self._sample(hf, self.max_sample_per_cluster, 5000 + int(cid))
+-			if not hs:
+-				ev_p_by_cluster[int(cid)] = 0.0
+-				continue
+-			my_bucket_mix = [0.0] * B
+-			for s in self._cluster_distribution(hs, list(board_list_lower), best_hand_fn, hand_rank_fn):
+-				my_bucket_mix[bmap[s]] += 1.0
+-			tm = sum(my_bucket_mix)
+-			if tm > 0:
+-				for i in range(B):
+-					my_bucket_mix[i] = my_bucket_mix[i] / tm
+-			ev_p, _ = self._expected_utility_buckets_both(my_bucket_mix, opp_bucket_mix, B, resolved_pot=resolved_pot)
+-			ev_p_by_cluster[int(cid)] = ev_p
+-		for oid in opp_range.keys():
+-			hf = self._filtered_hands_for_cluster(clusters, oid, board_set_upper)
+-			hs = self._sample(hf, self.max_sample_per_cluster, 6000 + int(oid))
+-			if not hs:
+-				ev_o_by_cluster[int(oid)] = 0.0
+-				continue
+-			opp_bucket_mix_local = [0.0] * B
+-			for s in self._cluster_distribution(hs, list(board_list_lower), best_hand_fn, hand_rank_fn):
+-				opp_bucket_mix_local[bmap[s]] += 1.0
+-			tm = sum(opp_bucket_mix_local)
+-			if tm > 0:
+-				for i in range(B):
+-					opp_bucket_mix_local[i] = opp_bucket_mix_local[i] / tm
+-			_, ev_o = self._expected_utility_buckets_both(opp_bucket_mix_local, opp_bucket_mix, B, resolved_pot=resolved_pot)
+-			ev_o_by_cluster[int(oid)] = ev_o
+-		return ev_p_by_cluster, ev_o_by_cluster
++    def _ev_bucket(self, clusters, board_list_norm, board_set_upper, my_range, opp_range, best_hand_fn, hand_rank_fn, resolved_pot):
++        bmap, B = self._bucket_mixes(clusters, list(my_range.keys()) + list(opp_range.keys()), list(board_list_norm), board_set_upper, best_hand_fn, hand_rank_fn)
++        if bmap is None:
++            return None, None
++        opp_bucket_mix = [0.0] * B
++        for oid, oprob in opp_range.items():
++            if float(oprob) <= 0.0:
++                continue
++            hf = self._filtered_hands_for_cluster(clusters, oid, board_set_upper)
++            hs = self._sample(hf, self.max_sample_per_cluster, 4000 + int(oid))
++            if not hs:
++                continue
++            for s in self._cluster_distribution(hs, list(board_list_norm), best_hand_fn, hand_rank_fn):
++                opp_bucket_mix[bmap[s]] += float(oprob)
++        t = sum(opp_bucket_mix)
++        if t > 0:
++            for i in range(B):
++                opp_bucket_mix[i] = opp_bucket_mix[i] / t
++        ev_p_by_cluster = {}
++        ev_o_by_cluster = {}
++        for cid in my_range.keys():
++            hf = self._filtered_hands_for_cluster(clusters, cid, board_set_upper)
++            hs = self._sample(hf, self.max_sample_per_cluster, 5000 + int(cid))
++            if not hs:
++                ev_p_by_cluster[int(cid)] = 0.0
++                continue
++            my_bucket_mix = [0.0] * B
++            for s in self._cluster_distribution(hs, list(board_list_norm), best_hand_fn, hand_rank_fn):
++                my_bucket_mix[bmap[s]] += 1.0
++            tm = sum(my_bucket_mix)
++            if tm > 0:
++                for i in range(B):
++                    my_bucket_mix[i] = my_bucket_mix[i] / tm
++            ev_p, _ = self._expected_utility_buckets_both(my_bucket_mix, opp_bucket_mix, B, resolved_pot=resolved_pot)
++            ev_p_by_cluster[int(cid)] = ev_p
++        for oid in opp_range.keys():
++            hf = self._filtered_hands_for_cluster(clusters, oid, board_set_upper)
++            hs = self._sample(hf, self.max_sample_per_cluster, 6000 + int(oid))
++            if not hs:
++                ev_o_by_cluster[int(oid)] = 0.0
++                continue
++            opp_bucket_mix_local = [0.0] * B
++            for s in self._cluster_distribution(hs, list(board_list_norm), best_hand_fn, hand_rank_fn):
++                opp_bucket_mix_local[bmap[s]] += 1.0
++            tm = sum(opp_bucket_mix_local)
++            if tm > 0:
++                for i in range(B):
++                    opp_bucket_mix_local[i] = opp_bucket_mix_local[i] / tm
++            _, ev_o = self._expected_utility_buckets_both(opp_bucket_mix_local, opp_bucket_mix, B, resolved_pot=resolved_pot)
++            ev_o_by_cluster[int(oid)] = ev_o
++        return ev_p_by_cluster, ev_o_by_cluster
+ 
+ 	def compute_cluster_cfvs(self, clusters, node, player, wins_fn, best_hand_fn, hand_rank_fn):
+ 		board = list(node.public_state.board_cards)

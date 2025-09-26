@@ -1,0 +1,43 @@
+--- a/config_io.py
++++ b/config_io.py
+@@ -43,23 +43,23 @@
+ 
+ 
+ def compose_resolve_config_from_yaml(abstraction_yaml_path, value_nets_yaml_path, solver_yaml_path, overrides=None):
+-		abst = load_config(abstraction_yaml_path) if abstraction_yaml_path else {}
+-		vnets = load_config(value_nets_yaml_path) if value_nets_yaml_path else {}
+-		solv = load_config(solver_yaml_path) if solver_yaml_path else {}
+-		if not isinstance(abst, dict):
+-				abst = {}
+-		if not isinstance(vnets, dict):
+-				vnets = {}
+-		if not isinstance(solv, dict):
+-				solv = {}
+-		seed = _resolve_seed_from_dicts(abst, vnets, solv)
+-		set_global_seed(seed)
+-		cfg = ResolveConfig.from_env(overrides or {})
+-		cfg = _apply_abstraction_to_cfg(cfg, abst)
+-		cfg = _apply_value_nets_to_cfg(cfg, vnets)
+-		cfg = _apply_solver_to_cfg(cfg, solv)
+-		runtime_overrides = _extract_runtime_overrides(solv)
+-		return {"seed": int(seed), "config": cfg, "runtime_overrides": runtime_overrides}
++        abst = load_config(abstraction_yaml_path) if abstraction_yaml_path else {}
++        vnets = load_config(value_nets_yaml_path) if value_nets_yaml_path else {}
++        solv = load_config(solver_yaml_path) if solver_yaml_path else {}
++        if not isinstance(abst, dict):
++                abst = {}
++        if not isinstance(vnets, dict):
++                vnets = {}
++        if not isinstance(solv, dict):
++                solv = {}
++        seed = _resolve_seed_from_dicts(abst, vnets, solv)
++        set_global_seed(seed)
++        cfg = ResolveConfig.from_env(overrides or {})
++        cfg = _apply_abstraction_to_cfg(cfg, abst, overrides=overrides or {})
++        cfg = _apply_value_nets_to_cfg(cfg, vnets)
++        cfg = _apply_solver_to_cfg(cfg, solv)
++        runtime_overrides = _extract_runtime_overrides(solv)
++        return {"seed": int(seed), "config": cfg, "runtime_overrides": runtime_overrides}
+ 
+ def _resolve_seed_from_dicts(abst, vnets, solv):
+ 	seed = None

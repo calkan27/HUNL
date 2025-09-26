@@ -1,0 +1,330 @@
+--- a/hand_clusterer.py
++++ b/hand_clusterer.py
+@@ -257,165 +257,168 @@
+ 		distance = np.linalg.norm(np.array(features1) - np.array(features2))
+ 		return distance
+ 
+-	def cluster_hands(self, hands, board, opponent_range, pot_size):
+-		if self.profile == "test":
+-			if self._fast_test_frozen_clusters is not None:
+-				if os.getenv("DEBUG_FAST_TESTS") == "1":
+-					print("[FASTTEST] Returning frozen clusters (reuse)")
+-				return self._fast_test_frozen_clusters
+-
+-			if os.getenv("DEBUG_FAST_TESTS") == "1":
+-				print("[FASTTEST] Building frozen clusters (O(n); no features/MC/K-means)")
+-
+-			if isinstance(hands, (set, dict)):
+-				hands_list = sorted(list(hands))
+-			else:
+-				hands_list = list(hands)
+-				hands_list.sort()
+-
+-			K = int(self.num_clusters)
+-			N = len(hands_list)
+-
+-			clusters = {i: set() for i in range(K)}
+-
+-			if N == 0:
+-				self._fast_test_frozen_clusters = clusters
+-				self.clusters = clusters
+-				self.centroids = None
+-				self._fast_test_initialized = True
+-				return clusters
+-
+-			if N < K:
+-				rng = random.Random(self._fast_test_seed)
+-				perm = list(range(K))
+-				rng.shuffle(perm)
+-				for idx, hand in enumerate(hands_list):
+-					clusters[perm[idx]] = {hand}
+-			else:
+-				for hand in hands_list:
+-					if isinstance(hand, str):
+-						key = hand
+-					else:
+-						key = " ".join(list(hand))
+-					h = hashlib.sha256(key.encode("utf-8")).hexdigest()
+-					cls = int(h, 16) % K
+-					clusters[cls].add(hand)
+-
+-			K = int(self.num_clusters)
+-			for k in range(K):
+-				if k not in clusters:
+-					clusters[k] = set()
+-			empties = [k for k, v in clusters.items() if len(v) == 0]
+-			if empties:
+-				donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
+-				for e in empties:
+-					if not donors:
+-						break
+-					dk, _ = donors[0]
+-					move = sorted(clusters[dk])[0]
+-					clusters[dk].remove(move)
+-					clusters[e].add(move)
+-					donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
+-
+-			self._fast_test_frozen_clusters = clusters
+-			self.clusters = clusters
+-			self.centroids = None  
+-			self._last_features = None  
+-			self._fast_test_initialized = True
+-			return clusters
+-
+-		start_time = time.time()
+-		hits_before = self._cache_hits
+-		misses_before = self._cache_misses
+-
+-		hand_features = {}
+-		for hand in hands:
+-			features = self.calculate_hand_features(hand, board, opponent_range, pot_size)
+-			hand_features[hand] = features
+-
+-		D_t = self._compute_drift(hand_features)
+-		should_recluster = False
+-		if self.clusters is None or self.centroids is None:
+-			should_recluster = True
+-		else:
+-			if D_t is None:
+-				should_recluster = True
+-			else:
+-				if D_t >= self.tau_re:
+-					should_recluster = True
+-				else:
+-					should_recluster = False
+-
+-		if not should_recluster:
+-			total_time = time.time() - start_time
+-			print(f"[INFO] Reusing previous clustering (D_t={D_t:.4f} < τ_re={self.tau_re:.4f}); time {total_time:.4f}s")
+-			print(f"[CACHE] hits={self._cache_hits} misses={self._cache_misses} (+{self._cache_hits - hits_before}/+{self._cache_misses - misses_before})")
+-			return self.clusters
+-
+-		print(f"[INFO] Reclustering triggered (D_t={'None' if D_t is None else f'{D_t:.4f}'} ≥ τ_re={self.tau_re:.4f} or no baseline)")
+-
+-		feature_vectors = np.array(list(hand_features.values()))
+-		norms = np.linalg.norm(feature_vectors, axis=1, keepdims=True)
+-		normalized_features = feature_vectors / norms
+-
+-		if len(hands) < self.num_clusters:
+-			self.num_clusters = len(hands)
+-
+-		initial_indices = np.random.choice(len(hands), size=self.num_clusters, replace=False)
+-		centroids = normalized_features[initial_indices]
+-		previous_cluster_ids = None
+-		iteration = 0
+-		while iteration < self.max_iterations:
+-			distances = np.linalg.norm(normalized_features[:, np.newaxis] - centroids, axis=2)
+-			cluster_ids = np.argmin(distances, axis=1)
+-			if previous_cluster_ids is not None:
+-				if np.array_equal(cluster_ids, previous_cluster_ids):
+-					break
+-			previous_cluster_ids = cluster_ids.copy()
+-			i = 0
+-			while i < self.num_clusters:
+-				members = normalized_features[cluster_ids == i]
+-				if len(members) > 0:
+-					centroids[i] = np.mean(members, axis=0)
+-				else:
+-					centroids[i] = normalized_features[np.random.choice(len(hands))]
+-				i = i + 1
+-			iteration = iteration + 1
+-
+-		clusters = defaultdict(set)
+-		idx = 0
+-		hands_list = list(hands)
+-		while idx < len(hands_list):
+-			clusters[int(cluster_ids[idx])].add(hands_list[idx])
+-			idx = idx + 1
+-
+-		K = int(self.num_clusters)
+-		for k in range(K):
+-			if k not in clusters:
+-				clusters[k] = set()
+-
+-		empties = [k for k, v in clusters.items() if len(v) == 0]
+-		if empties:
+-			donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
+-			for e in empties:
+-				if not donors:
+-					break
+-				dk, _ = donors[0]
+-				move = sorted(clusters[dk])[0]
+-				clusters[dk].remove(move)
+-				clusters[e].add(move)
+-				donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
+-
+-		self.clusters = clusters
+-		self.centroids = centroids
+-		self._last_features = hand_features
+-
+-		total_time2 = time.time() - start_time
+-		print(f"[INFO] Clustering completed in {total_time2:.4f} seconds")
+-		print(f"[CACHE] hits={self._cache_hits} misses={self._cache_misses} (+{self._cache_hits - hits_before}/+{self._cache_misses - misses_before})")
+-		return clusters
+-
+-
++    def cluster_hands(self, hands, board, opponent_range, pot_size):
++        if self.profile == "test":
++            if self._fast_test_frozen_clusters is not None:
++                if os.getenv("DEBUG_FAST_TESTS") == "1":
++                    print("[FASTTEST] Returning frozen clusters (reuse)")
++                return self._fast_test_frozen_clusters
++
++            if os.getenv("DEBUG_FAST_TESTS") == "1":
++                print("[FASTTEST] Building frozen clusters (O(n); no features/MC/K-means)")
++
++            if isinstance(hands, (set, dict)):
++                hands_list = sorted(list(hands))
++            else:
++                hands_list = list(hands)
++                hands_list.sort()
++
++            K = int(self.num_clusters)
++            N = len(hands_list)
++
++            clusters = {i: set() for i in range(K)}
++
++            if N == 0:
++                self._fast_test_frozen_clusters = clusters
++                self.clusters = clusters
++                self.centroids = None
++                self._fast_test_initialized = True
++                return clusters
++
++            if N < K:
++                rng = random.Random(self._fast_test_seed)
++                perm = list(range(K))
++                rng.shuffle(perm)
++                for idx, hand in enumerate(hands_list):
++                    clusters[perm[idx]] = {hand}
++            else:
++                for hand in hands_list:
++                    if isinstance(hand, str):
++                        key = hand
++                    else:
++                        key = " ".join(list(hand))
++                    h = hashlib.sha256(key.encode("utf-8")).hexdigest()
++                    cls = int(h, 16) % K
++                    clusters[cls].add(hand)
++
++            K = int(self.num_clusters)
++            for k in range(K):
++                if k not in clusters:
++                    clusters[k] = set()
++            empties = [k for k, v in clusters.items() if len(v) == 0]
++            if empties:
++                donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
++                for e in empties:
++                    if not donors:
++                        break
++                    dk, _ = donors[0]
++                    move = sorted(clusters[dk])[0]
++                    clusters[dk].remove(move)
++                    clusters[e].add(move)
++                    donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
++
++            self._fast_test_frozen_clusters = clusters
++            self.clusters = clusters
++            self.centroids = None
++            self._last_features = None
++            self._fast_test_initialized = True
++            return clusters
++
++        start_time = time.time()
++        hits_before = self._cache_hits
++        misses_before = self._cache_misses
++
++        hand_features = {}
++        for hand in hands:
++            features = self.calculate_hand_features(hand, board, opponent_range, pot_size)
++            hand_features[hand] = features
++
++        D_t = self._compute_drift(hand_features)
++        should_recluster = False
++        if self.clusters is None or self.centroids is None:
++            should_recluster = True
++        else:
++            if D_t is None:
++                should_recluster = True
++            else:
++                if D_t >= self.tau_re:
++                    should_recluster = True
++                else:
++                    should_recluster = False
++
++        if not should_recluster:
++            total_time = time.time() - start_time
++            print(f"[INFO] Reusing previous clustering (D_t={D_t:.4f} < τ_re={self.tau_re:.4f}); time {total_time:.4f}s")
++            print(f"[CACHE] hits={self._cache_hits} misses={self._cache_misses} (+{self._cache_hits - hits_before}/+{self._cache_misses - misses_before})")
++            return self.clusters
++
++        import numpy as _np
++        rs = _np.random.RandomState(self._deterministic_seed_for_clustering(board, opponent_range, pot_size))
++
++        feature_vectors = _np.array(list(hand_features.values()))
++        norms = _np.linalg.norm(feature_vectors, axis=1, keepdims=True)
++        normalized_features = feature_vectors / norms
++
++        if len(hands) < self.num_clusters:
++            self.num_clusters = len(hands)
++
++        idx_all = _np.arange(len(hands))
++        rs.shuffle(idx_all)
++        initial_indices = idx_all[:self.num_clusters]
++        centroids = normalized_features[initial_indices].copy()
++
++        previous_cluster_ids = None
++        iteration = 0
++        while iteration < self.max_iterations:
++            distances = _np.linalg.norm(normalized_features[:, _np.newaxis] - centroids, axis=2)
++            cluster_ids = _np.argmin(distances, axis=1)
++            if previous_cluster_ids is not None:
++                if _np.array_equal(cluster_ids, previous_cluster_ids):
++                    break
++            previous_cluster_ids = cluster_ids.copy()
++            i = 0
++            while i < self.num_clusters:
++                members = normalized_features[cluster_ids == i]
++                if len(members) > 0:
++                    centroids[i] = _np.mean(members, axis=0)
++                else:
++                    centroids[i] = normalized_features[rs.randint(0, len(hands))]
++                i = i + 1
++            iteration = iteration + 1
++
++        from collections import defaultdict as _dd
++        clusters = _dd(set)
++        idx = 0
++        hands_list = list(hands)
++        while idx < len(hands_list):
++            clusters[int(cluster_ids[idx])].add(hands_list[idx])
++            idx = idx + 1
++
++        K = int(self.num_clusters)
++        for k in range(K):
++            if k not in clusters:
++                clusters[k] = set()
++
++        empties = [k for k, v in clusters.items() if len(v) == 0]
++        if empties:
++            donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
++            for e in empties:
++                if not donors:
++                    break
++                dk, _ = donors[0]
++                move = sorted(clusters[dk])[0]
++                clusters[dk].remove(move)
++                clusters[e].add(move)
++                donors = sorted([(k, len(v)) for k, v in clusters.items() if len(v) > 1], key=lambda x: -x[1])
++
++        self.clusters = clusters
++        self.centroids = centroids
++        self._last_features = hand_features
++
++        total_time2 = time.time() - start_time
++        print(f"[INFO] Clustering completed in {total_time2:.4f} seconds")
++        print(f"[CACHE] hits={self._cache_hits} misses={self._cache_misses} (+{self._cache_hits - hits_before}/+{self._cache_misses - misses_before})")
++        return clusters
+ 
+ 	def get_cluster_ranges(self):
+ 		ranges = {}

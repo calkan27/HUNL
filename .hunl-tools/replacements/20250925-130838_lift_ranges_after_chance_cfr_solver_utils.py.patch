@@ -1,0 +1,111 @@
+--- a/cfr_solver_utils.py
++++ b/cfr_solver_utils.py
+@@ -51,53 +51,61 @@
+ 		return 'none'
+ 
+ 
+-	def lift_ranges_after_chance(self, node: GameNode) -> dict:
+-		ps = node.public_state
+-		board = list(getattr(ps, "board_cards", []))
+-		board_set = set(board)
+-		cl = getattr(self, "clusters", {}) or {}
+-
+-		def _compat_count(hset):
+-			if not hset:
+-				return 0
+-			c = 0
+-			for h in hset:
+-				if isinstance(h, str):
+-					a, b = h.split()
+-				else:
+-					a, b = list(h)
+-				if a == b:
+-					continue
+-				if (a in board_set) or (b in board_set):
+-					continue
+-				c += 1
+-			return c
+-
+-		def _reweight(r):
+-			num = {}
+-			for cid, p in dict(r).items():
+-				cid_i = int(cid)
+-				hset = cl.get(cid_i, set())
+-				cnum = _compat_count(hset)
+-				if cnum > 0:
+-					num[cid_i] = float(p) * float(cnum)
+-			if not num:
+-				avail = {int(k): _compat_count(v) for k, v in cl.items()}
+-				avail = {k: v for k, v in avail.items() if v > 0}
+-				if not avail:
+-					return r
+-				u = 1.0 / float(len(avail))
+-				return {int(k): u for k in avail.keys()}
+-			s = sum(num.values())
+-			for k in list(num.keys()):
+-				num[k] = num[k] / s
+-			return num
+-
+-		for pl in (0, 1):
+-			if isinstance(node.player_ranges[pl], dict):
+-				node.player_ranges[pl] = _reweight(node.player_ranges[pl])
+-
+-		return {0: dict(node.player_ranges[0]), 1: dict(node.player_ranges[1])}
++    def lift_ranges_after_chance(self, node: GameNode) -> dict:
++        ps = node.public_state
++        board = list(getattr(ps, "board_cards", []))
++        board_set = set(board)
++        cl = getattr(self, "clusters", {}) or {}
++
++        def _compat_count(hset):
++            if not hset:
++                return 0
++            c = 0
++            for h in hset:
++                if isinstance(h, str):
++                    a, b = h.split()
++                else:
++                    a, b = list(h)
++                if a == b:
++                    continue
++                if (a in board_set) or (b in board_set):
++                    continue
++                c += 1
++            return c
++
++        def _reweight(r):
++            num = {}
++            for cid, p in dict(r).items():
++                cid_i = int(cid)
++                hset = cl.get(cid_i, set())
++                cnum = _compat_count(hset)
++                if cnum > 0:
++                    num[cid_i] = float(p) * float(cnum)
++            if not num:
++                avail = {int(k): _compat_count(v) for k, v in cl.items()}
++                avail = {k: v for k, v in avail.items() if v > 0}
++                if not avail:
++                    return r
++                u = 1.0 / float(len(avail))
++                return {int(k): u for k in avail.keys()}
++            s = sum(num.values())
++            for k in list(num.keys()):
++                num[k] = num[k] / s
++            return num
++
++        for pl in (0, 1):
++            if isinstance(node.player_ranges[pl], dict):
++                node.player_ranges[pl] = _reweight(node.player_ranges[pl])
++
++        if not hasattr(self, "own_range_tracking"):
++            self.own_range_tracking = {}
++        get_key = getattr(self, "_state_key", None)
++        if callable(get_key):
++            key = get_key(node)
++            cp = int(getattr(node.public_state, "current_player", 0))
++            self.own_range_tracking[key] = {int(k): float(v) for k, v in dict(node.player_ranges[cp]).items()}
++
++        return {0: dict(node.player_ranges[0]), 1: dict(node.player_ranges[1])}
+ 
+ 	def apply_opponent_action_update(self, prev_node: GameNode, new_node: GameNode, observed_action_type: ActionType):
+ 		if not hasattr(self, "opponent_cfv_upper_tracking"):

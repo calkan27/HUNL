@@ -1,0 +1,323 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -103,160 +103,166 @@
+ 		self._recursive_range_sampling_cache = {}
+ 
+ 
+-	def run_cfr(self, node):
+-		self._ensure_sparse_schedule()
+-
+-		ps = node.public_state
+-		agent_player = ps.current_player
+-		if agent_player not in (0, 1):
+-			return None
+-
+-		if not hasattr(self, "_soundness"):
+-			self._soundness = {}
+-
+-		self._diag_cfv_calls = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
+-		self._zs_residual_samples = []
+-
+-		cache_hit = False
+-		if ps.current_round == 0:
+-			key0 = self._preflop_signature(node)
+-			hit = self._preflop_cache_get(key0)
+-			if hit is not None:
+-				cache_hit = True
+-				self._apply_preflop_cache_hit(node, hit)
+-
+-		key = self._state_key(node) if hasattr(self, "_state_key") else None
+-		if hasattr(self, "own_range_tracking") and key in getattr(self, "own_range_tracking", {}):
+-			node.player_ranges[agent_player] = dict(self.own_range_tracking[key])
+-		if hasattr(self, "opponent_cfv_upper_tracking") and key in getattr(self, "opponent_cfv_upper_tracking", {}):
+-			pass
+-
+-		test_mode = (getattr(self, "hand_clusterer", None) is not None and getattr(self.hand_clusterer, "profile", "bot") == "test")
+-		if test_mode:
+-			if not self.clusters or len(self.clusters) == 0:
+-				return None
+-		if not test_mode and not self.clusters:
+-			all_hands = self.generate_all_possible_hands()
+-			self.clusters = self.hand_clusterer.cluster_hands(
+-				all_hands,
+-				ps.board_cards,
+-				node.player_ranges[(agent_player + 1) % 2],
+-				ps.pot_size,
+-			)
+-
+-		fast_env = os.getenv("FAST_TESTS") == "1"
+-		if fast_env:
+-			for player in [0, 1]:
+-				total = sum(node.player_ranges[player].values())
+-				if total > 0.0:
+-					for cid in list(node.player_ranges[player].keys()):
+-						node.player_ranges[player][cid] = node.player_ranges[player][cid] / total
+-				else:
+-					keys = list(node.player_ranges[player].keys())
+-					k = len(keys)
+-					if k > 0:
+-						u = 1.0 / k
+-						for cid in keys:
+-							node.player_ranges[player][cid] = u
+-		else:
+-			for player in [0, 1]:
+-				total_prob = sum(node.player_ranges[player].values())
+-				node.player_ranges[player] = self.recursive_range_sampling(
+-					set(node.player_ranges[player].keys()),
+-					total_prob,
+-					ps.board_cards,
+-				)
+-
+-		self.cfr_values = defaultdict(CFRValues)
+-		self.iteration = 0
+-
+-		self.apply_round_iteration_schedule(ps.current_round)
+-		if int(ps.current_round) == 0:
+-			self.total_iterations = 0
+-
+-		stage_name = self.get_stage(node)
+-		if not (isinstance(self._omit_prefix_iters, dict) and stage_name in self._omit_prefix_iters):
+-			self._omit_prefix_iters = {"preflop": 980, "flop": 500, "turn": 500, "river": 1000}
+-
+-		_ = self._range_gadget_begin(node)
+-
+-		total_iters = int(self.total_iterations)
+-		for _ in range(total_iters):
+-			self.iteration += 1
+-			cfvs = {}
+-			for pl in [0, 1]:
+-				cfvs[pl] = self._calculate_counterfactual_values(node, pl)
+-			for pl in [0, 1]:
+-				self._update_regret(node, pl, cfvs[pl])
+-
+-			if node not in self.opponent_counterfactual_values:
+-				self.opponent_counterfactual_values[node] = {}
+-			self.opponent_counterfactual_values[node][0] = cfvs[1]
+-			self.opponent_counterfactual_values[node][1] = cfvs[0]
+-
+-			opp_player = (agent_player + 1) % 2
+-			upper = self._upper_from_cfvs(cfvs.get(opp_player, {}))
+-			self._range_gadget_commit(node, upper)
+-
+-		regret_l2 = self._compute_regret_l2(node)
+-		avg_ent = self._compute_avg_strategy_entropy(node)
+-		zero_sum_res = self._compute_zero_sum_residual(node)
+-		zero_sum_res_mean = float(
+-			sum(abs(x) for x in self._zs_residual_samples) / float(len(self._zs_residual_samples))
+-		) if getattr(self, "_zs_residual_samples", None) else 0.0
+-		self._last_diagnostics = {
+-			"depth_limit": int(self.depth_limit),
+-			"iterations": int(self.total_iterations),
+-			"k1": float(self._soundness.get("k1", 0.0)),
+-			"k2": float(self._soundness.get("k2", 0.0)),
+-			"regret_l2": float(regret_l2),
+-			"avg_strategy_entropy": float(avg_ent),
+-			"cfv_calls": dict(self._diag_cfv_calls),
+-			"zero_sum_residual": float(zero_sum_res),
+-			"zero_sum_residual_mean": float(zero_sum_res_mean),
+-			"constraint_mode": str(getattr(self, "constraint_mode", "sp")),
+-		}
+-
+-		if ps.current_round == 0:
+-			key1 = self._preflop_signature(node)
+-			own = dict(node.player_ranges[agent_player])
+-			s = sum(own.values())
+-			if s > 0.0:
+-				for k2 in list(own.keys()):
+-					own[k2] = own[k2] / s
+-			opp = (agent_player + 1) % 2
+-			opp_cfvs = self.opponent_counterfactual_values.get(node, {}).get(opp, {})
+-			upper = self._upper_from_cfvs(opp_cfvs)
+-			self._preflop_cache_put(key1, own, upper)
+-
+-		allowed_actions = self._allowed_actions_agent(ps)
+-		action_probs = self._mixed_action_distribution(node, agent_player, allowed_actions)
+-		r = random.random()
+-		cum = 0.0
+-		chosen = allowed_actions[-1]
+-		for a_type, p in zip(allowed_actions, action_probs):
+-			cum += p
+-			if r <= cum:
+-				chosen = a_type
+-				break
+-		act = Action(chosen)
+-
+-		tmp_parent = GameNode(ps)
+-		tmp_parent.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+-		tmp_parent.public_state.last_action = act
+-		if hasattr(self, "update_tracking_on_own_action"):
+-			self.update_tracking_on_own_action(
+-				tmp_parent,
+-				agent_player=agent_player,
+-				counterfactual_values=self.opponent_counterfactual_values.get(node, {}),
+-			)
+-
+-		new_ps = ps.update_state(node, act)
+-		node.public_state = new_ps
+-
+-		self.cfr_values = defaultdict(CFRValues)
+-		self.iteration = 0
+-		return act
++    def run_cfr(self, node):
++        self._ensure_sparse_schedule()
++
++        if getattr(self, "hand_clusterer", None) is not None:
++            prof = str(getattr(self.hand_clusterer, "profile", ""))
++            if prof == "test":
++                ok = (os.getenv("FAST_TESTS") == "1") or bool(getattr(getattr(self, "_config", None), "debug_fast_tests", False))
++                assert ok
++
++        ps = node.public_state
++        agent_player = ps.current_player
++        if agent_player not in (0, 1):
++            return None
++
++        if not hasattr(self, "_soundness"):
++            self._soundness = {}
++
++        self._diag_cfv_calls = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
++        self._zs_residual_samples = []
++
++        cache_hit = False
++        if ps.current_round == 0:
++            key0 = self._preflop_signature(node)
++            hit = self._preflop_cache_get(key0)
++            if hit is not None:
++                cache_hit = True
++                self._apply_preflop_cache_hit(node, hit)
++
++        key = self._state_key(node) if hasattr(self, "_state_key") else None
++        if hasattr(self, "own_range_tracking") and key in getattr(self, "own_range_tracking", {}):
++            node.player_ranges[agent_player] = dict(self.own_range_tracking[key])
++        if hasattr(self, "opponent_cfv_upper_tracking") and key in getattr(self, "opponent_cfv_upper_tracking", {}):
++            pass
++
++        test_mode = (getattr(self.hand_clusterer, "profile", "bot") == "test")
++        if test_mode:
++            if not self.clusters or len(self.clusters) == 0:
++                return None
++        if not test_mode and not self.clusters:
++            all_hands = self.generate_all_possible_hands()
++            self.clusters = self.hand_clusterer.cluster_hands(
++                all_hands,
++                ps.board_cards,
++                node.player_ranges[(agent_player + 1) % 2],
++                ps.pot_size,
++            )
++
++        fast_env = os.getenv("FAST_TESTS") == "1"
++        if fast_env:
++            for player in [0, 1]:
++                total = sum(node.player_ranges[player].values())
++                if total > 0.0:
++                    for cid in list(node.player_ranges[player].keys()):
++                        node.player_ranges[player][cid] = node.player_ranges[player][cid] / total
++                else:
++                    keys = list(node.player_ranges[player].keys())
++                    k = len(keys)
++                    if k > 0:
++                        u = 1.0 / k
++                        for cid in keys:
++                            node.player_ranges[player][cid] = u
++        else:
++            for player in [0, 1]:
++                total_prob = sum(node.player_ranges[player].values())
++                node.player_ranges[player] = self.recursive_range_sampling(
++                    set(node.player_ranges[player].keys()),
++                    total_prob,
++                    ps.board_cards,
++                )
++
++        self.cfr_values = defaultdict(CFRValues)
++        self.iteration = 0
++
++        self.apply_round_iteration_schedule(ps.current_round)
++        if int(ps.current_round) == 0:
++            self.total_iterations = 0
++
++        stage_name = self.get_stage(node)
++        if not (isinstance(self._omit_prefix_iters, dict) and stage_name in self._omit_prefix_iters):
++            self._omit_prefix_iters = {"preflop": 980, "flop": 500, "turn": 500, "river": 1000}
++
++        _ = self._range_gadget_begin(node)
++
++        total_iters = int(self.total_iterations)
++        for _ in range(total_iters):
++            self.iteration += 1
++            cfvs = {}
++            for pl in [0, 1]:
++                cfvs[pl] = self._calculate_counterfactual_values(node, pl)
++            for pl in [0, 1]:
++                self._update_regret(node, pl, cfvs[pl])
++
++            if node not in self.opponent_counterfactual_values:
++                self.opponent_counterfactual_values[node] = {}
++            self.opponent_counterfactual_values[node][0] = cfvs[1]
++            self.opponent_counterfactual_values[node][1] = cfvs[0]
++
++            opp_player = (agent_player + 1) % 2
++            upper = self._upper_from_cfvs(cfvs.get(opp_player, {}))
++            self._range_gadget_commit(node, upper)
++
++        regret_l2 = self._compute_regret_l2(node)
++        avg_ent = self._compute_avg_strategy_entropy(node)
++        zero_sum_res = self._compute_zero_sum_residual(node)
++        zero_sum_res_mean = float(
++            sum(abs(x) for x in self._zs_residual_samples) / float(len(self._zs_residual_samples))
++        ) if getattr(self, "_zs_residual_samples", None) else 0.0
++        self._last_diagnostics = {
++            "depth_limit": int(self.depth_limit),
++            "iterations": int(self.total_iterations),
++            "k1": float(self._soundness.get("k1", 0.0)),
++            "k2": float(self._soundness.get("k2", 0.0)),
++            "regret_l2": float(regret_l2),
++            "avg_strategy_entropy": float(avg_ent),
++            "cfv_calls": dict(self._diag_cfv_calls),
++            "zero_sum_residual": float(zero_sum_res),
++            "zero_sum_residual_mean": float(zero_sum_res_mean),
++            "constraint_mode": str(getattr(self, "constraint_mode", "sp")),
++        }
++
++        if ps.current_round == 0:
++            key1 = self._preflop_signature(node)
++            own = dict(node.player_ranges[agent_player])
++            s = sum(own.values())
++            if s > 0.0:
++                for k2 in list(own.keys()):
++                    own[k2] = own[k2] / s
++            opp = (agent_player + 1) % 2
++            opp_cfvs = self.opponent_counterfactual_values.get(node, {}).get(opp, {})
++            upper = self._upper_from_cfvs(opp_cfvs)
++            self._preflop_cache_put(key1, own, upper)
++
++        allowed_actions = self._allowed_actions_agent(ps)
++        action_probs = self._mixed_action_distribution(node, agent_player, allowed_actions)
++        r = random.random()
++        cum = 0.0
++        chosen = allowed_actions[-1]
++        for a_type, p in zip(allowed_actions, action_probs):
++            cum += p
++            if r <= cum:
++                chosen = a_type
++                break
++        act = Action(chosen)
++
++        tmp_parent = GameNode(ps)
++        tmp_parent.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++        tmp_parent.public_state.last_action = act
++        if hasattr(self, "update_tracking_on_own_action"):
++            self.update_tracking_on_own_action(
++                tmp_parent,
++                agent_player=agent_player,
++                counterfactual_values=self.opponent_counterfactual_values.get(node, {}),
++            )
++
++        new_ps = ps.update_state(node, act)
++        node.public_state = new_ps
++
++        self.cfr_values = defaultdict(CFRValues)
++        self.iteration = 0
++        return act
+ 
+ 	def _calculate_counterfactual_values(self, node, player, depth=0, cache=None):
+ 		if cache is None:

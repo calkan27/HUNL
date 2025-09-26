@@ -1,0 +1,34 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -47,6 +47,8 @@
+         while not node.public_state.is_terminal and step_guard < 200:
+                 step_guard += 1
+                 prev_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++                prev_board = list(node.public_state.board_cards)
++                prev_round = int(node.public_state.current_round)
+                 cur = node.public_state.current_player
+                 if cur == 0:
+                         dist = pol_agent(node, player=0)
+@@ -62,6 +64,13 @@
+                         new_ps = node.public_state.update_state(node, Action(chosen))
+                         node = GameNode(new_ps)
+                         node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
++                new_board = list(node.public_state.board_cards)
++                if int(node.public_state.current_round) > prev_round and len(new_board) > len(prev_board):
++                        seen = set(prev_board)
++                        for c in new_board:
++                                if c not in seen:
++                                        events.append({"type": "chance", "action": c})
++                                        seen.add(c)
+ 
+         if not node.public_state.is_terminal:
+                 return 0.0, {"initial_node": None, "events": []}
+@@ -75,7 +84,7 @@
+ 
+         value_fn = _value_fn_from_solver(value_solver_for_aivat)
+         policy_fn = lambda nd, player: (pol_agent(nd, player) if player == 0 else pol_opp(nd, player))
+-        aiv = AIVATEvaluator(value_fn=value_fn, policy_fn=policy_fn, chance_policy_fn=None, agent_player=0)
++        aiv = AIVATEvaluator(value_fn=value_fn, policy_fn=policy_fn, chance_policy_fn=_chance_policy_uniform, agent_player=0)
+         res = aiv.evaluate(episode)
+         return float(naive), {"aivat": float(res["aivat"])}
+ 

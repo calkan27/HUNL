@@ -1,0 +1,340 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -1211,323 +1211,20 @@
+ 		}
+ 
+     def apply_opponent_action_update(self, prev_node, new_node, observed_action_type):
+-        if not hasattr(self, "opponent_cfv_upper_tracking"):
+-            self.opponent_cfv_upper_tracking = {}
+-        prev_key = self._state_key(prev_node) if hasattr(self, "_state_key") else None
+-        next_key = self._state_key(new_node) if hasattr(self, "_state_key") else None
+-        if next_key is None:
+-            return
+-        prev_u = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(prev_key, {}))
+-        next_u = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(next_key, {}))
+-        out = {}
+-        for k in set(list(prev_u.keys()) + list(next_u.keys())):
+-            a = float(prev_u.get(int(k), float("-inf")))
+-            b = float(next_u.get(int(k), float("-inf")))
+-            out[int(k)] = a if a > b else b
+-        self.opponent_cfv_upper_tracking[next_key] = out
+-
+-	def apply_cfv_bundle(self, bundle_or_path, device=None):
+-		if isinstance(bundle_or_path, str):
+-			loaded = load_cfv_bundle(bundle_or_path, device=device)
+-		else:
+-			loaded = dict(bundle_or_path)
+-		models = dict(loaded.get("models", {}))
+-		meta = dict(loaded.get("meta", {}))
+-		if device is None:
+-			device = self.device if hasattr(self, "device") else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+-		out = {}
+-		for stage, net in models.items():
+-			out[str(stage)] = net.to(device)
+-		if out:
+-			self.models.update(out)
+-		cmap = dict(meta.get("cluster_mapping", {}))
+-		if cmap:
+-			if hasattr(self, "hand_clusterer") and hasattr(self.hand_clusterer, "load_mapping"):
+-				self.hand_clusterer.load_mapping(cmap)
+-			self.clusters = {int(k): set(v) for k, v in cmap.items()}
+-		imeta = dict(meta.get("input_meta", {}))
+-		if "num_clusters" in imeta:
+-			try:
+-				self.num_clusters = int(imeta["num_clusters"])
+-			except Exception:
+-				pass
+-		self.device = device
+-		return {"models_applied": list(out.keys()), "num_clusters": int(getattr(self, "num_clusters", 0))}
+-
+-	def _is_terminal(self, node):
+-
+-		try:
+-			return bool(node.public_state.is_terminal)
+-		except Exception:
+-			return False
+-	def _calculate_terminal_utility(self, node, player):
+-
+-		ps = node.public_state
+-		if not getattr(ps, "is_terminal", False):
+-			return 0.0
+-		try:
+-			u = ps.terminal_utility()
+-			return float(u[int(player)])
+-		except Exception:
+-			return 0.0
+-	def _player_wins(self, player_hand, opp_hand, board):
+-
+-		try:
+-			ph = list(player_hand) + list(board)
+-			oh = list(opp_hand) + list(board)
+-			rp = hand_rank(best_hand(ph))
+-			ro = hand_rank(best_hand(oh))
+-			if rp > ro:
+-				return 1
+-			elif ro > rp:
+-				return -1
+-			return 0
+-		except Exception:
+-			return 0
+-	def apply_round_iteration_schedule(self, current_round):
+-
+-		self._ensure_sparse_schedule()
+-		try:
+-			self.total_iterations = int(self._round_iters.get(int(current_round),
+-															 int(self.total_iterations)))
+-		except Exception:
+-			pass
+-
+-
+-	def lift_ranges_after_chance(self, node):
+-
+-		try:
+-			for pl in (0, 1):
+-				r = dict(node.player_ranges[pl])
+-				s = sum(float(v) for v in r.values()) or 0.0
+-				if s > 0.0:
+-					for k in list(r.keys()):
+-						r[k] = float(r[k]) / s
+-				else:
+-					K = int(self.num_clusters)
+-					if K > 0:
+-						u = 1.0 / float(K)
+-						r = {i: u for i in range(K)}
+-				node.player_ranges[pl] = r
+-		except Exception:
+-			pass
+-		return node
+-
+-
+-	def _slt_action_menu(self, ps, pot_fracs=(0.5, 1.0, 2.0), for_player=True):
+-		menu = []
+-		legal = self._allowed_actions_agent(ps) if for_player else self._allowed_actions_opponent(ps)
+-		if ActionType.FOLD in legal:
+-			menu.append(ActionType.FOLD)
+-		if ActionType.CALL in legal:
+-			menu.append(ActionType.CALL)
+-		wants_half = any(abs(f - 0.5) < 1e-9 for f in pot_fracs)
+-		wants_pot  = any(abs(f - 1.0) < 1e-9 for f in pot_fracs)
+-		wants_2pot = any(abs(f - 2.0) < 1e-9 for f in pot_fracs)
+-		if wants_half and ActionType.HALF_POT_BET in legal:
+-			menu.append(ActionType.HALF_POT_BET)
+-		if wants_pot and ActionType.POT_SIZED_BET in legal:
+-			menu.append(ActionType.POT_SIZED_BET)
+-		if wants_2pot and ActionType.TWO_POT_BET in legal:
+-			menu.append(ActionType.TWO_POT_BET)
+-		if ActionType.ALL_IN in legal:
+-			menu.append(ActionType.ALL_IN)
+-		return menu
+-	def _slt_leaf_cfv(self, node, player):
+-		stage = self.get_stage(node)
+-		if stage in ("flop", "turn", "preflop"):
+-			preds = self.predict_counterfactual_values(node, player)
+-			scale = float(node.public_state.pot_size)
+-			out = np.zeros((self.num_clusters,), dtype=float)
+-			for cid, vec in preds.items():
+-				val = float(vec[0]) if isinstance(vec, (list, tuple)) else float(vec)
+-				idx = int(cid)
+-				if 0 <= idx < self.num_clusters:
+-					out[idx] = val * scale
+-			return out
+-		if stage == "river":
+-			preds = self.predict_counterfactual_values(node, player)
+-			out = np.zeros((self.num_clusters,), dtype=float)
+-			for cid, vec in preds.items():
+-				val = float(vec[0]) if isinstance(vec, (list, tuple)) else float(vec)
+-				idx = int(cid)
+-				if 0 <= idx < self.num_clusters:
+-					out[idx] = val
+-			return out
+-		return np.zeros((self.num_clusters,), dtype=float)
+-	def build_sparse_lookahead_tree(self, root_node, player, pot_fracs=(0.5, 1.0, 2.0), max_actions_per_branch=4, to_end_of_round=True, max_depth_actions=None):
+-		K = int(self.num_clusters)
+-		stage_start = self.get_stage(root_node)
+-		start_round = int(root_node.public_state.current_round)
+-		nodes = []
+-		parents = []
+-		edges = []
+-		reach_self = []
+-		reach_opp = []
+-		values = []
+-		stack = []
+-		def _norm_range(r):
+-			v = np.zeros((K,), dtype=float)
+-			s = 0.0
+-			for cid, p in dict(r).items():
+-				i = int(cid)
+-				if 0 <= i < K:
+-					v[i] = float(p)
+-					s += float(p)
+-			if s > 0.0:
+-				v /= s
+-			return v
+-		r_self0 = _norm_range(root_node.player_ranges[player])
+-		r_opp0 = _norm_range(root_node.player_ranges[(player + 1) % 2])
+-		nodes.append(root_node)
+-		parents.append(-1)
+-		edges.append(ActionType.CALL)
+-		reach_self.append(r_self0)
+-		reach_opp.append(r_opp0)
+-		values.append(None)
+-		stack.append((0, 0))
+-		while stack:
+-			ni, depth_actions = stack.pop()
+-			cur = nodes[ni]
+-			ps = cur.public_state
+-			if ps.is_terminal:
+-				val = self._slt_leaf_cfv(cur, player)
+-				values[ni] = val
+-				continue
+-			if (not to_end_of_round) and (max_depth_actions is not None) and (depth_actions >= int(max_depth_actions)):
+-				val = self._slt_leaf_cfv(cur, player)
+-				values[ni] = val
+-				continue
+-			if int(ps.current_round) != start_round:
+-				val = self._slt_leaf_cfv(cur, player)
+-				values[ni] = val
+-				continue
+-			actor = int(ps.current_player)
+-			is_our_turn = (actor == int(player))
+-			menu = self._slt_action_menu(ps, pot_fracs=tuple(pot_fracs), for_player=is_our_turn)
+-			if len(menu) == 0:
+-				val = self._slt_leaf_cfv(cur, player)
+-				values[ni] = val
+-				continue
+-			if max_actions_per_branch is not None and len(menu) > int(max_actions_per_branch):
+-				menu = menu[:int(max_actions_per_branch)]
+-			if is_our_turn:
+-				values_map = self.cfr_values[cur]
+-				children = []
+-				for a in menu:
+-					new_ps = ps.update_state(cur, Action(a))
+-					child = GameNode(new_ps)
+-					child.player_ranges = [dict(cur.player_ranges[0]), dict(cur.player_ranges[1])]
+-					children.append((a, child))
+-				strat_agg = np.zeros((len(menu),), dtype=float)
+-				for cid, prior in cur.player_ranges[player].items():
+-					cid = int(cid)
+-					base = values_map.get_average_strategy(cid)
+-					masked = self._mask_strategy(base, menu)
+-					for i, a in enumerate(menu):
+-						strat_agg[i] += float(prior) * float(masked[a.value])
+-				t = float(sum(strat_agg))
+-				if t > 0.0:
+-					strat_agg = strat_agg / t
+-				parent_self = reach_self[ni]
+-				parent_opp = reach_opp[ni]
+-				for i, (a, child) in enumerate(children):
+-					nodes.append(child)
+-					parents.append(ni)
+-					edges.append(a)
+-					rs = parent_self * float(strat_agg[i])
+-					ro = parent_opp.copy()
+-					reach_self.append(rs)
+-					reach_opp.append(ro)
+-					values.append(None)
+-					stack.append((len(nodes) - 1, depth_actions + 1))
+-			else:
+-				children = []
+-				for a in menu:
+-					new_ps = ps.update_state(cur, Action(a))
+-					child = GameNode(new_ps)
+-					child.player_ranges = [dict(cur.player_ranges[0]), dict(cur.player_ranges[1])]
+-					children.append((a, child))
+-				parent_self = reach_self[ni]
+-				parent_opp = reach_opp[ni]
+-				if hasattr(self, "opponent_cfv_upper_tracking"):
+-					pass
+-				u = len(menu)
+-				if u <= 0:
+-					u = 1
+-				opp_mix = np.full((u,), 1.0 / float(u), dtype=float)
+-				for i, (a, child) in enumerate(children):
+-					nodes.append(child)
+-					parents.append(ni)
+-					edges.append(a)
+-					rs = parent_self.copy()
+-					ro = parent_opp * float(opp_mix[i])
+-					reach_self.append(rs)
+-					reach_opp.append(ro)
+-					values.append(None)
+-					stack.append((len(nodes) - 1, depth_actions + 1))
+-		out = {
+-			"nodes": nodes,
+-			"parents": parents,
+-			"edges": edges,
+-			"reach_self": reach_self,
+-			"reach_opp": reach_opp,
+-			"values": values,
+-			"stage_start": stage_start,
+-		}
+-		return out
+-	def _info_key(self, node, player):
+-		return (self._state_key(node), int(player))
+-	def _rm_plus(self, regrets, allowed_actions):
+-		A = len(ActionType)
+-		mask = [False] * A
+-		for a in allowed_actions:
+-			mask[int(a.value)] = True
+-		pos = [0.0] * A
+-		s = 0.0
+-		for i in range(A):
+-			if mask[i]:
+-				v = regrets[i]
+-				if v < 0.0:
+-					v = 0.0
+-				pos[i] = v
+-				s += v
+-		if s <= 0.0:
+-			k = float(max(1, sum(1 for b in mask if b)))
+-			out = [0.0] * A
+-			for i in range(A):
+-				if mask[i]:
+-					out[i] = 1.0 / k
+-			return out
+-		out = [0.0] * A
+-		for i in range(A):
+-			if mask[i]:
+-				out[i] = pos[i] / s
+-		return out
+-	def _normalize_range(self, r, K: int) -> np.ndarray:
+-		if isinstance(r, dict):
+-			out = np.zeros((K,), dtype=float)
+-			s = 0.0
+-			for cid, p in r.items():
+-				i = int(cid)
+-				if 0 <= i < K:
+-					v = float(p)
+-					out[i] = v
+-					s += v
+-			if s > 0.0:
+-				out /= s
+-			return out
+-		out = np.asarray(r, dtype=float).copy()
+-		s = float(out.sum())
+-		if s > 0.0:
+-			out /= s
+-		return out
+-
+-	def _allowed_actions(self, public_state, for_us: bool):
+-		return self._slt_action_menu(public_state, pot_fracs=(0.5, 1.0, 2.0), for_player=for_us)
+-
+-	def _info_key_for(self, node, player: int):
+-		return self._info_key(node, player)
++            if not hasattr(self, "opponent_cfv_upper_tracking"):
++                    self.opponent_cfv_upper_tracking = {}
++            prev_key = self._state_key(prev_node) if hasattr(self, "_state_key") else None
++            next_key = self._state_key(new_node) if hasattr(self, "_state_key") else None
++            if next_key is None:
++                    return
++            prev_u = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(prev_key, {}))
++            next_u = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(next_key, {}))
++            out = {}
++            for k in set(list(prev_u.keys()) + list(next_u.keys())):
++                    a = float(prev_u.get(int(k), float("-inf")))
++                    b = float(next_u.get(int(k), float("-inf")))
++                    out[int(k)] = a if a > b else b
++            self.opponent_cfv_upper_tracking[next_key] = out
+ 
+     def _worst_from_constraints(self, node, us: int) -> float:
+             key = self._state_key(node)

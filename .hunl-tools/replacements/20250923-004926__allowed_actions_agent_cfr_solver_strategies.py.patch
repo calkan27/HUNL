@@ -1,0 +1,203 @@
+--- a/cfr_solver_strategies.py
++++ b/cfr_solver_strategies.py
+@@ -118,102 +118,104 @@
+ 				post[cid] = post[cid] / norm
+ 		node.player_ranges[player] = post
+ 
+-	def _allowed_actions_agent(self, ps):
+-		self._ensure_sparse_schedule()
+-		ridx = int(getattr(ps, "current_round", getattr(ps, "round_idx", 0)))
+-		flags = self._round_actions.get(ridx, {"half_pot": True, "two_pot": False})
+-
+-		p = int(getattr(ps, "current_player", 0))
+-		cb = tuple(getattr(ps, "current_bets", (0, 0)))
+-		my_bet = cb[p] if p < len(cb) else 0
+-		opp_bet = cb[(p + 1) % 2] if len(cb) > 1 else 0
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		if hasattr(ps, "_min_raise_size") and callable(ps._min_raise_size):
+-			min_raise_inc = int(ps._min_raise_size())
+-		else:
+-			min_raise_inc = int(getattr(ps, "min_raise_size", 0))
+-		st0 = getattr(ps, "stacks", (0, 0))
+-		my_stack = int(st0[p]) if isinstance(st0, (tuple, list)) and len(st0) >= 2 else int(getattr(ps, "stack", 0))
+-
+-		legal_list = None
+-		if hasattr(ps, "legal_actions") and callable(ps.legal_actions):
+-			try:
+-				l = ps.legal_actions()
+-				if isinstance(l, list):
+-					legal_list = l
+-			except Exception:
+-				legal_list = None
+-		if legal_list is not None:
+-			out = []
+-			seen = set()
+-			for a in legal_list:
+-				if a == ActionType.HALF_POT_BET and not flags.get("half_pot", False):
+-					continue
+-				if a == ActionType.TWO_POT_BET and not flags.get("two_pot", False):
+-					continue
+-				if a not in seen:
+-					seen.add(a)
+-					out.append(a)
+-			if ActionType.CALL not in out:
+-				out.append(ActionType.CALL)
+-			if my_stack > 0:
+-				if to_call == 0:
+-					if flags.get("half_pot", False) and ActionType.HALF_POT_BET not in out:
+-						out.append(ActionType.HALF_POT_BET)
+-					if ActionType.POT_SIZED_BET not in out:
+-						out.append(ActionType.POT_SIZED_BET)
+-					if flags.get("two_pot", False) and ActionType.TWO_POT_BET not in out:
+-						out.append(ActionType.TWO_POT_BET)
+-					if ActionType.ALL_IN not in out:
+-						out.append(ActionType.ALL_IN)
+-				else:
+-					if my_stack <= to_call:
+-						if ActionType.ALL_IN not in out:
+-							out.append(ActionType.ALL_IN)
+-					else:
+-						if flags.get("half_pot", False) and ActionType.HALF_POT_BET not in out:
+-							out.append(ActionType.HALF_POT_BET)
+-						if ActionType.POT_SIZED_BET not in out:
+-							out.append(ActionType.POT_SIZED_BET)
+-						if flags.get("two_pot", False) and ActionType.TWO_POT_BET not in out:
+-							out.append(ActionType.TWO_POT_BET)
+-						if ActionType.ALL_IN not in out:
+-							out.append(ActionType.ALL_IN)
+-			return out
+-
+-		out = []
+-		if to_call > 0:
+-			out.append(ActionType.FOLD)
+-		out.append(ActionType.CALL)
+-		if my_stack > 0:
+-			if to_call == 0:
+-				if flags.get("half_pot", False):
+-					out.append(ActionType.HALF_POT_BET)
+-				out.append(ActionType.POT_SIZED_BET)
+-				if flags.get("two_pot", False):
+-					out.append(ActionType.TWO_POT_BET)
+-				out.append(ActionType.ALL_IN)
+-			else:
+-				if my_stack <= to_call:
+-					out.append(ActionType.ALL_IN)
+-				else:
+-					if flags.get("half_pot", False):
+-						out.append(ActionType.HALF_POT_BET)
+-					out.append(ActionType.POT_SIZED_BET)
+-					if flags.get("two_pot", False):
+-						out.append(ActionType.TWO_POT_BET)
+-					out.append(ActionType.ALL_IN)
+-		seen = set()
+-		filt = []
+-		for a in out:
+-			if a not in seen:
+-				seen.add(a)
+-				filt.append(a)
+-		if not filt:
+-			return [ActionType.CALL]
+-		return filt
++    def _allowed_actions_agent(self, ps):
++        self._ensure_sparse_schedule()
++        ridx = int(getattr(ps, "current_round", getattr(ps, "round_idx", 0)))
++        flags = self._round_actions.get(ridx, {"half_pot": True, "two_pot": False})
++
++        p = int(getattr(ps, "current_player", 0))
++        cb = tuple(getattr(ps, "current_bets", (0, 0)))
++        my_bet = cb[p] if p < len(cb) else 0
++        opp_bet = cb[(p + 1) % 2] if len(cb) > 1 else 0
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        if hasattr(ps, "_min_raise_size") and callable(ps._min_raise_size):
++            min_raise_inc = int(ps._min_raise_size())
++        else:
++            min_raise_inc = int(getattr(ps, "min_raise_size", 0))
++        st0 = getattr(ps, "stacks", (0, 0))
++        my_stack = int(st0[p]) if isinstance(st0, (tuple, list)) and len(st0) >= 2 else int(getattr(ps, "stack", 0))
++
++        legal_list = None
++        if hasattr(ps, "legal_actions") and callable(ps.legal_actions):
++            try:
++                l = ps.legal_actions()
++                if isinstance(l, list):
++                    legal_list = l
++            except Exception:
++                legal_list = None
++        if legal_list is not None:
++            out = []
++            seen = set()
++            for a in legal_list:
++                if a == ActionType.HALF_POT_BET and not flags.get("half_pot", False):
++                    continue
++                if a == ActionType.TWO_POT_BET and not flags.get("two_pot", False):
++                    continue
++                if a not in seen:
++                    seen.add(a)
++                    out.append(a)
++            if ActionType.CALL not in out:
++                out.append(ActionType.CALL)
++            if to_call > 0 and ActionType.FOLD not in out:
++                out.append(ActionType.FOLD)
++            if my_stack > 0:
++                if to_call == 0:
++                    if flags.get("half_pot", False) and ActionType.HALF_POT_BET not in out:
++                        out.append(ActionType.HALF_POT_BET)
++                    if ActionType.POT_SIZED_BET not in out:
++                        out.append(ActionType.POT_SIZED_BET)
++                    if flags.get("two_pot", False) and ActionType.TWO_POT_BET not in out:
++                        out.append(ActionType.TWO_POT_BET)
++                    if ActionType.ALL_IN not in out:
++                        out.append(ActionType.ALL_IN)
++                else:
++                    if my_stack <= to_call:
++                        if ActionType.ALL_IN not in out:
++                            out.append(ActionType.ALL_IN)
++                    else:
++                        if flags.get("half_pot", False) and ActionType.HALF_POT_BET not in out:
++                            out.append(ActionType.HALF_POT_BET)
++                        if ActionType.POT_SIZED_BET not in out:
++                            out.append(ActionType.POT_SIZED_BET)
++                        if flags.get("two_pot", False) and ActionType.TWO_POT_BET not in out:
++                            out.append(ActionType.TWO_POT_BET)
++                        if ActionType.ALL_IN not in out:
++                            out.append(ActionType.ALL_IN)
++            return out
++
++        out = []
++        if to_call > 0:
++            out.append(ActionType.FOLD)
++        out.append(ActionType.CALL)
++        if my_stack > 0:
++            if to_call == 0:
++                if flags.get("half_pot", False):
++                    out.append(ActionType.HALF_POT_BET)
++                out.append(ActionType.POT_SIZED_BET)
++                if flags.get("two_pot", False):
++                    out.append(ActionType.TWO_POT_BET)
++                out.append(ActionType.ALL_IN)
++            else:
++                if my_stack <= to_call:
++                    out.append(ActionType.ALL_IN)
++                else:
++                    if flags.get("half_pot", False):
++                        out.append(ActionType.HALF_POT_BET)
++                    out.append(ActionType.POT_SIZED_BET)
++                    if flags.get("two_pot", False):
++                        out.append(ActionType.TWO_POT_BET)
++                    out.append(ActionType.ALL_IN)
++        seen = set()
++        filt = []
++        for a in out:
++            if a not in seen:
++                seen.add(a)
++                filt.append(a)
++        if not filt:
++            return [ActionType.CALL]
++        return filt
+ 
+ 	def _allowed_actions_opponent(self, ps):
+ 		return self._allowed_actions_agent(ps)

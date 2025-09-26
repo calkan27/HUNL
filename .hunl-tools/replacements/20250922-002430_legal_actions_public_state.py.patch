@@ -1,0 +1,79 @@
+--- a/public_state.py
++++ b/public_state.py
+@@ -533,48 +533,34 @@
+ 		self.last_action = ("EXOGENOUS_BET", int(bettor), float(delta))
+ 		return self
+ 
+-	def legal_actions(self):
+-		p = self.current_player
+-		o = (p + 1) % 2
+-		my_bet = self.current_bets[p]
+-		opp_bet = self.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		acts = []
+-		if to_call > 0:
+-			acts.append(ActionType.FOLD)
+-		acts.append(ActionType.CALL)
+-		min_raise_inc = self._min_raise_size()
+-		reopen_block = (self.last_raise_was_allin_below_min is not None) and (self.last_raise_was_allin_below_min != p)
+-		if to_call == 0:
+-			if self.stacks[p] > 0:
+-				hp = int(max(min_raise_inc, int(self.pot_size * 0.5)))
+-				pt = int(max(min_raise_inc, int(self.pot_size)))
+-				tp = int(max(min_raise_inc, int(self.pot_size * 2.0)))
+-				if hp > 0 and self.stacks[p] >= hp:
+-					acts.append(ActionType.HALF_POT_BET)
+-				if pt > 0 and self.stacks[p] >= pt:
+-					acts.append(ActionType.POT_SIZED_BET)
+-				if tp > 0 and self.stacks[p] >= tp:
+-					acts.append(ActionType.TWO_POT_BET)
+-				acts.append(ActionType.ALL_IN)
+-		else:
+-			remaining_after_call = self.stacks[p] - to_call
+-			if remaining_after_call > 0 and not reopen_block:
+-				pot_after_call = self.pot_size + to_call
+-				hp = int(max(min_raise_inc, int(pot_after_call * 0.5)))
+-				pt = int(max(min_raise_inc, int(pot_after_call)))
+-				tp = int(max(min_raise_inc, int(pot_after_call * 2.0)))
+-				if hp > 0 and remaining_after_call >= hp:
+-					acts.append(ActionType.HALF_POT_BET)
+-				if pt > 0 and remaining_after_call >= pt:
+-					acts.append(ActionType.POT_SIZED_BET)
+-				if tp > 0 and remaining_after_call >= tp:
+-					acts.append(ActionType.TWO_POT_BET)
+-			if not reopen_block:
+-				acts.append(ActionType.ALL_IN)
+-		return acts
++    def legal_actions(self):
++        p = self.current_player
++        o = (p + 1) % 2
++        my_bet = self.current_bets[p]
++        opp_bet = self.current_bets[o]
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        acts = []
++        min_raise_inc = self._min_raise_size()
++        reopen_block = (self.last_raise_was_allin_below_min is not None) and (self.last_raise_was_allin_below_min != p)
++        if to_call > 0:
++            acts.append(ActionType.FOLD)
++        acts.append(ActionType.CALL)
++        if to_call == 0:
++            if reopen_block:
++                return acts
++            if self.stacks[p] > 0:
++                hp = int(max(min_raise_inc, int(self.pot_size * 0.5)))
++                pt = int(max(min_raise_inc, int(self.pot_size)))
++                tp = int(max(min_raise_inc, int(self.pot_size * 2.0)))
++                if hp > 0 and self.stacks[p] >= hp:
++                    acts.append(ActionType.HALF_POT_BET)
++                if pt > 0 and self.stacks[p] >= pt:
++                    acts.append(ActionType.POT_SIZED_BET)
++                if tp > 0 and self.stacks[p] >= tp:
++                    acts.append(ActionType.TWO_POT_BET)
++                acts.append(ActionTy
+ 
+ 	def terminal_utility(self):
+ 		u = [0.0, 0.0]

@@ -1,0 +1,257 @@
+--- a/cfv_trainer.py
++++ b/cfv_trainer.py
+@@ -6,94 +6,167 @@
+ 
+ 
+ def train_cfv_network(
+-	model,
+-	train_samples,
+-	val_samples,
+-	epochs=350,
+-	batch_size=1000,
+-	lr=1e-3,
+-	lr_drop_epoch=200,
+-	lr_after=1e-4,
+-	weight_decay=1e-6,
+-	device=None,
+-	seed=None,
+-	early_stop_patience=30,
+-	min_delta=0.0,
++        model,
++        train_samples,
++        val_samples,
++        epochs=350,
++        batch_size=1000,
++        lr=1e-3,
++        lr_drop_epoch=200,
++        lr_after=1e-4,
++        weight_decay=1e-6,
++        device=None,
++        seed=None,
++        early_stop_patience=30,
++        min_delta=0.0,
+ ):
+-
+-	if seed is not None:
+-		random.seed(int(seed))
+-		torch.manual_seed(int(seed))
+-		if torch.cuda.is_available():
+-			torch.cuda.manual_seed_all(int(seed))
+-
+-	if device is None:
+-		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+-	model = model.to(device)
+-
+-	optimizer = Adam(model.parameters(), lr=lr, weight_decay=float(weight_decay))
+-	criterion = nn.SmoothL1Loss(reduction="mean")
+-	K = int(getattr(model, "num_clusters", 0))
+-
+-	best_state = None
+-	best_val = math.inf
+-	history = {"train_huber": [], "train_mae": [], "val_huber": [], "val_mae": []}
+-	pat = 0
+-
+-	for e in range(int(epochs)):
+-		if e == int(lr_drop_epoch):
+-			for g in optimizer.param_groups:
+-				g["lr"] = float(lr_after)
+-
+-		model.train()
+-		for xb, y1b, y2b in _cfv_batcher(train_samples, int(batch_size), shuffle=True, device=device):
+-			r1b, r2b = _ranges_from_inputs(xb, K)
+-			p1, p2 = model(xb)
+-			f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
+-			l1 = criterion(f1, y1b)
+-			l2 = criterion(f2, y2b)
+-			loss = 0.5 * (l1 + l2)
+-			optimizer.zero_grad(set_to_none=True)
+-			loss.backward()
+-			optimizer.step()
+-
+-		tr_huber, tr_mae = _eval_loss_cfv(
+-			model=model,
+-			train_samples=train_samples,
+-			val_samples=val_samples,
+-			split="train",
+-			batch_size=int(batch_size),
+-			device=device,
+-			criterion=criterion,
+-			K=K,
+-		)
+-		val_huber, val_mae = _eval_loss_cfv(
+-			model=model,
+-			train_samples=train_samples,
+-			val_samples=val_samples,
+-			split="val",
+-			batch_size=int(batch_size),
+-			device=device,
+-			criterion=criterion,
+-			K=K,
+-		)
+-
+-		history["train_huber"].append(float(tr_huber))
+-		history["train_mae"].append(float(tr_mae))
+-		history["val_huber"].append(float(val_huber))
+-		history["val_mae"].append(float(val_mae))
+-
+-		if val_huber + float(min_delta) < best_val:
+-			best_val = float(val_huber)
+-			best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+-			pat = 0
+-		else:
+-			pat += 1
+-			if pat >= int(early_stop_patience):
+-				break
+-
+-	return {"best_state": best_state, "best_val_loss": float(best_val), "history": history}
+-
++        """
++        Generic CFV trainer that works for any stage model with .enforce_zero_sum and .num_clusters.
++        Input layout is assumed to be: [pot_norm (1), board_one_hot (52), r1 (K), r2 (K)].
++        """
++        # Seed
++        if seed is not None:
++                random.seed(int(seed))
++                torch.manual_seed(int(seed))
++                if torch.cuda.is_available():
++                        torch.cuda.manual_seed_all(int(seed))
++
++        # Device
++        if device is None:
++                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
++        model = model.to(device)
++
++        # Opt & loss
++        optimizer = Adam(model.parameters(), lr=lr, weight_decay=float(weight_decay))
++        criterion = nn.SmoothL1Loss(reduction="mean")
++        K = int(getattr(model, "num_clusters", 0))
++
++        best_state = None
++        best_val = math.inf
++        history = {"train_huber": [], "train_mae": [], "val_huber": [], "val_mae": []}
++        pat = 0
++
++        for e in range(int(epochs)):
++                # LR schedule
++                if e == int(lr_drop_epoch):
++                        for g in optimizer.param_groups:
++                                g["lr"] = float(lr_after)
++
++                # ---- Train pass
++                model.train()
++                for xb, y1b, y2b in _cfv_batcher(train_samples, int(batch_size), shuffle=True, device=device):
++                        r1b, r2b = _ranges_from_inputs(xb, K)
++                        p1, p2 = model(xb)
++                        f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
++                        l1 = criterion(f1, y1b)
++                        l2 = criterion(f2, y2b)
++                        loss = 0.5 * (l1 + l2)
++                        optimizer.zero_grad(set_to_none=True)
++                        loss.backward()
++                        optimizer.step()
++
++                # ---- Eval (train + val)
++                tr_huber, tr_mae = _eval_loss_cfv(
++                        model=model,
++                        train_samples=train_samples,
++                        val_samples=val_samples,
++                        split="train",
++                        batch_size=int(batch_size),
++                        device=device,
++                        criterion=criterion,
++                        K=K,
++                )
++                val_huber, val_mae = _eval_loss_cfv(
++                        model=model,
++                        train_samples=train_samples,
++                        val_samples=val_samples,
++                        split="val",
++                        batch_size=int(batch_size),
++                        device=device,
++                        criterion=criterion,
++                        K=K,
++                )
++
++                # ---- Log & early stopping
++                history["train_huber"].append(float(tr_huber))
++                history["train_mae"].append(float(tr_mae))
++                history["val_huber"].append(float(val_huber))
++                history["val_mae"].append(float(val_mae))
++
++                if val_huber + float(min_delta) < best_val:
++                        best_val = float(val_huber)
++                        best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
++                        pat = 0
++                else:
++                        pat += 1
++                        if pat >= int(early_stop_patience):
++                                break
++
++        return {"best_state": best_state, "best_val_loss": float(best_val), "history": history}
++
++
++def _cfv_batcher(samples, batch_size, shuffle, device):
++        """
++        Yields (xb, y1b, y2b) tensors from a list of dict records with keys:
++          - "input_vector", "target_v1", "target_v2"
++        """
++        n = len(samples)
++        idx = list(range(n))
++        if shuffle:
++                random.shuffle(idx)
++        i = 0
++        while i < n:
++                j = min(i + batch_size, n)
++                chunk = [samples[k] for k in idx[i:j]]
++                i = j
++                x = []
++                y1 = []
++                y2 = []
++                for s in chunk:
++                        x.append(s["input_vector"])
++                        y1.append(s["target_v1"])
++                        y2.append(s["target_v2"])
++                xt = torch.tensor(x, dtype=torch.float32, device=device)
++                y1t = torch.tensor(y1, dtype=torch.float32, device=device)
++                y2t = torch.tensor(y2, dtype=torch.float32, device=device)
++                yield xt, y1t, y2t
++
++
++def _ranges_from_inputs(x: torch.Tensor, K: int):
++        """
++        Slice range tensors (r1, r2) out of batched inputs according to the shared layout.
++        """
++        sr1 = 1 + 52
++        er1 = sr1 + K
++        sr2 = er1
++        er2 = sr2 + K
++        return x[:, sr1:er1], x[:, sr2:er2]
++
++
++def _eval_loss_cfv(model, train_samples, val_samples, split, batch_size, device, criterion, K: int):
++        """
++        Evaluate SmoothL1 (Huber) loss and MAE for the given split ("train" or "val").
++        """
++        model.eval()
++        total_huber = 0.0
++        total_mae = 0.0
++        count = 0
++        with torch.no_grad():
++                source = val_samples if split == "val" else train_samples
++                for xb, y1b, y2b in _cfv_batcher(source, batch_size, shuffle=False, device=device):
++                        r1b, r2b = _ranges_from_inputs(xb, K)
++                        p1, p2 = model(xb)
++                        f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
++                        l1 = criterion(f1, y1b)
++                        l2 = criterion(f2, y2b)
++                        l = 0.5 * (l1 + l2)
++                        mae = 0.5 * (torch.mean(torch.abs(f1 - y1b)) + torch.mean(torch.abs(f2 - y2b)))
++                        bs = xb.shape[0]
++                        total_huber += float(l.item()) * bs
++                        total_mae += float(mae.item()) * bs
++                        count += bs
++        den = max(1, count)
++        return total_huber / den, total_mae / den
+ 
+ def _cfv_batcher(samples, batch_size, shuffle, device):
+ 

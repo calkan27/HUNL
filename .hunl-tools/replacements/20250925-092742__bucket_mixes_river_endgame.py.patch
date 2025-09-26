@@ -1,0 +1,27 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -169,15 +169,15 @@
+                 ev_o_by_cluster[int(k)] = 0.0
+         return ev_p_by_cluster, ev_o_by_cluster
+ 
+-	def _bucket_mixes(self, clusters, ids, board_list_lower, board_set_upper, best_hand_fn, hand_rank_fn):
+-		all_strengths = []
+-		for cid in ids:
+-			hf = self._filtered_hands_for_cluster(clusters, cid, board_set_upper)
+-			hs = self._sample(hf, self.max_sample_per_cluster, 3000 + int(cid))
+-			if hs:
+-				all_strengths.extend(self._cluster_distribution(hs, list(board_list_lower), best_hand_fn, hand_rank_fn))
+-		bmap, B = self._bucketize(all_strengths)
+-		return bmap, B
++    def _bucket_mixes(self, clusters, ids, board_list_norm, board_set_upper, best_hand_fn, hand_rank_fn):
++        all_strengths = []
++        for cid in ids:
++            hf = self._filtered_hands_for_cluster(clusters, cid, board_set_upper)
++            hs = self._sample(hf, self.max_sample_per_cluster, 3000 + int(cid))
++            if hs:
++                all_strengths.extend(self._cluster_distribution(hs, list(board_list_norm), best_hand_fn, hand_rank_fn))
++        bmap, B = self._bucketize(all_strengths)
++        return bmap, B
+ 
+ 	def _ev_bucket(self, clusters, board_list_lower, board_set_upper, my_range, opp_range, best_hand_fn, hand_rank_fn, resolved_pot):
+ 		bmap, B = self._bucket_mixes(clusters, list(my_range.keys()) + list(opp_range.keys()), list(board_list_lower), board_set_upper, best_hand_fn, hand_rank_fn)

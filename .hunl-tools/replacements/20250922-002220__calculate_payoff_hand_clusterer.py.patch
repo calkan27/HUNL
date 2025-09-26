@@ -1,0 +1,25 @@
+--- a/hand_clusterer.py
++++ b/hand_clusterer.py
+@@ -229,14 +229,14 @@
+                 total_cfv += prob * payoff
+         return total_cfv
+ 
+-	def _calculate_payoff(self, player_hand, opponent_hand, board, pot_size):
+-		result = self.cfr_solver._player_wins(player_hand, opponent_hand, board)
+-		if result == 1:
+-			return pot_size
+-		elif result == -1:
+-			return -pot_size
+-		else:
+-			return 0.0
++    def _calculate_payoff(self, player_hand, opponent_hand, board, pot_size):
++        result = self.cfr_solver._player_wins(player_hand, opponent_hand, board)
++        if result == 1:
++            return pot_size
++        elif result == -1:
++            return -pot_size
++        else:
++            return 0.0
+ 
+ 	def calculate_hand_distance(self, features1, features2):
+ 		distance = np.linalg.norm(np.array(features1) - np.array(features2))

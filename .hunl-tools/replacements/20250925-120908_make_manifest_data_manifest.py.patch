@@ -1,0 +1,55 @@
+--- a/data_manifest.py
++++ b/data_manifest.py
+@@ -3,19 +3,39 @@
+ import time
+ 
+ def make_manifest(data_generator, stage, seed, extras=None):
+-	spec = {
+-		"schema": "cfv.manifest.v1",
+-		"created_at": int(time.time()),
+-		"stage": str(stage),
+-		"seed": int(seed),
+-		"num_clusters": int(getattr(data_generator, "num_clusters", 0)),
+-		"pot_sampler": data_generator.pot_sampler_spec() if hasattr(data_generator, "pot_sampler_spec") else [],
+-		"range_generator": data_generator.range_generator_spec() if hasattr(data_generator, "range_generator_spec") else {"name": "", "params": {}},
+-	}
+-	if isinstance(extras, dict):
+-		for k, v in extras.items():
+-			spec[k] = v
+-	return spec
++        spec = {
++                "schema": "cfv.manifest.v1",
++                "created_at": int(time.time()),
++                "stage": str(stage),
++                "seed": int(seed),
++                "num_clusters": int(getattr(data_generator, "num_clusters", 0)),
++                "pot_sampler": data_generator.pot_sampler_spec() if hasattr(data_generator, "pot_sampler_spec") else [],
++                "range_generator": data_generator.range_generator_spec() if hasattr(data_generator, "range_generator_spec") else {"name": "", "params": {}},
++        }
++        outer = None
++        try:
++                outer = bool(getattr(getattr(data_generator, "_config", None), "enforce_zero_sum_outer"))
++        except Exception:
++                pass
++        if outer is None:
++                outer = True
++        spec["outer_zero_sum"] = bool(outer)
++        try:
++                bf = getattr(getattr(data_generator, "_config", None), "bet_fractions", None)
++                if not isinstance(bf, dict) or not bf:
++                        bf = {0: [1.0], 1: [1.0], 2: [1.0], 3: [1.0]}
++        except Exception:
++                bf = {0: [1.0], 1: [1.0], 2: [1.0], 3: [1.0]}
++        flags = {}
++        try:
++                flags = {int(r): {"half_pot": bool(v.get("half_pot", True)), "two_pot": bool(v.get("two_pot", False))} for r, v in getattr(getattr(data_generator, "cfr_solver", None), "_round_actions", {}).items()}
++        except Exception:
++                flags = {0: {"half_pot": True, "two_pot": False}, 1: {"half_pot": False, "two_pot": False}, 2: {"half_pot": False, "two_pot": False}, 3: {"half_pot": False, "two_pot": False}}
++        spec["action_set"] = {"bet_fractions": {int(k): [float(x) for x in v] for k, v in bf.items()}, "round_flags": flags, "include_all_in": True}
++        if isinstance(extras, dict):
++                for k, v in extras.items():
++                        spec[k] = v
++        return spec
+ 
+ def save_manifest(manifest, path):
+ 	dirn = os.path.dirname(path)

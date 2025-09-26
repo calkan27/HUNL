@@ -1,0 +1,49 @@
+--- a/config_io.py
++++ b/config_io.py
+@@ -92,26 +92,26 @@
+ 				return int(K_flop)
+ 		return None
+ 
+-def _apply_abstraction_to_cfg(cfg, abst: dict):
+-	K = _choose_num_clusters_from_abst(abst if isinstance(abst, dict) else {})
+-	if K is not None:
+-		cfg.num_clusters = int(K)
+-	if isinstance(abst, dict) and "tau_re" in abst:
+-		try:
+-			cfg.tau_re = float(abst["tau_re"])
+-		except Exception:
+-			pass
+-	if isinstance(abst, dict) and "drift_sample_size" in abst:
+-		try:
+-			cfg.drift_sample_size = int(abst["drift_sample_size"])
+-		except Exception:
+-			pass
+-	if isinstance(abst, dict) and "use_cfv_in_features" in abst:
+-		try:
+-			cfg.use_cfv_in_features = bool(abst["use_cfv_in_features"])
+-		except Exception:
+-			pass
+-	return cfg
++def _apply_abstraction_to_cfg(cfg, abst: dict, overrides: dict = None):
++        K = _choose_num_clusters_from_abst(abst if isinstance(abst, dict) else {})
++        if K is not None and not (isinstance(overrides, dict) and ("num_clusters" in overrides)):
++                cfg.num_clusters = int(K)
++        if isinstance(abst, dict) and "tau_re" in abst:
++                try:
++                        cfg.tau_re = float(abst["tau_re"])
++                except Exception:
++                        pass
++        if isinstance(abst, dict) and "drift_sample_size" in abst:
++                try:
++                        cfg.drift_sample_size = int(abst["drift_sample_size"])
++                except Exception:
++                        pass
++        if isinstance(abst, dict) and "use_cfv_in_features" in abst:
++                try:
++                        cfg.use_cfv_in_features = bool(abst["use_cfv_in_features"])
++                except Exception:
++                        pass
++        return cfg
+ 
+ def _apply_value_nets_to_cfg(cfg, vnets: dict):
+ 	if isinstance(vnets, dict) and "outer_zero_sum" in vnets:

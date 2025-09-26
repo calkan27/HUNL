@@ -1,0 +1,687 @@
+--- a/public_state_actions.py
++++ b/public_state_actions.py
+@@ -4,413 +4,277 @@
+ 
+ class PublicStateActionsMixin:
+     def update_state(self, node, action):
+-        new_state = self.clone()
+-        new_state.actions.append((new_state.current_player, action))
+-        new_state.last_action = action
+-        player = new_state.current_player
+-        opponent = (player + 1) % 2
+-        if new_state.is_terminal:
+-            return new_state
+-        prev_pot = float(new_state.pot_size)
+-        to_call = new_state.current_bets[opponent] - new_state.current_bets[player]
+-        if to_call < 0:
+-            to_call = 0
+-        if action.action_type == ActionType.FOLD:
+-            new_state.players_in_hand[player] = False
+-            new_state.is_terminal = True
++            new_state = self.clone()
++            new_state.actions.append((new_state.current_player, action))
++            new_state.last_action = action
++            player = new_state.current_player
++            opponent = (player + 1) % 2
++            if new_state.is_terminal:
++                    return new_state
++            legal = set(new_state.legal_actions())
++            if action.action_type not in legal:
++                    raise ValueError("IllegalAction")
++            prev_pot = float(new_state.pot_size)
++            to_call = new_state.current_bets[opponent] - new_state.current_bets[player]
++            if to_call < 0:
++                    to_call = 0
++            if action.action_type == ActionType.FOLD:
++                    new_state.players_in_hand[player] = False
++                    new_state.is_terminal = True
++                    new_state._assert_invariants(prev_pot=prev_pot)
++                    return new_state
++            elif action.action_type == ActionType.CALL:
++                    if to_call == 0:
++                            new_state.consecutive_checks = new_state.consecutive_checks + 1
++                    caller_stack_before = new_state.stacks[player]
++                    matched = caller_stack_before if caller_stack_before < to_call else to_call
++                    new_state.stacks[player] = new_state.stacks[player] - matched
++                    new_state.current_bets[player] = new_state.current_bets[player] + matched
++                    new_state.pot_size = new_state.pot_size + matched
++                    new_state.total_contrib[player] += matched
++                    if matched < to_call:
++                            excess = to_call - matched
++                            new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
++                            new_state.stacks[opponent] = new_state.stacks[opponent] + excess
++                            new_state.pot_size = new_state.pot_size - excess
++                            new_state.total_contrib[opponent] -= excess
++                    if to_call > 0:
++                            new_state.consecutive_checks = 0
++                    if new_state.current_bets[player] == new_state.current_bets[opponent]:
++                            new_state._advance_street_if_closed(actor=player)
++                            new_state._fast_forward_to_showdown_if_allin_locked()
++            elif action.action_type == ActionType.HALF_POT_BET:
++                    my_bet = new_state.current_bets[player]
++                    opp_bet = new_state.current_bets[opponent]
++                    to_call = opp_bet - my_bet
++                    if to_call < 0:
++                            to_call = 0
++                    if to_call == 0:
++                            target = new_state.pot_size * 0.5
++                            if target < new_state.big_blind:
++                                    target = new_state.big_blind
++                            if target > new_state.stacks[player]:
++                                    target = new_state.stacks[player]
++                            bet_amt = int(target) if isinstance(target, float) else target
++                            if bet_amt > 0:
++                                    new_state.stacks[player] = new_state.stacks[player] - bet_amt
++                                    new_state.current_bets[player] = new_state.current_bets[player] + bet_amt
++                                    new_state.pot_size = new_state.pot_size + bet_amt
++                                    new_state.total_contrib[player] += bet_amt
++                                    new_state.last_raiser = player
++                                    new_state.last_raise_increment = bet_amt
++                                    new_state.last_raise_was_allin_below_min = None
++                                    new_state.consecutive_checks = 0
++                    else:
++                            caller_stack_before = new_state.stacks[player]
++                            matched = caller_stack_before if caller_stack_before < to_call else to_call
++                            new_state.stacks[player] = new_state.stacks[player] - matched
++                            new_state.current_bets[player] = new_state.current_bets[player] + matched
++                            new_state.pot_size = new_state.pot_size + matched
++                            new_state.total_contrib[player] += matched
++                            if matched < to_call:
++                                    excess = to_call - matched
++                                    new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
++                                    new_state.stacks[opponent] = new_state.stacks[opponent] + excess
++                                    new_state.pot_size = new_state.pot_size - excess
++                                    new_state.total_contrib[opponent] -= excess
++                                    new_state._advance_street_if_closed(actor=player)
++                                    new_state._fast_forward_to_showdown_if_allin_locked()
++                            else:
++                                    pot_after_call = new_state.pot_size
++                                    min_raise_inc = new_state._min_raise_size()
++                                    half_pot_inc = pot_after_call * 0.5
++                                    raise_inc = half_pot_inc if half_pot_inc > min_raise_inc else min_raise_inc
++                                    if raise_inc > new_state.stacks[player]:
++                                            raise_inc = new_state.stacks[player]
++                                    raise_inc = int(raise_inc) if isinstance(raise_inc, float) else raise_inc
++                                    if raise_inc > 0:
++                                            new_state.stacks[player] = new_state.stacks[player] - raise_inc
++                                            new_state.current_bets[player] = new_state.current_bets[player] + raise_inc
++                                            new_state.pot_size = new_state.pot_size + raise_inc
++                                            new_state.total_contrib[player] += raise_inc
++                                            if raise_inc >= min_raise_inc:
++                                                    new_state.last_raiser = player
++                                                    new_state.last_raise_increment = raise_inc
++                                                    new_state.last_raise_was_allin_below_min = None
++                                            new_state.consecutive_checks = 0
++                    if new_state.current_bets[player] == new_state.current_bets[opponent]:
++                            new_state._advance_street_if_closed(actor=player)
++                            new_state._fast_forward_to_showdown_if_allin_locked()
++            elif action.action_type == ActionType.POT_SIZED_BET:
++                    my_bet = new_state.current_bets[player]
++                    opp_bet = new_state.current_bets[opponent]
++                    to_call = opp_bet - my_bet
++                    if to_call < 0:
++                            to_call = 0
++                    if to_call == 0:
++                            target = new_state.pot_size
++                            if target < new_state.big_blind:
++                                    target = new_state.big_blind
++                            if target > new_state.stacks[player]:
++                                    target = new_state.stacks[player]
++                            bet_amt = target
++                            if bet_amt > 0:
++                                    new_state.stacks[player] = new_state.stacks[player] - bet_amt
++                                    new_state.current_bets[player] = new_state.current_bets[player] + bet_amt
++                                    new_state.pot_size = new_state.pot_size + bet_amt
++                                    new_state.total_contrib[player] += bet_amt
++                                    new_state.last_raiser = player
++                                    new_state.last_raise_increment = bet_amt
++                                    new_state.last_raise_was_allin_below_min = None
++                                    new_state.consecutive_checks = 0
++                    else:
++                            caller_stack_before = new_state.stacks[player]
++                            matched = caller_stack_before if caller_stack_before < to_call else to_call
++                            new_state.stacks[player] = new_state.stacks[player] - matched
++                            new_state.current_bets[player] = new_state.current_bets[player] + matched
++                            new_state.pot_size = new_state.pot_size + matched
++                            new_state.total_contrib[player] += matched
++                            if matched < to_call:
++                                    excess = to_call - matched
++                                    new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
++                                    new_state.stacks[opponent] = new_state.stacks[opponent] + excess
++                                    new_state.pot_size = new_state.pot_size - excess
++                                    new_state.total_contrib[opponent] -= excess
++                                    new_state._advance_street_if_closed(actor=player)
++                                    new_state._fast_forward_to_showdown_if_allin_locked()
++                            else:
++                                    pot_after_call = new_state.pot_size
++                                    min_raise_inc = new_state._min_raise_size()
++                                    raise_inc = pot_after_call if pot_after_call > min_raise_inc else min_raise_inc
++                                    if raise_inc > new_state.stacks[player]:
++                                            raise_inc = new_state.stacks[player]
++                                    if raise_inc > 0:
++                                            new_state.stacks[player] = new_state.stacks[player] - raise_inc
++                                            new_state.current_bets[player] = new_state.current_bets[player] + raise_inc
++                                            new_state.pot_size = new_state.pot_size + raise_inc
++                                            new_state.total_contrib[player] += raise_inc
++                                            if raise_inc >= min_raise_inc:
++                                                    new_state.last_raiser = player
++                                                    new_state.last_raise_increment = raise_inc
++                                                    new_state.last_raise_was_allin_below_min = None
++                                            new_state.consecutive_checks = 0
++                    if new_state.current_bets[player] == new_state.current_bets[opponent]:
++                            new_state._advance_street_if_closed(actor=player)
++                            new_state._fast_forward_to_showdown_if_allin_locked()
++            elif action.action_type == ActionType.TWO_POT_BET:
++                    my_bet = new_state.current_bets[player]
++                    opp_bet = new_state.current_bets[opponent]
++                    to_call = opp_bet - my_bet
++                    if to_call < 0:
++                            to_call = 0
++                    if to_call == 0:
++                            target = new_state.pot_size * 2.0
++                            if target < new_state.big_blind:
++                                    target = new_state.big_blind
++                            if target > new_state.stacks[player]:
++                                    target = new_state.stacks[player]
++                            bet_amt = int(target) if isinstance(target, float) else target
++                            if bet_amt > 0:
++                                    new_state.stacks[player] = new_state.stacks[player] - bet_amt
++                                    new_state.current_bets[player] = new_state.current_bets[player] + bet_amt
++                                    new_state.pot_size = new_state.pot_size + bet_amt
++                                    new_state.total_contrib[player] += bet_amt
++                                    new_state.last_raiser = player
++                                    new_state.last_raise_increment = bet_amt
++                                    new_state.last_raise_was_allin_below_min = None
++                                    new_state.consecutive_checks = 0
++                    else:
++                            caller_stack_before = new_state.stacks[player]
++                            matched = caller_stack_before if caller_stack_before < to_call else to_call
++                            new_state.stacks[player] = new_state.stacks[player] - matched
++                            new_state.current_bets[player] = new_state.current_bets[player] + matched
++                            new_state.pot_size = new_state.pot_size + matched
++                            new_state.total_contrib[player] += matched
++                            if matched < to_call:
++                                    excess = to_call - matched
++                                    new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
++                                    new_state.stacks[opponent] = new_state.stacks[opponent] + excess
++                                    new_state.pot_size = new_state.pot_size - excess
++                                    new_state.total_contrib[opponent] -= excess
++                                    new_state._advance_street_if_closed(actor=player)
++                                    new_state._fast_forward_to_showdown_if_allin_locked()
++                            else:
++                                    pot_after_call = new_state.pot_size
++                                    min_raise_inc = new_state._min_raise_size()
++                                    two_pot_inc = pot_after_call * 2.0
++                                    raise_inc = two_pot_inc if two_pot_inc > min_raise_inc else min_raise_inc
++                                    if raise_inc > new_state.stacks[player]:
++                                            raise_inc = new_state.stacks[player]
++                                    raise_inc = int(raise_inc) if isinstance(raise_inc, float) else raise_inc
++                                    if raise_inc > 0:
++                                            new_state.stacks[player] = new_state.stacks[player] - raise_inc
++                                            new_state.current_bets[player] = new_state.current_bets[player] + raise_inc
++                                            new_state.pot_size = new_state.pot_size + raise_inc
++                                            new_state.total_contrib[player] += raise_inc
++                                            if raise_inc >= min_raise_inc:
++                                                    new_state.last_raiser = player
++                                                    new_state.last_raise_increment = raise_inc
++                                                    new_state.last_raise_was_allin_below_min = None
++                                            new_state.consecutive_checks = 0
++                    if new_state.current_bets[player] == new_state.current_bets[opponent]:
++                            new_state._advance_street_if_closed(actor=player)
++                            new_state._fast_forward_to_showdown_if_allin_locked()
++            elif action.action_type == ActionType.ALL_IN:
++                    my_bet = new_state.current_bets[player]
++                    opp_bet = new_state.current_bets[opponent]
++                    to_call = opp_bet - my_bet
++                    if to_call < 0:
++                            to_call = 0
++                    caller_stack_before = new_state.stacks[player]
++                    matched = caller_stack_before if caller_stack_before < to_call else to_call
++                    new_state.stacks[player] = new_state.stacks[player] - matched
++                    new_state.current_bets[player] = new_state.current_bets[player] + matched
++                    new_state.pot_size = new_state.pot_size + matched
++                    new_state.total_contrib[player] += matched
++                    if matched < to_call:
++                            excess = to_call - matched
++                            new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
++                            new_state.stacks[opponent] = new_state.stacks[opponent] + excess
++                            new_state.pot_size = new_state.pot_size - excess
++                            new_state.total_contrib[opponent] -= excess
++                            new_state._advance_street_if_closed(actor=player)
++                            new_state._fast_forward_to_showdown_if_allin_locked()
++                    else:
++                            all_in_amount_remaining = new_state.stacks[player]
++                            if all_in_amount_remaining < 0:
++                                    all_in_amount_remaining = 0
++                            if all_in_amount_remaining > 0:
++                                    new_state.current_bets[player] = new_state.current_bets[player] + all_in_amount_remaining
++                                    new_state.stacks[player] = 0
++                                    new_state.pot_size = new_state.pot_size + all_in_amount_remaining
++                                    new_state.total_contrib[player] += all_in_amount_remaining
++                                    increment_above_call = all_in_amount_remaining
++                                    min_raise_inc = new_state._min_raise_size()
++                                    if to_call == 0:
++                                            new_state.last_raiser = player
++                                            new_state.last_raise_increment = all_in_amount_remaining
++                                            new_state.last_raise_was_allin_below_min = None if all_in_amount_remaining >= min_raise_inc else player
++                                    else:
++                                            if increment_above_call >= min_raise_inc:
++                                                    new_state.last_raiser = player
++                                                    new_state.last_raise_increment = increment_above_call
++                                                    new_state.last_raise_was_allin_below_min = None
++                                            else:
++                                                    new_state.last_raise_was_allin_below_min = player
++                                    new_state.consecutive_checks = 0
++                    if new_state.current_bets[player] == new_state.current_bets[opponent]:
++                            new_state._advance_street_if_closed(actor=player)
++                            new_state._fast_forward_to_showdown_if_allin_locked()
++            if not new_state.is_terminal:
++                    if not (new_state.current_bets[0] == 0 and new_state.current_bets[1] == 0 and new_state.current_round >= 1 and new_state.last_raiser is None):
++                            new_state.current_player = opponent
++            if not new_state.is_terminal:
++                    new_state._fast_forward_to_showdown_if_allin_locked()
++            if new_state.players_in_hand.count(True) == 1:
++                    new_state.is_terminal = True
++            if new_state.pot_size < 0:
++                    new_state.pot_size = 0
++            for i in (0, 1):
++                    if new_state.stacks[i] > new_state.initial_stacks[i]:
++                            new_state.stacks[i] = new_state.initial_stacks[i]
++                    if new_state.current_bets[i] < 0:
++                            new_state.current_bets[i] = 0
+             new_state._assert_invariants(prev_pot=prev_pot)
+             return new_state
+-        elif action.action_type == ActionType.CALL:
+-            if to_call == 0:
+-                new_state.consecutive_checks = new_state.consecutive_checks + 1
+-            caller_stack_before = new_state.stacks[player]
+-            matched = caller_stack_before if caller_stack_before < to_call else to_call
+-            new_state.stacks[player] = new_state.stacks[player] - matched
+-            new_state.current_bets[player] = new_state.current_bets[player] + matched
+-            new_state.pot_size = new_state.pot_size + matched
+-            new_state.total_contrib[player] += matched
+-            if matched < to_call:
+-                excess = to_call - matched
+-                new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
+-                new_state.stacks[opponent] = new_state.stacks[opponent] + excess
+-                new_state.pot_size = new_state.pot_size - excess
+-                new_state.total_contrib[opponent] -= excess
+-            if to_call > 0:
+-                new_state.consecutive_checks = 0
+-            if new_state.current_bets[player] == new_state.current_bets[opponent]:
+-                new_state._advance_street_if_closed(actor=player)
+-                new_state._fast_forward_to_showdown_if_allin_locked()
+-        elif action.action_type == ActionType.HALF_POT_BET:
+-            my_bet = new_state.current_bets[player]
+-            opp_bet = new_state.current_bets[opponent]
+-            to_call = opp_bet - my_bet
+-            if to_call < 0:
+-                to_call = 0
+-            if to_call == 0:
+-                target = new_state.pot_size * 0.5
+-                if target < new_state.big_blind:
+-                    target = new_state.big_blind
+-                if target > new_state.stacks[player]:
+-                    target = new_state.stacks[player]
+-                bet_amt = int(target) if isinstance(target, float) else target
+-                if bet_amt > 0:
+-                    new_state.stacks[player] = new_state.stacks[player] - bet_amt
+-                    new_state.current_bets[player] = new_state.current_bets[player] + bet_amt
+-                    new_state.pot_size = new_state.pot_size + bet_amt
+-                    new_state.total_contrib[player] += bet_amt
+-                    new_state.last_raiser = player
+-                    new_state.last_raise_increment = bet_amt
+-                    new_state.last_raise_was_allin_below_min = None
+-                    new_state.consecutive_checks = 0
+-            else:
+-                caller_stack_before = new_state.stacks[player]
+-                matched = caller_stack_before if caller_stack_before < to_call else to_call
+-                new_state.stacks[player] = new_state.stacks[player] - matched
+-                new_state.current_bets[player] = new_state.current_bets[player] + matched
+-                new_state.pot_size = new_state.pot_size + matched
+-                new_state.total_contrib[player] += matched
+-                if matched < to_call:
+-                    excess = to_call - matched
+-                    new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
+-                    new_state.stacks[opponent] = new_state.stacks[opponent] + excess
+-                    new_state.pot_size = new_state.pot_size - excess
+-                    new_state.total_contrib[opponent] -= excess
+-                    new_state._advance_street_if_closed(actor=player)
+-                    new_state._fast_forward_to_showdown_if_allin_locked()
+-                else:
+-                    pot_after_call = new_state.pot_size
+-                    min_raise_inc = new_state._min_raise_size()
+-                    half_pot_inc = pot_after_call * 0.5
+-                    raise_inc = half_pot_inc if half_pot_inc > min_raise_inc else min_raise_inc
+-                    if raise_inc > new_state.stacks[player]:
+-                        raise_inc = new_state.stacks[player]
+-                    raise_inc = int(raise_inc) if isinstance(raise_inc, float) else raise_inc
+-                    if raise_inc > 0:
+-                        new_state.stacks[player] = new_state.stacks[player] - raise_inc
+-                        new_state.current_bets[player] = new_state.current_bets[player] + raise_inc
+-                        new_state.pot_size = new_state.pot_size + raise_inc
+-                        new_state.total_contrib[player] += raise_inc
+-                        if raise_inc >= min_raise_inc:
+-                            new_state.last_raiser = player
+-                            new_state.last_raise_increment = raise_inc
+-                            new_state.last_raise_was_allin_below_min = None
+-                        new_state.consecutive_checks = 0
+-            if new_state.current_bets[player] == new_state.current_bets[opponent]:
+-                new_state._advance_street_if_closed(actor=player)
+-                new_state._fast_forward_to_showdown_if_allin_locked()
+-        elif action.action_type == ActionType.POT_SIZED_BET:
+-            my_bet = new_state.current_bets[player]
+-            opp_bet = new_state.current_bets[opponent]
+-            to_call = opp_bet - my_bet
+-            if to_call < 0:
+-                to_call = 0
+-            if to_call == 0:
+-                target = new_state.pot_size
+-                if target < new_state.big_blind:
+-                    target = new_state.big_blind
+-                if target > new_state.stacks[player]:
+-                    target = new_state.stacks[player]
+-                bet_amt = target
+-                if bet_amt > 0:
+-                    new_state.stacks[player] = new_state.stacks[player] - bet_amt
+-                    new_state.current_bets[player] = new_state.current_bets[player] + bet_amt
+-                    new_state.pot_size = new_state.pot_size + bet_amt
+-                    new_state.total_contrib[player] += bet_amt
+-                    new_state.last_raiser = player
+-                    new_state.last_raise_increment = bet_amt
+-                    new_state.last_raise_was_allin_below_min = None
+-                    new_state.consecutive_checks = 0
+-            else:
+-                caller_stack_before = new_state.stacks[player]
+-                matched = caller_stack_before if caller_stack_before < to_call else to_call
+-                new_state.stacks[player] = new_state.stacks[player] - matched
+-                new_state.current_bets[player] = new_state.current_bets[player] + matched
+-                new_state.pot_size = new_state.pot_size + matched
+-                new_state.total_contrib[player] += matched
+-                if matched < to_call:
+-                    excess = to_call - matched
+-                    new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
+-                    new_state.stacks[opponent] = new_state.stacks[opponent] + excess
+-                    new_state.pot_size = new_state.pot_size - excess
+-                    new_state.total_contrib[opponent] -= excess
+-                    new_state._advance_street_if_closed(actor=player)
+-                    new_state._fast_forward_to_showdown_if_allin_locked()
+-                else:
+-                    pot_after_call = new_state.pot_size
+-                    min_raise_inc = new_state._min_raise_size()
+-                    raise_inc = pot_after_call if pot_after_call > min_raise_inc else min_raise_inc
+-                    if raise_inc > new_state.stacks[player]:
+-                        raise_inc = new_state.stacks[player]
+-                    if raise_inc > 0:
+-                        new_state.stacks[player] = new_state.stacks[player] - raise_inc
+-                        new_state.current_bets[player] = new_state.current_bets[player] + raise_inc
+-                        new_state.pot_size = new_state.pot_size + raise_inc
+-                        new_state.total_contrib[player] += raise_inc
+-                        if raise_inc >= min_raise_inc:
+-                            new_state.last_raiser = player
+-                            new_state.last_raise_increment = raise_inc
+-                            new_state.last_raise_was_allin_below_min = None
+-                        new_state.consecutive_checks = 0
+-            if new_state.current_bets[player] == new_state.current_bets[opponent]:
+-                new_state._advance_street_if_closed(actor=player)
+-                new_state._fast_forward_to_showdown_if_allin_locked()
+-        elif action.action_type == ActionType.TWO_POT_BET:
+-            my_bet = new_state.current_bets[player]
+-            opp_bet = new_state.current_bets[opponent]
+-            to_call = opp_bet - my_bet
+-            if to_call < 0:
+-                to_call = 0
+-            if to_call == 0:
+-                target = new_state.pot_size * 2.0
+-                if target < new_state.big_blind:
+-                    target = new_state.big_blind
+-                if target > new_state.stacks[player]:
+-                    target = new_state.stacks[player]
+-                bet_amt = int(target) if isinstance(target, float) else target
+-                if bet_amt > 0:
+-                    new_state.stacks[player] = new_state.stacks[player] - bet_amt
+-                    new_state.current_bets[player] = new_state.current_bets[player] + bet_amt
+-                    new_state.pot_size = new_state.pot_size + bet_amt
+-                    new_state.total_contrib[player] += bet_amt
+-                    new_state.last_raiser = player
+-                    new_state.last_raise_increment = bet_amt
+-                    new_state.last_raise_was_allin_below_min = None
+-                    new_state.consecutive_checks = 0
+-            else:
+-                caller_stack_before = new_state.stacks[player]
+-                matched = caller_stack_before if caller_stack_before < to_call else to_call
+-                new_state.stacks[player] = new_state.stacks[player] - matched
+-                new_state.current_bets[player] = new_state.current_bets[player] + matched
+-                new_state.pot_size = new_state.pot_size + matched
+-                new_state.total_contrib[player] += matched
+-                if matched < to_call:
+-                    excess = to_call - matched
+-                    new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
+-                    new_state.stacks[opponent] = new_state.stacks[opponent] + excess
+-                    new_state.pot_size = new_state.pot_size - excess
+-                    new_state.total_contrib[opponent] -= excess
+-                    new_state._advance_street_if_closed(actor=player)
+-                    new_state._fast_forward_to_showdown_if_allin_locked()
+-                else:
+-                    pot_after_call = new_state.pot_size
+-                    min_raise_inc = new_state._min_raise_size()
+-                    two_pot_inc = pot_after_call * 2.0
+-                    raise_inc = two_pot_inc if two_pot_inc > min_raise_inc else min_raise_inc
+-                    if raise_inc > new_state.stacks[player]:
+-                        raise_inc = new_state.stacks[player]
+-                    raise_inc = int(raise_inc) if isinstance(raise_inc, float) else raise_inc
+-                    if raise_inc > 0:
+-                        new_state.stacks[player] = new_state.stacks[player] - raise_inc
+-                        new_state.current_bets[player] = new_state.current_bets[player] + raise_inc
+-                        new_state.pot_size = new_state.pot_size + raise_inc
+-                        new_state.total_contrib[player] += raise_inc
+-                        if raise_inc >= min_raise_inc:
+-                            new_state.last_raiser = player
+-                            new_state.last_raise_increment = raise_inc
+-                            new_state.last_raise_was_allin_below_min = None
+-                        new_state.consecutive_checks = 0
+-            if new_state.current_bets[player] == new_state.current_bets[opponent]:
+-                new_state._advance_street_if_closed(actor=player)
+-                new_state._fast_forward_to_showdown_if_allin_locked()
+-        elif action.action_type == ActionType.ALL_IN:
+-            my_bet = new_state.current_bets[player]
+-            opp_bet = new_state.current_bets[opponent]
+-            to_call = opp_bet - my_bet
+-            if to_call < 0:
+-                to_call = 0
+-            caller_stack_before = new_state.stacks[player]
+-            matched = caller_stack_before if caller_stack_before < to_call else to_call
+-            new_state.stacks[player] = new_state.stacks[player] - matched
+-            new_state.current_bets[player] = new_state.current_bets[player] + matched
+-            new_state.pot_size = new_state.pot_size + matched
+-            new_state.total_contrib[player] += matched
+-            if matched < to_call:
+-                excess = to_call - matched
+-                new_state.current_bets[opponent] = new_state.current_bets[opponent] - excess
+-                new_state.stacks[opponent] = new_state.stacks[opponent] + excess
+-                new_state.pot_size = new_state.pot_size - excess
+-                new_state.total_contrib[opponent] -= excess
+-                new_state._advance_street_if_closed(actor=player)
+-                new_state._fast_forward_to_showdown_if_allin_locked()
+-            else:
+-                all_in_amount_remaining = new_state.stacks[player]
+-                if all_in_amount_remaining < 0:
+-                    all_in_amount_remaining = 0
+-                if all_in_amount_remaining > 0:
+-                    new_state.current_bets[player] = new_state.current_bets[player] + all_in_amount_remaining
+-                    new_state.stacks[player] = 0
+-                    new_state.pot_size = new_state.pot_size + all_in_amount_remaining
+-                    new_state.total_contrib[player] += all_in_amount_remaining
+-                    increment_above_call = all_in_amount_remaining
+-                    min_raise_inc = new_state._min_raise_size()
+-                    if to_call == 0:
+-                        new_state.last_raiser = player
+-                        new_state.last_raise_increment = all_in_amount_remaining
+-                        new_state.last_raise_was_allin_below_min = None if all_in_amount_remaining >= min_raise_inc else player
+-                    else:
+-                        if increment_above_call >= min_raise_inc:
+-                            new_state.last_raiser = player
+-                            new_state.last_raise_increment = increment_above_call
+-                            new_state.last_raise_was_allin_below_min = None
+-                        else:
+-                            new_state.last_raise_was_allin_below_min = player
+-                    new_state.consecutive_checks = 0
+-            if new_state.current_bets[player] == new_state.current_bets[opponent]:
+-                new_state._advance_street_if_closed(actor=player)
+-                new_state._fast_forward_to_showdown_if_allin_locked()
+-        if not new_state.is_terminal:
+-            if not (new_state.current_bets[0] == 0 and new_state.current_bets[1] == 0 and new_state.current_round >= 1 and new_state.last_raiser is None):
+-                new_state.current_player = opponent
+-        if not new_state.is_terminal:
+-            new_state._fast_forward_to_showdown_if_allin_locked()
+-        if new_state.players_in_hand.count(True) == 1:
+-            new_state.is_terminal = True
+-        if new_state.pot_size < 0:
+-            new_state.pot_size = 0
+-        for i in (0, 1):
+-            if new_state.stacks[i] > new_state.initial_stacks[i]:
+-                new_state.stacks[i] = new_state.initial_stacks[i]
+-            if new_state.current_bets[i] < 0:
+-                new_state.current_bets[i] = 0
+-        new_state._assert_invariants(prev_pot=prev_pot)
+-        return new_state
+ 
+-	def apply_exogenous_opponent_all_in(self, bettor):
+-		if self.is_terminal:
+-			return self
+-		if bettor not in (0, 1):
+-			return self
+-		prev_pot = float(self.pot_size)
+-		other = (bettor + 1) % 2
+-		my_bet = self.current_bets[bettor]
+-		opp_bet = self.current_bets[other]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		caller_stack_before = self.stacks[bettor]
+-		matched = caller_stack_before if caller_stack_before < to_call else to_call
+-		self.stacks[bettor] = caller_stack_before - matched
+-		self.current_bets[bettor] = self.current_bets[bettor] + matched
+-		self.pot_size = self.pot_size + matched
+-		if matched < to_call:
+-			excess = to_call - matched
+-			self.current_bets[other] = self.current_bets[other] - excess
+-			self.stacks[other] = self.stacks[other] + excess
+-			self.pot_size = self.pot_size - excess
+-			self._advance_street_if_closed(actor=bettor)
+-			self._fast_forward_to_showdown_if_allin_locked()
+-		else:
+-			all_in_amount_remaining = self.stacks[bettor]
+-			if all_in_amount_remaining < 0:
+-				all_in_amount_remaining = 0
+-			if all_in_amount_remaining > 0:
+-				self.current_bets[bettor] = self.current_bets[bettor] + all_in_amount_remaining
+-				self.stacks[bettor] = 0
+-				self.pot_size = self.pot_size + all_in_amount_remaining
+-				increment_above_call = all_in_amount_remaining
+-				min_raise_inc = self._min_raise_size()
+-				if to_call == 0:
+-					self.last_raiser = bettor
+-					self.last_raise_increment = all_in_amount_remaining
+-				else:
+-					if increment_above_call >= min_raise_inc:
+-						self.last_raiser = bettor
+-						self.last_raise_increment = increment_above_call
+-		if self.current_bets[bettor] == self.current_bets[other]:
+-			self._advance_street_if_closed(actor=bettor)
+-			self._fast_forward_to_showdown_if_allin_locked()
+-		if not self.is_terminal:
+-			if not (self.current_bets[0] == 0 and self.current_bets[1] == 0 and self.current_round >= 1 and self.last_raiser is None):
+-				self.current_player = other
+-		if self.players_in_hand.count(True) == 1:
+-			self.is_terminal = True
+-		if self.pot_size < 0:
+-			self.pot_size = 0
+-		i = 0
+-		while i < 2:
+-			if self.stacks[i] > self.initial_stacks[i]:
+-				self.stacks[i] = self.initial_stacks[i]
+-			if self.current_bets[i] < 0:
+-				self.current_bets[i] = 0
+-			i = i + 1
+-		self.last_action = ("EXOGENOUS_ALL_IN", int(bettor))
+-		self._assert_invariants(prev_pot=prev_pot)
+-		return self
+-
+-	def apply_exogenous_opponent_check(self, checker):
+-		if self.is_terminal:
+-			return self
+-		if checker not in (0, 1):
+-			return self
+-		other = (checker + 1) % 2
+-		my_bet = self.current_bets[checker]
+-		opp_bet = self.current_bets[other]
+-		to_call = opp_bet - my_bet
+-		if to_call > 0:
+-			return self
+-		prev_pot = float(self.pot_size)
+-		self.last_action = ("EXOGENOUS_CHECK", int(checker))
+-		if not self.is_terminal:
+-			self.current_player = other
+-		self._assert_invariants(prev_pot=prev_pot)
+-		return self
+-
+-	def apply_exogenous_opponent_bet(self, bettor, amount):
+-		if self.is_terminal:
+-			return self
+-		if bettor not in (0, 1):
+-			return self
+-		if amount is None:
+-			return self
+-		prev_pot = float(self.pot_size)
+-		other = (bettor + 1) % 2
+-		prev_my = int(self.current_bets[bettor])
+-		prev_opp = int(self.current_bets[other])
+-		prev_to_call = prev_opp - prev_my
+-		if prev_to_call < 0:
+-			prev_to_call = 0
+-		a = float(amount)
+-		if a < 0:
+-			a = 0.0
+-		avail = float(self.stacks[bettor])
+-		delta = a if a <= avail else avail
+-		if delta <= 0.0:
+-			return self
+-		self.stacks[bettor] = self.stacks[bettor] - delta
+-		self.current_bets[bettor] = self.current_bets[bettor] + delta
+-		self.pot_size = self.pot_size + delta
+-		new_my = int(self.current_bets[bettor])
+-		new_opp = int(self.current_bets[other])
+-		inc = 0
+-		if new_my > prev_opp:
+-			if prev_to_call == 0:
+-				inc = new_my - prev_my
+-			else:
+-				inc = new_my - prev_opp
+-			if inc < 0:
+-				inc = 0
+-		if inc > 0:
+-			self.last_raiser = int(bettor)
+-			self.last_raise_increment = int(inc)
+-			self.last_raise_was_allin_below_min = None
+-		if self.players_in_hand.count(True) == 1:
+-			self.is_terminal = True
+-		if not self.is_terminal:
+-			if self.current_bets[bettor] == self.current_bets[other]:
+-				self._advance_street_if_closed(actor=bettor)
+-				self._fast_forward_to_showdown_if_allin_locked()
+-		if not self.is_terminal:
+-			if not (self.current_bets[0] == 0 and self.current_bets[1] == 0 and self.current_round >= 1 and self.last_raiser is None):
+-				self.current_player = other
+-		if self.pot_size < 0:
+-			self.pot_size = 0
+-		i = 0
+-		while i < 2:
+-			if self.stacks[i] > self.initial_stacks[i]:
+-				self.stacks[i] = self.initial_stacks[i]
+-			if self.current_bets[i] < 0:
+-				self.current_bets[i] = 0
+-			i = i + 1
+-		self.last_action = ("EXOGENOUS_BET", int(bettor), float(delta))
+-		self._assert_invariants(prev_pot=prev_pot)
+-		return self

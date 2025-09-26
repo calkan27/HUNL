@@ -1,0 +1,87 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -486,45 +486,45 @@
+             expected_value += worst_case_for_us
+         return expected_value
+ 
+-	def update_player_range(self, node, player, cluster_id, action_index):
+-		values = self.cfr_values[node]
+-		num_actions = len(ActionType)
+-
+-		priors = node.player_ranges[player]
+-		post = {}
+-		norm = 0.0
+-
+-		for cid, prior in priors.items():
+-			current_strategy = values.compute_strategy(cid) if cid in values.cumulative_positive_regret else values.strategy.get(cid, [1.0 / num_actions] * num_actions)
+-			if action_index < 0 or action_index >= len(current_strategy):
+-				like = 0.0
+-			else:
+-				like = current_strategy[action_index]
+-			weight = prior * like
+-			post[cid] = weight
+-			norm = norm + weight
+-
+-		if norm <= 0.0:
+-			total_prior = 0.0
+-			for cid in priors:
+-				total_prior = total_prior + priors[cid]
+-			if total_prior <= 0.0:
+-				k = len(priors)
+-				if k > 0:
+-					u = 1.0 / k
+-					for cid in post:
+-						post[cid] = u
+-				else:
+-					post = {}
+-			else:
+-				for cid in post:
+-					post[cid] = priors[cid] / total_prior
+-		else:
+-			for cid in post:
+-				post[cid] = post[cid] / norm
+-
+-		node.player_ranges[player] = post
+-
++    def update_player_range(self, node, player, cluster_id, action_index):
++        values = self.cfr_values[node]
++        num_actions = len(ActionType)
++        if player not in (0, 1):
++            return
++        priors = node.player_ranges[player]
++        post = {}
++        norm = 0.0
++        for cid, prior in priors.items():
++            current_strategy = values.compute_strategy(cid) if cid in values.cumulative_positive_regret else values.strategy.get(cid, [1.0 / num_actions] * num_actions)
++            if player == (node.public_state.current_player + 1) % 2:
++                like = 1.0
++            else:
++                if action_index < 0 or action_index >= len(current_strategy):
++                    like = 0.0
++                else:
++                    like = current_strategy[action_index]
++            weight = prior * like
++            post[cid] = weight
++            norm = norm + weight
++        if norm <= 0.0:
++            total_prior = 0.0
++            for cid in priors:
++                total_prior = total_prior + priors[cid]
++            if total_prior <= 0.0:
++                k = len(priors)
++                if k > 0:
++                    u = 1.0 / k
++                    for cid in post:
++                        post[cid] = u
++                else:
++                    post = {}
++            else:
++                for cid in post:
++                    post[cid] = priors[cid] / total_prior
++        else:
++            for cid in post:
++                post[cid] = post[cid] / norm
++        node.player_ranges[player] = post
+ 
+ 	def _update_regret(self, node, player, counterfactual_values):
+ 		values = self.cfr_values[node]

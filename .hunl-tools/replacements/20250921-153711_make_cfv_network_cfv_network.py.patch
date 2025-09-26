@@ -1,0 +1,14 @@
+--- a/cfv_network.py
++++ b/cfv_network.py
+@@ -47,8 +47,9 @@
+ 		player1_values, player2_values = self(input_tensor)
+ 		f1, f2 = self.enforce_zero_sum(player1_range, player2_range, player1_values, player2_values)
+ 		return f1, f2
+-	def make_cfv_network(input_size, num_clusters):
+-		return CounterfactualValueNetwork(int(input_size), int(num_clusters))
++    def make_cfv_network(input_size, num_clusters):
++        return CounterfactualValueNetwork(int(input_size), int(num_clusters))
++
+ 	def build_three_stage_cfv(input_size_preflop, input_size_flop, input_size_turn, num_clusters, device=None):
+ 		if device is None:
+ 			device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

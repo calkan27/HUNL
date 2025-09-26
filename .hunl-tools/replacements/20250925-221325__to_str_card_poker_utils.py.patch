@@ -1,0 +1,70 @@
+--- a/poker_utils.py
++++ b/poker_utils.py
+@@ -29,27 +29,46 @@
+ 
+ 
+ def _to_str_card(c):
+-	if isinstance(c, str):
+-		s = c.strip().upper()
+-		if len(s) >= 2:
+-			r = s[0]
+-			t = s[1]
+-			if (r in RANKS) and (t in SUITS):
+-				return r + t
+-		return s[:2].upper()
+-	else:
+-		if isinstance(c, (list, tuple)):
+-			if len(c) >= 2:
+-				a = str(c[0]).strip().upper()
+-				b = str(c[1]).strip().upper()
+-				ra = a[0] if a else ""
+-				sb = b[1] if (len(b) > 1) else ""
+-				r = a[0] if a else ""
+-				t = b[0] if b else ""
+-				if (r in RANKS) and (t in SUITS):
+-					return r + t
+-				return (ra + sb) if (ra and sb) else (a[:1] + b[:1])
+-	return str(c).strip().upper()[:2]
++    s = _bi.str(c)
++
++    if not isinstance(c, str):
++        if isinstance(c, (list, tuple)):
++            if len(c) == 2:
++                a = _bi.str(c[0])
++                b = _bi.str(c[1])
++                s = a + b
++            elif len(c) == 1:
++                s = _bi.str(c[0])
++
++    s = s.strip().upper()
++
++    if len(s) >= 2:
++        r = s[0]
++        t = s[1]
++        if (r in RANKS) and (t in SUITS):
++            return r + t
++        if (s[0] in SUITS) and (s[1] in RANKS):
++            return s[1] + s[0]
++        if (s[0] == "1") and (len(s) >= 3) and (s[1] == "0") and (s[2] in SUITS):
++            return "T" + s[2]
++
++    r_pick = None
++    t_pick = None
++    i = 0
++    while i < len(s):
++        ch = s[i]
++        if (r_pick is None) and (ch in RANKS):
++            r_pick = ch
++        elif (t_pick is None) and (ch in SUITS):
++            t_pick = ch
++        if (r_pick is not None) and (t_pick is not None):
++            break
++        i += 1
++
++    if (r_pick is not None) and (t_pick is not None):
++        return r_pick + t_pick
++
++    return s[:2].upper()
+ 
+ def _normalize_cards(card_iterable):
+ 	out = []

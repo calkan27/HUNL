@@ -1,0 +1,84 @@
+--- a/cfr_core.py
++++ b/cfr_core.py
+@@ -228,23 +228,64 @@
+ 
+ 		return root_policy, node_values, opp_cfv
+ 
+-	def set_warm_start(self, warm_start: Optional[Dict[Any, List[float]]] = None) -> None:
+-		self._warm_start: Dict[Any, List[float]] = {}
+-
+-		if not isinstance(warm_start, dict):
+-			return
+-
+-		for k, v in warm_start.items():
+-			ok = True
+-			vec = []
+-			for x in list(v):
+-				try:
+-					vec.append(float(x))
+-				except Exception:
+-					ok = False
+-					break
+-			if ok:
+-				self._warm_start[k] = vec
++    def set_warm_start(self, warm_start: Optional[Dict[Any, List[float]]] = None) -> None:
++        self._warm_start = {}
++        if not isinstance(warm_start, dict):
++            return
++        for k, v in warm_start.items():
++            if isinstance(v, (list, tuple)):
++                vec = []
++                i = 0
++                while i < len(v):
++                    x = v[i]
++                    if isinstance(x, (int, float)):
++                        vec.append(float(x))
++                    else:
++                        if isinstance(x, bool):
++                            vec.append(float(int(x)))
++                        else:
++                            vec = []
++                            break
++                    i += 1
++                if vec:
++                    self._warm_start[k] = vec
++            else:
++                if isinstance(v, dict):
++                    keys = list(v.keys())
++                    int_keys = []
++                    j = 0
++                    while j < len(keys):
++                        tk = keys[j]
++                        if isinstance(tk, int):
++                            int_keys.append(tk)
++                        else:
++                            if isinstance(tk, str):
++                                s = tk.strip()
++                                if s.startswith("-") or s.startswith("+"):
++                                    ns = s[1:]
++                                else:
++                                    ns = s
++                                if ns.isdigit():
++                                    int_keys.append(int(s))
++                        j += 1
++                    int_keys.sort()
++                    vec2 = []
++                    m = 0
++                    while m < len(int_keys):
++                        x = v.get(int_keys[m], None)
++                        if isinstance(x, (int, float)):
++                            vec2.append(float(x))
++                        else:
++                            if isinstance(x, bool):
++                                vec2.append(float(int(x)))
++                            else:
++                                vec2 = []
++                                break
++                        m += 1
++                    if vec2:
++                        self._warm_start[k] = vec2
++                else:
++                    continue
+ 
+ 	def _traverse_terminal_or_leaf(
+ 		self,

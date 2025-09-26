@@ -1,0 +1,67 @@
+--- a/cfv_trainer_turn.py
++++ b/cfv_trainer_turn.py
+@@ -23,33 +23,37 @@
+ 
+ 
+ def eval_stream(model, samples_iter, batch_size, device, K, criterion):
+-	model.eval()
+-	total_huber = 0.0
+-	total_mae = 0.0
+-	count = 0
+-	with torch.no_grad():
+-		for xb, y1b, y2b in batcher_from_iter(samples_iter, int(batch_size), device):
+-			sr1 = 1 + 52
+-			er1 = sr1 + int(K)
+-			sr2 = er1
+-			er2 = sr2 + int(K)
+-			r1b = xb[:, sr1:er1]
+-			r2b = xb[:, sr2:er2]
+-
+-			p1, p2 = model(xb)
+-			f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
+-
+-			l1 = criterion(f1, y1b)
+-			l2 = criterion(f2, y2b)
+-			l = 0.5 * (l1 + l2)
+-			mae = 0.5 * (torch.mean(torch.abs(f1 - y1b)) + torch.mean(torch.abs(f2 - y2b)))
+-			bs = xb.shape[0]
+-			total_huber += float(l.item()) * bs
+-			total_mae += float(mae.item()) * bs
+-			count += bs
+-	den = max(1, count)
+-	return total_huber / den, total_mae / den
+-
++        model.eval()
++        total_huber = 0.0
++        total_mae = 0.0
++        count = 0
++        residual_max = 0.0
++        with torch.no_grad():
++                for xb, y1b, y2b in batcher_from_iter(samples_iter, int(batch_size), device):
++                        sr1 = 1 + 52
++                        er1 = sr1 + int(K)
++                        sr2 = er1
++                        er2 = sr2 + int(K)
++                        r1b = xb[:, sr1:er1]
++                        r2b = xb[:, sr2:er2]
++                        p1, p2 = model(xb)
++                        f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
++                        l1 = criterion(f1, y1b)
++                        l2 = criterion(f2, y2b)
++                        l = 0.5 * (l1 + l2)
++                        mae = 0.5 * (torch.mean(torch.abs(f1 - y1b)) + torch.mean(torch.abs(f2 - y2b)))
++                        s1 = torch.sum(r1b * f1, dim=1)
++                        s2 = torch.sum(r2b * f2, dim=1)
++                        res = torch.abs(s1 + s2)
++                        bs = xb.shape[0]
++                        total_huber += float(l.item()) * bs
++                        total_mae += float(mae.item()) * bs
++                        count += bs
++                        mx = float(torch.max(res).item()) if res.numel() > 0 else 0.0
++                        if mx > residual_max:
++                                residual_max = mx
++        den = max(1, count)
++        return total_huber / den, total_mae / den, residual_max
+ 
+ def train_turn_cfv(
+ 	model,

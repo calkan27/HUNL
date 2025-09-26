@@ -1,0 +1,48 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -947,19 +947,32 @@
+ 		dB = {k: v.shape for k, v in mB.state_dict().items()}
+ 		return dA == dB
+ 
+-	def _share_flop_turn_if_missing(self):
+-		has_flop = any(p.requires_grad is False for p in self.models['flop'].parameters()) or True
+-		has_turn = any(p.requires_grad is False for p in self.models['turn'].parameters()) or True
+-
+-		if self._same_shapes(self.models['flop'], self.models['turn']):
+-			if not has_flop and has_turn:
+-				self.models['flop'].load_state_dict(copy.deepcopy(self.models['turn'].state_dict()))
+-				self.models['flop'].eval()
+-				print("[INFO] Using turn weights for flop (compatibility fallback).")
+-			elif not has_turn and has_flop:
+-				self.models['turn'].load_state_dict(copy.deepcopy(self.models['flop'].state_dict()))
+-				self.models['turn'].eval()
+-				print("[INFO] Using flop weights for turn (compatibility fallback).")
++    def _share_flop_turn_if_missing(self):
++        def _model_nonzero(m):
++            with torch.no_grad():
++                for p in m.parameters():
++                    if p is None:
++                        continue
++
++                    if p.abs().sum().item() != 0.0:
++                        return True
++            return False
++
++        if not self._same_shapes(self.models['flop'], self.models['turn']):
++            return  
++
++        flop_nonzero = _model_nonzero(self.models['flop'])
++        turn_nonzero = _model_nonzero(self.models['turn'])
++
++        if (not flop_nonzero) and turn_nonzero:
++            self.models['flop'].load_state_dict(copy.deepcopy(self.models['turn'].state_dict()))
++            self.models['flop'].eval()
++            print("[INFO] Using turn weights for flop (compatibility fallback).")
++        elif (not turn_nonzero) and flop_nonzero:
++            self.models['turn'].load_state_dict(copy.deepcopy(self.models['flop'].state_dict()))
++            self.models['turn'].eval()
++            print("[INFO] Using flop weights for turn (compatibility fallback).")
++
+ 	def get_stage(self, node):
+ 		cr = int(node.public_state.current_round)
+ 		if cr == 0:

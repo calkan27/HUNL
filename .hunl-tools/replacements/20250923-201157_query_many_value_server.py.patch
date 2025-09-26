@@ -1,0 +1,26 @@
+--- a/value_server.py
++++ b/value_server.py
+@@ -157,14 +157,15 @@
+         self._q.put((str(stage), inputs.detach().clone(), bool(scale_to_pot), total_initial, h))
+         return h.result(as_numpy=as_numpy)
+ 
+-	def query_many(
+-		self,
+-		stage: str,
+-		batch_inputs: torch.Tensor,
+-		scale_to_pot: bool = False,
+-		as_numpy: bool = True,
+-	) -> Tuple[Any, Any]:
+-		return self.query(stage, batch_inputs, scale_to_pot=scale_to_pot, as_numpy=as_numpy)
++    def query_many(
++        self,
++        stage: str,
++        batch_inputs: torch.Tensor,
++        scale_to_pot: bool = False,
++        as_numpy: bool = True,
++        total_initial: Optional[float] = None,
++    ) -> Tuple[Any, Any]:
++        return self.query(stage, batch_inputs, scale_to_pot=scale_to_pot, as_numpy=as_numpy, total_initial=total_initial)
+ 
+ 	def get_counters(self) -> Dict[str, int]:
+ 		return {str(k): int(v) for k, v in self._counters.items()}

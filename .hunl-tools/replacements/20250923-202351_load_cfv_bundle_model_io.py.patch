@@ -1,0 +1,72 @@
+--- a/model_io.py
++++ b/model_io.py
+@@ -48,17 +48,55 @@
+ 
+ 
+ def load_cfv_bundle(path, device=None):
+-	bundle = torch.load(path, map_location=("cpu" if device is None else device))
+-	out_models = {}
+-	stages = dict(bundle.get("stages", {}))
+-	for stage, rec in stages.items():
+-		insz = int(rec.get("input_size", 0))
+-		K = int(rec.get("num_clusters", 0))
+-		net = CounterfactualValueNetwork(insz, num_clusters=K)
+-		net.load_state_dict(rec.get("state_dict", {}))
+-		if device is not None:
+-			net = net.to(device)
+-		net.eval()
+-		out_models[str(stage)] = net
+-	meta = {"cluster_mapping": dict(bundle.get("cluster_mapping", {})), "input_meta": dict(bundle.get("input_meta", {})), "version": str(bundle.get("version", "")), "created_at": int(bundle.get("created_at", 0))}
+-	return {"models": out_models, "meta": meta}
++        bundle = torch.load(path, map_location=("cpu" if device is None else device))
++        out_models = {}
++        stages = dict(bundle.get("stages", {}))
++
++        def _make_compat_linear(insz: int, K: int, bias: bool):
++                class _CompatLinearCFV(torch.nn.Module):
++                        def __init__(self, input_size, num_clusters, use_bias):
++                                super().__init__()
++                                self.fc = torch.nn.Linear(int(input_size), int(2 * num_clusters), bias=bool(use_bias))
++                                self.num_clusters = int(num_clusters)
++                                self.input_size = int(input_size)
++                        def forward(self, x):
++                                out = self.fc(x)
++                                Kloc = self.num_clusters
++                                return out[:, :Kloc], out[:, Kloc:]
++                        @torch.no_grad()
++                        def enforce_zero_sum(self, r1, r2, p1, p2):
++                                sum_r1 = torch.clamp(torch.sum(r1, dim=1, keepdim=True), min=1e-9)
++                                sum_r2 = torch.clamp(torch.sum(r2, dim=1, keepdim=True), min=1e-9)
++                                s = torch.sum(r1 * p1, dim=1, keepdim=True) + torch.sum(r2 * p2, dim=1, keepdim=True)
++                                a = -0.5 * s / sum_r1
++                                b = -0.5 * s / sum_r2
++                                return p1 + a, p2 + b
++                return _CompatLinearCFV(insz, K, bias)
++
++        for stage, rec in stages.items():
++                insz = int(rec.get("input_size", 0))
++                K = int(rec.get("num_clusters", 0))
++                state_dict = rec.get("state_dict", {})
++                net = CounterfactualValueNetwork(insz, num_clusters=K)
++                try:
++                        net.load_state_dict(state_dict, strict=True)
++                except Exception:
++                        has_bias = any(k.endswith("bias") for k in state_dict.keys())
++                        net = _make_compat_linear(insz, K, has_bias)
++                        try:
++                                net.load_state_dict(state_dict, strict=True)
++                        except Exception:
++                                net.load_state_dict(state_dict, strict=False)
++                if device is not None:
++                        net = net.to(device)
++                net.eval()
++                out_models[str(stage)] = net
++
++        meta = {
++                "cluster_mapping": dict(bundle.get("cluster_mapping", {})),
++                "input_meta": dict(bundle.get("input_meta", {})),
++                "version": str(bundle.get("version", "")),
++                "created_at": int(bundle.get("created_at", 0)),
++        }
++        return {"models": out_models, "meta": meta}
++

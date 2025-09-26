@@ -1,0 +1,63 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -443,32 +443,31 @@
+ 		return float(u[int(player)]) if isinstance(u, (list, tuple)) and len(u) >= 2 else 0.0
+ 
+ 
+-	def set_cfr_hybrid_config(self, preflop_omit=None, flop_omit=None, turn_omit=None, river_omit=None, round_iters=None, round_flags=None):
+-		self._ensure_sparse_schedule()
+-		if not hasattr(self, "_omit_prefix_iters") or not isinstance(self._omit_prefix_iters, dict):
+-			self._omit_prefix_iters = {"preflop": 980, "flop": 500, "turn": 500, "river": 1000}
+-		if preflop_omit is not None:
+-			self._omit_prefix_iters["preflop"] = int(preflop_omit)
+-		if flop_omit is not None:
+-			self._omit_prefix_iters["flop"] = int(flop_omit)
+-		if turn_omit is not None:
+-			self._omit_prefix_iters["turn"] = int(turn_omit)
+-		if river_omit is not None:
+-			self._omit_prefix_iters["river"] = int(river_omit)
+-		if isinstance(round_iters, dict):
+-			for k, v in round_iters.items():
+-				self._round_iters[int(k)] = int(v)
+-		if isinstance(round_flags, dict):
+-			out = {}
+-			for r, fl in round_flags.items():
+-				out[int(r)] = {
+-					"half_pot": bool(fl.get("half_pot", True)),
+-					"two_pot": bool(fl.get("two_pot", False)),
+-				}
+-			self._round_actions = out
+-		return {
+-			"omit_prefix": dict(self._omit_prefix_iters),
+-			"round_iters": dict(self._round_iters),
+-			"round_actions": {int(k): {"half_pot": bool(v.get("half_pot", True)), "two_pot": bool(v.get("two_pot", False))} for k, v in self._round_actions.items()},
+-		}
+-
++    def set_cfr_hybrid_config(self, preflop_omit=None, flop_omit=None, turn_omit=None, river_omit=None, round_iters=None, round_flags=None):
++        self._ensure_sparse_schedule()
++        if not hasattr(self, "_omit_prefix_iters") or not isinstance(self._omit_prefix_iters, dict):
++            self._omit_prefix_iters = {"preflop": 980, "flop": 500, "turn": 500, "river": 1000}
++        if preflop_omit is not None:
++            self._omit_prefix_iters["preflop"] = int(preflop_omit)
++        if flop_omit is not None:
++            self._omit_prefix_iters["flop"] = int(flop_omit)
++        if turn_omit is not None:
++            self._omit_prefix_iters["turn"] = int(turn_omit)
++        if river_omit is not None:
++            self._omit_prefix_iters["river"] = int(river_omit)
++        if isinstance(round_iters, dict):
++            for k, v in round_iters.items():
++                self._round_iters[int(k)] = int(v)
++        if isinstance(round_flags, dict):
++            out = {}
++            for r, fl in round_flags.items():
++                out[int(r)] = {"half_pot": bool(fl.get("half_pot", True)), "two_pot": bool(fl.get("two_pot", False))}
++            self._round_actions = out
++        if (round_iters is None) and (round_flags is None) and (river_omit is None):
++            return {"preflop": int(self._omit_prefix_iters["preflop"]), "flop": int(self._omit_prefix_iters["flop"]), "turn": int(self._omit_prefix_iters["turn"])}
++        return {
++            "omit_prefix": dict(self._omit_prefix_iters),
++            "round_iters": dict(self._round_iters),
++            "round_actions": {int(k): {"half_pot": bool(v.get("half_pot", True)), "two_pot": bool(v.get("two_pot", False))} for k, v in self._round_actions.items()},
++        }
++

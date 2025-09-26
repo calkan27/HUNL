@@ -1,0 +1,47 @@
+--- a/aivat.py
++++ b/aivat.py
+@@ -142,27 +142,21 @@
+ 			s += (float(p) / t) * val
+ 		return s
+ 
+-	def _action_dist(self, node, player=None, chance=False):
+-		if chance:
+-			if self.chance_policy_fn is not None:
+-				items = self.chance_policy_fn(node)
+-				result = {}
+-				for k, v in items:
+-					result[k] = v
+-				return result
+-			else:
+-				return {}
+-		else:
+-			if player is not None:
+-				_player = player
+-			else:
+-				_player = self.agent_player
++    def _action_dist(self, node, player=None, chance=False):
++        if chance:
++            if self.chance_policy_fn is not None:
++                items = self.chance_policy_fn(node)
++                if isinstance(items, dict):
++                    return dict(items)
++                else:
++                    return dict(items)
++            else:
++                return {}
++        else:
++            target = player if player is not None else self.agent_player
++            items = self.policy_fn(node, target)
++            if isinstance(items, dict):
++                return dict(items)
++            else:
++                return dict(items)
+ 
+-			items = self.policy_fn(node, _player)
+-			result = {}
+-			for k, v in items:
+-				result[k] = v
+-			return result
+-
+-
+-

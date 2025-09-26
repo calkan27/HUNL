@@ -1,0 +1,34 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -87,19 +87,18 @@
+ 
+ def _run_matches(mode: str, episodes: int, seed: int, cfg: ResolveConfig) -> List[Tuple[float, float]]:
+ 
+-		random.seed(seed)
+-		solverA = CFRSolver(config=cfg)
+-		solverB = CFRSolver(config=cfg)
+-		all_hands: List[Tuple[float, float]] = []
+-		for i in range(int(episodes)):
+-				rng_seed = random.randint(1, 10**9)
+-				cur_dealer = i % 2
+-				if mode == "agent-vs-agent":
+-						naive, ares = _play_episode(solverA, solverA, rng_seed, solverA, dealer=cur_dealer)
+-				else:
+-						naive, ares = _play_episode(solverA, solverB, rng_seed, solverA, dealer=cur_dealer)
+-				all_hands.append((naive, ares["aivat"]))
+-		return all_hands
++        random.seed(seed)
++        solverA = CFRSolver(config=cfg)
++        solverB = CFRSolver(config=cfg)
++        all_hands: List[Tuple[float, float]] = []
++        for _ in range(int(episodes)):
++                rng_seed = random.randint(1, 10**9)
++                if mode == "agent-vs-agent":
++                        naive, ares = _play_episode(solverA, solverA, rng_seed, solverA)
++                else:
++                        naive, ares = _play_episode(solverA, solverB, rng_seed, solverA)
++                all_hands.append((naive, ares["aivat"]))
++        return all_hands
+ 
+ def _summarize(results: List[Tuple[float, float]]) -> Tuple[float, float, float, float, float]:
+ 

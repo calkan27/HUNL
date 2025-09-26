@@ -1,0 +1,50 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -1210,31 +1210,22 @@
+ 			3: {"half_pot": True, "two_pot": True},
+ 		}
+ 
+-	def apply_opponent_action_update(self, prev_node, new_node, observed_action_type):
+-		if not hasattr(self, "own_range_tracking"):
+-			self.own_range_tracking = {}
+-		if not hasattr(self, "opponent_cfv_upper_tracking"):
+-			self.opponent_cfv_upper_tracking = {}
+-		prev_key = self._state_key(prev_node) if hasattr(self, "_state_key") else None
+-		next_key = self._state_key(new_node) if hasattr(self, "_state_key") else None
+-		if next_key is None:
+-			return
+-		if prev_key in self.opponent_counterfactual_values:
+-			opp = (new_node.public_state.current_player + 1) % 2
+-			src = self.opponent_counterfactual_values.get(prev_node, {}).get(opp, {})
+-			avg = {}
+-			for cid, vec in src.items():
+-				if isinstance(vec, (list, tuple)) and len(vec) > 0:
+-					s = 0.0
+-					n = 0
+-					for x in vec:
+-						s += float(x)
+-						n += 1
+-					mu = (s / float(n)) if n > 0 else 0.0
+-				else:
+-					mu = float(vec) if isinstance(vec, (int, float)) else 0.0
+-				avg[int(cid)] = mu
+-			self.opponent_cfv_upper_tracking[next_key] = avg
++    def apply_opponent_action_update(self, prev_node, new_node, observed_action_type):
++        if not hasattr(self, "opponent_cfv_upper_tracking"):
++            self.opponent_cfv_upper_tracking = {}
++        prev_key = self._state_key(prev_node) if hasattr(self, "_state_key") else None
++        next_key = self._state_key(new_node) if hasattr(self, "_state_key") else None
++        if next_key is None:
++            return
++        prev_u = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(prev_key, {}))
++        next_u = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(next_key, {}))
++        out = {}
++        for k in set(list(prev_u.keys()) + list(next_u.keys())):
++            a = float(prev_u.get(int(k), float("-inf")))
++            b = float(next_u.get(int(k), float("-inf")))
++            out[int(k)] = a if a > b else b
++        self.opponent_cfv_upper_tracking[next_key] = out
++
+ 	def apply_cfv_bundle(self, bundle_or_path, device=None):
+ 		if isinstance(bundle_or_path, str):
+ 			loaded = load_cfv_bundle(bundle_or_path, device=device)

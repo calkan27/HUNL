@@ -1,0 +1,42 @@
+--- a/model_io.py
++++ b/model_io.py
+@@ -61,6 +61,8 @@
+ 	torch.save(bundle, out_path)
+ 	return out_path
+ 
++
++
+ def load_cfv_bundle(path, device=None):
+         bundle = torch.load(path, map_location=("cpu" if device is None else device))
+         out_models = {}
+@@ -79,12 +81,19 @@
+                                 return out[:, :Kloc], out[:, Kloc:]
+                         @torch.no_grad()
+                         def enforce_zero_sum(self, r1, r2, p1, p2):
+-                                sum_r1 = torch.clamp(torch.sum(r1, dim=1, keepdim=True), min=1e-9)
+-                                sum_r2 = torch.clamp(torch.sum(r2, dim=1, keepdim=True), min=1e-9)
+-                                s = torch.sum(r1 * p1, dim=1, keepdim=True) + torch.sum(r2 * p2, dim=1, keepdim=True)
+-                                a = -0.5 * s / sum_r1
+-                                b = -0.5 * s / sum_r2
+-                                return p1 + a, p2 + b
++                                eps = 1e-7
++                                s1 = torch.sum(r1, dim=1, keepdim=True)
++                                s2 = torch.sum(r2, dim=1, keepdim=True)
++                                Kloc = p1.shape[1]
++                                u = p1.new_full((p1.shape[0], Kloc), 1.0 / max(1, Kloc))
++                                w1 = torch.where(s1 > eps, r1 / torch.clamp(s1, min=eps), u)
++                                w2 = torch.where(s2 > eps, r2 / torch.clamp(s2, min=eps), u)
++                                sv1 = torch.sum(w1 * p1, dim=1, keepdim=True)
++                                sv2 = torch.sum(w2 * p2, dim=1, keepdim=True)
++                                delta = 0.5 * (sv1 + sv2)
++                                f1 = p1 - delta
++                                f2 = p2 - delta
++                                return f1, f2
+                 return _CompatLinearCFV(insz, K, bias)
+ 
+         for stage, rec in stages.items():
+@@ -136,3 +145,4 @@
+                 "created_at": int(bundle.get("created_at", 0)),
+         }
+         return {"models": out_models, "meta": meta}
++

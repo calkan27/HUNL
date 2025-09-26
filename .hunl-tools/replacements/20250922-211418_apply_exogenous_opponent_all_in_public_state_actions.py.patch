@@ -1,0 +1,139 @@
+--- a/public_state_actions.py
++++ b/public_state_actions.py
+@@ -326,71 +326,71 @@
+             self._apply_half_pot_bet(self, p, to_call)
+         elif kind
+ 
+-	def apply_exogenous_opponent_all_in(self, bettor):
+-		if self.is_terminal:
+-			return self
+-		if bettor not in (0, 1):
+-			return self
+-		if self.current_player is None or int(self.current_player) != int(bettor):
+-			return self
+-		prev_pot = float(self.pot_size)
+-		self.last_refund_amount = 0.0
+-		p = int(bettor)
+-		o = (p + 1) % 2
+-		my_bet = self.current_bets[p]
+-		opp_bet = self.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		caller_stack_before = self.stacks[p]
+-		matched = caller_stack_before if caller_stack_before < to_call else to_call
+-		self.stacks[p] = self.stacks[p] - matched
+-		self.current_bets[p] = self.current_bets[p] + matched
+-		self.pot_size = self.pot_size + matched
+-		if matched > 0:
+-			self.total_contrib[p] += matched
+-		if matched < to_call:
+-			excess = to_call - matched
+-			self.last_refund_amount = float(excess)
+-			self.current_bets[o] = self.current_bets[o] - excess
+-			self.stacks[o] = self.stacks[o] + excess
+-			self.pot_size = self.pot_size - excess
+-			self.total_contrib[o] -= excess
+-			self._advance_street_if_closed(actor=p)
+-			self._fast_forward_to_showdown_if_allin_locked()
+-		else:
+-			rest = self.stacks[p]
+-			if rest < 0:
+-				rest = 0
+-			if rest > 0:
+-				self.current_bets[p] = self.current_bets[p] + rest
+-				self.stacks[p] = 0
+-				self.pot_size = self.pot_size + rest
+-				self.total_contrib[p] += rest
+-				increment_above_call = rest
+-				min_raise_inc = self._min_raise_size()
+-				if to_call == 0:
+-					self.last_raiser = p
+-					self.last_raise_increment = rest
+-					self.last_raise_was_allin_below_min = None if rest >= min_raise_inc else p
+-				else:
+-					if increment_above_call >= min_raise_inc:
+-						self.last_raiser = p
+-						self.last_raise_increment = increment_above_call
+-						self.last_raise_was_allin_below_min = None
+-					else:
+-						self.last_raise_was_allin_below_min = p
+-				self.consecutive_checks = 0
+-		if self.current_bets[p] == self.current_bets[o]:
+-			self._advance_street_if_closed(actor=p)
+-			self._fast_forward_to_showdown_if_allin_locked()
+-		if not self.is_terminal:
+-			if not (self.current_bets[0] == 0 and self.current_bets[1] == 0 and self.current_round >= 1 and self.last_raiser is None):
+-				self.current_player = o
+-		self.last_action = ("EXOGENOUS_ALL_IN", p)
+-		self._assert_invariants(prev_pot=prev_pot)
+-		return self
+-
++    def apply_exogenous_opponent_all_in(self, bettor):
++        if self.is_terminal:
++            return self
++        if bettor not in (0, 1):
++            return self
++        if self.current_player is None or int(self.current_player) != int(bettor):
++            return self
++        prev_pot = float(self.pot_size)
++        self.last_refund_amount = 0.0
++        p = int(bettor)
++        o = (p + 1) % 2
++        my_bet = self.current_bets[p]
++        opp_bet = self.current_bets[o]
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        caller_stack_before = self.stacks[p]
++        matched = caller_stack_before if caller_stack_before < to_call else to_call
++        self.stacks[p] = self.stacks[p] - matched
++        self.current_bets[p] = self.current_bets[p] + matched
++        self.pot_size = self.pot_size + matched
++        if matched > 0:
++            self.total_contrib[p] += matched
++        if matched < to_call:
++            excess = to_call - matched
++            self.last_refund_amount = float(excess)
++            self.current_bets[o] = self.current_bets[o] - excess
++            self.stacks[o] = self.stacks[o] + excess
++            self.pot_size = self.pot_size - excess
++            self.total_contrib[o] -= excess
++            if self.current_bets[p] == self.current_bets[o]:
++                self._advance_street_if_closed(actor=p)
++                self._fast_forward_to_showdown_if_allin_locked()
++        else:
++            rest = self.stacks[p]
++            if rest < 0:
++                rest = 0
++            if rest > 0:
++                self.current_bets[p] = self.current_bets[p] + rest
++                self.stacks[p] = 0
++                self.pot_size = self.pot_size + rest
++                self.total_contrib[p] += rest
++                increment_above_call = rest if to_call > 0 else rest
++                min_raise_inc = self._min_raise_size()
++                if to_call == 0:
++                    if rest >= min_raise_inc:
++                        self.last_raiser = p
++                        self.last_raise_increment = rest
++                        self.last_raise_was_allin_below_min = None
++                    else:
++                        self.last_raise_was_allin_below_min = p
++                else:
++                    if increment_above_call >= min_raise_inc:
++                        self.last_raiser = p
++                        self.last_raise_increment = increment_above_call
++                        self.last_raise_was_allin_below_min = None
++                    else:
++                        self.last_raise_was_allin_below_min = p
++                self.consecutive_checks = 0
++        if self.current_bets[p] == self.current_bets[o]:
++            self._advance_street_if_closed(actor=p)
++            self._fast_forward_to_showdown_if_allin_locked()
++        self.last_action = ("EXOGENOUS_ALL_IN", p)
++        self._assert_invariants(prev_pot=prev_pot)
++        return self
+ 
+ 	def _apply_all_in(self, st, player, to_call):
+ 		opponent = (player + 1) % 2

@@ -1,0 +1,112 @@
+--- a/data_generator_datasets.py
++++ b/data_generator_datasets.py
+@@ -110,55 +110,60 @@
+             self.cfr_solver._round_actions = round_flags_backup
+             self._pop_production_mode(guard)
+ 
+-	def generate_flop_dataset_using_turn(self, turn_model, num_situations, out_dir=None, chunk_size=50000, seed=2027):
+-		rng = random.Random(int(seed))
+-		meta = {
+-			"schema": "cfv.dataset.flop.v1",
+-			"created_at": int(time.time()),
+-			"stage": "flop",
+-			"num_clusters": int(self.num_clusters),
+-			"pot_sampler": self.pot_sampler_spec(),
+-			"range_generator": self.range_generator_spec() if hasattr(self, "range_generator_spec") else {"name": "recursive_R.v1", "params": {}},
+-		}
+-		guard = self._push_production_mode()
+-		count = 0
+-		chunk = []
+-		chunk_idx = 0
+-		try:
+-			while count < int(num_situations):
+-				node = self._sample_flop_situation(rng)
+-				self.cfr_solver.total_iterations = 1000
+-				self.cfr_solver.depth_limit = max(1, int(getattr(self, "depth_limit", 1)))
+-				self.cfr_solver.models["turn"] = turn_model.to(self.cfr_solver.device).eval()
+-				self.cfr_solver.run_cfr(node)
+-				cf = self.compute_counterfactual_values(node)
+-				bucketed = self.bucket_player_ranges([node.player_ranges[0], node.player_ranges[1]])
+-				self._assert_sampler_invariants(
+-					node.public_state.board_cards,
+-					[{i: bucketed[0][i] for i in range(self.num_clusters)},
+-					 {i: bucketed[1][i] for i in range(self.num_clusters)}],
+-					node.public_state.pot_size
+-				)
+-				iv = self.prepare_input_vector(bucketed, node.public_state.board_cards, node.public_state.pot_size, node.public_state.actions)
+-				t1, t2 = self.prepare_target_values(cf)
+-				rec = {
+-					"input_vector": iv,
+-					"target_v1": [float(x) for x in t1],
+-					"target_v2": [float(x) for x in t2],
+-				}
+-				chunk.append(rec)
+-				count += 1
+-				if out_dir and len(chunk) >= int(chunk_size):
+-					if hasattr(self, "_persist_npz_chunk"):
+-						self._persist_npz_chunk(chunk, out_dir, "flop", chunk_idx, meta)
+-					chunk = []
+-					chunk_idx += 1
+-			if out_dir and chunk:
+-				if hasattr(self, "_persist_npz_chunk"):
+-					self._persist_npz_chunk(chunk, out_dir, "flop", chunk_idx, meta)
+-			return {"written_chunks": int(chunk_idx + (1 if (out_dir and chunk) else 0)), "in_memory": [] if out_dir else list(chunk)}
+-		finally:
+-			self._pop_production_mode(guard)
++    def generate_flop_dataset_using_turn(self, turn_model, num_situations, out_dir=None, chunk_size=50000, seed=2027):
++        rng = random.Random(int(seed))
++        meta = {
++            "schema": "cfv.dataset.flop.v1",
++            "created_at": int(time.time()),
++            "stage": "flop",
++            "num_clusters": int(self.num_clusters),
++            "pot_sampler": self.pot_sampler_spec(),
++            "range_generator": self.range_generator_spec() if hasattr(self, "range_generator_spec") else {"name": "recursive_R.v1", "params": {}},
++        }
++        guard = self._push_production_mode()
++        self.cfr_solver._ensure_sparse_schedule()
++        round_flags_backup = {int(k): {"half_pot": bool(v.get("half_pot", True)), "two_pot": bool(v.get("two_pot", False))} for k, v in getattr(self.cfr_solver, "_round_actions", {}).items()}
++        for r in (0, 1, 2, 3):
++            self.cfr_solver._round_actions[int(r)] = {"half_pot": False, "two_pot": False}
++        count = 0
++        chunk = []
++        chunk_idx = 0
++        try:
++            while count < int(num_situations):
++                node = self._sample_flop_situation(rng)
++                self.cfr_solver.total_iterations = 1000
++                self.cfr_solver.depth_limit = max(1, int(getattr(self, "depth_limit", 1)))
++                self.cfr_solver.models["turn"] = turn_model.to(self.cfr_solver.device).eval()
++                self.cfr_solver.run_cfr(node)
++                cf = self.compute_counterfactual_values(node)
++                bucketed = self.bucket_player_ranges([node.player_ranges[0], node.player_ranges[1]])
++                self._assert_sampler_invariants(
++                    node.public_state.board_cards,
++                    [{i: bucketed[0][i] for i in range(self.num_clusters)},
++                     {i: bucketed[1][i] for i in range(self.num_clusters)}],
++                    node.public_state.pot_size
++                )
++                iv = self.prepare_input_vector(bucketed, node.public_state.board_cards, node.public_state.pot_size, node.public_state.actions)
++                t1, t2 = self.prepare_target_values(cf, node.public_state.pot_size)
++                rec = {
++                    "input_vector": iv,
++                    "target_v1": [float(x) for x in t1],
++                    "target_v2": [float(x) for x in t2],
++                }
++                chunk.append(rec)
++                count += 1
++                if out_dir and len(chunk) >= int(chunk_size):
++                    if hasattr(self, "_persist_npz_chunk"):
++                        self._persist_npz_chunk(chunk, out_dir, "flop", chunk_idx, meta)
++                    chunk = []
++                    chunk_idx += 1
++            if out_dir and chunk:
++                if hasattr(self, "_persist_npz_chunk"):
++                    self._persist_npz_chunk(chunk, out_dir, "flop", chunk_idx, meta)
++            return {"written_chunks": int(chunk_idx + (1 if (out_dir and chunk) else 0)), "in_memory": [] if out_dir else list(chunk)}
++        finally:
++            self.cfr_solver._round_actions = round_flags_backup
++            self._pop_production_mode(guard)
+ 
+ 	def generate_unique_boards(self, stage='flop', num_boards=10):
+ 		stage = str(stage).lower()

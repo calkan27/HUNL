@@ -1,0 +1,80 @@
+--- a/cfr_solver_strategies.py
++++ b/cfr_solver_strategies.py
+@@ -116,58 +116,22 @@
+ 		node.player_ranges[player] = post
+ 
+ 
+-	def _allowed_actions_agent(self, ps):
+-		self._ensure_sparse_schedule()
+-		out = []
+-		p = ps.current_player
+-		o = (p + 1) % 2
+-		my_bet = ps.current_bets[p]
+-		opp_bet = ps.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-				to_call = 0
+-		flags = self._round_actions.get(int(ps.current_round), {"half_pot": True, "two_pot": False})
+-		min_raise_inc = ps._min_raise_size()
+-		if to_call > 0:
+-				out.append(ActionType.FOLD)
+-		out.append(ActionType.CALL)
+-		if to_call == 0:
+-				if ps.stacks[p] > 0:
+-						if flags.get("half_pot", False):
+-								hp = max(min_raise_inc, int(ps.pot_size * 0.5))
+-								if ps.stacks[p] >= hp and hp > 0:
+-										out.append(ActionType.HALF_POT_BET)
+-						pt = max(min_raise_inc, int(ps.pot_size))
+-						if ps.stacks[p] >= pt and pt > 0:
+-								out.append(ActionType.POT_SIZED_BET)
+-						if flags.get("two_pot", False):
+-								tp = max(min_raise_inc, int(ps.pot_size * 2.0))
+-								if ps.stacks[p] >= tp and tp > 0:
+-										out.append(ActionType.TWO_POT_BET)
+-						out.append(ActionType.ALL_IN)
+-		else:
+-				remaining_after_call = ps.stacks[p] - to_call
+-				if remaining_after_call > 0:
+-						pot_after_call = ps.pot_size + to_call
+-						if flags.get("half_pot", False):
+-									hp = max(min_raise_inc, int(pot_after_call * 0.5))
+-									if remaining_after_call >= hp and hp > 0:
+-											out.append(ActionType.HALF_POT_BET)
+-							pt = max(min_raise_inc, int(pot_after_call))
+-							if remaining_after_call >= pt and pt > 0:
+-									out.append(ActionType.POT_SIZED_BET)
+-							if flags.get("two_pot", False):
+-									tp = max(min_raise_inc, int(pot_after_call * 2.0))
+-									if remaining_after_call >= tp and tp > 0:
+-											out.append(ActionType.TWO_POT_BET)
+-					out.append(ActionType.ALL_IN)
+-			legal = set(ps.legal_actions()) if hasattr(ps, "legal_actions") else None
+-			if isinstance(legal, set):
+-					out = [a for a in out if a in legal]
+-			seen = set()
+-			filt = []
+-			for a in out:
+-					if a not in seen:
+-							seen.add(a)
+-							filt.append(a)
+-			return filt
++    def _allowed_actions_agent(self, ps):
++        self._ensure_sparse_schedule()
++        legal = list(ps.legal_actions()) if hasattr(ps, "legal_actions") else []
++        flags = self._round_actions.get(int(ps.current_round), {"half_pot": True, "two_pot": False})
++        out = []
++        for a in legal:
++            if a == ActionType.HALF_POT_BET and not flags.get("half_pot", False):
++                continue
++            if a == ActionType.TWO_POT_BET and not flags.get("two_pot", False):
++                continue
++            out.append(a)
++        seen = set()
++        filt = []
++        for a in out:
++            if a not in seen:
++                seen.add(a)
++                filt.append(a)
++        return filt
++

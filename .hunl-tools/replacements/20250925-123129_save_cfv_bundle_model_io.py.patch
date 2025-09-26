@@ -1,0 +1,126 @@
+--- a/model_io.py
++++ b/model_io.py
+@@ -5,61 +5,68 @@
+ from compat_linear_cfv import CompatLinearCFV
+ 
+ def save_cfv_bundle(models, cluster_mapping, input_meta, path, seed=None):
+-	bundle = {}
+-	bundle["version"] = "1.0"
+-	bundle["created_at"] = int(time.time())
+-	bundle["seed"] = int(seed) if seed is not None else int(os.environ.get("FAST_TEST_SEED", "1729"))
+-	bundle["stages"] = {}
+-	max_K = 0
+-	for stage, net in dict(models).items():
+-		if net is None:
+-			continue
+-		stage_rec = {}
+-		stage_rec["input_size"] = int(getattr(net, "input_size", 0))
+-		stage_rec["num_clusters"] = int(getattr(net, "num_clusters", 0))
+-		stage_rec["state_dict"] = {k: v.detach().cpu() for k, v in net.state_dict().items()}
+-		bundle["stages"][str(stage)] = stage_rec
+-		if stage_rec["num_clusters"] > max_K:
+-			max_K = stage_rec["num_clusters"]
+-	if input_meta is None:
+-		input_meta = {}
+-	im = dict(input_meta)
+-	if "num_clusters" not in im or int(im.get("num_clusters", 0)) <= 0:
+-		im["num_clusters"] = int(max_K)
+-	if "board_one_hot_dim" not in im:
+-		im["board_one_hot_dim"] = 52
+-	if "uses_pot_norm" not in im:
+-		im["uses_pot_norm"] = True
+-	K = int(im.get("num_clusters", 0))
+-	B = int(im.get("board_one_hot_dim", 52))
+-	start_pn = 0
+-	start_b = start_pn + 1
+-	start_r1 = start_b + B
+-	start_r2 = start_r1 + K
+-	end_all = start_r2 + K
+-	layout = {
+-		"pot_norm": 1,
+-		"board_one_hot": B,
+-		"ranges": {"r1": K, "r2": K}
+-	}
+-	slices = {
+-		"pot_norm": [start_pn, start_pn + 1],
+-		"board_one_hot": [start_b, start_b + B],
+-		"r1": [start_r1, start_r1 + K],
+-		"r2": [start_r2, start_r2 + K],
+-		"total_input_size": end_all
+-	}
+-	im["input_layout"] = layout
+-	im["input_slices"] = slices
+-	im["range_dims"] = {"r1": K, "r2": K}
+-	bundle["cluster_mapping"] = dict(cluster_mapping) if cluster_mapping is not None else {}
+-	bundle["input_meta"] = im
+-	out_path = str(path)
+-	dirn = os.path.dirname(out_path)
+-	if dirn and not os.path.isdir(dirn):
+-		os.makedirs(dirn, exist_ok=True)
+-	torch.save(bundle, out_path)
+-	return out_path
++        import os
++        import time
++        import torch
++        bundle = {}
++        bundle["version"] = "1.0"
++        bundle["created_at"] = int(time.time())
++        bundle["seed"] = int(seed) if seed is not None else int(os.environ.get("FAST_TEST_SEED", "1729"))
++        bundle["stages"] = {}
++        max_K = 0
++        for stage, net in dict(models).items():
++                if net is None:
++                        continue
++                stage_rec = {}
++                stage_rec["input_size"] = int(getattr(net, "input_size", 0))
++                stage_rec["num_clusters"] = int(getattr(net, "num_clusters", 0))
++                stage_rec["state_dict"] = {k: v.detach().cpu() for k, v in net.state_dict().items()}
++                bundle["stages"][str(stage)] = stage_rec
++                if stage_rec["num_clusters"] > max_K:
++                        max_K = stage_rec["num_clusters"]
++        if input_meta is None:
++                input_meta = {}
++        im = dict(input_meta)
++        if "num_clusters" not in im or int(im.get("num_clusters", 0)) <= 0:
++                im["num_clusters"] = int(max_K)
++        if "board_one_hot_dim" not in im:
++                im["board_one_hot_dim"] = 52
++        if "uses_pot_norm" not in im:
++                im["uses_pot_norm"] = True
++        if "target_units" not in im:
++                im["target_units"] = "pot_fraction"
++        if "outer_zero_sum" not in im:
++                im["outer_zero_sum"] = True
++        K = int(im.get("num_clusters", 0))
++        B = int(im.get("board_one_hot_dim", 52))
++        start_pn = 0
++        start_b = start_pn + 1
++        start_r1 = start_b + B
++        start_r2 = start_r1 + K
++        end_all = start_r2 + K
++        layout = {
++                "pot_norm": 1,
++                "board_one_hot": B,
++                "ranges": {"r1": K, "r2": K}
++        }
++        slices = {
++                "pot_norm": [start_pn, start_pn + 1],
++                "board_one_hot": [start_b, start_b + B],
++                "r1": [start_r1, start_r1 + K],
++                "r2": [start_r2, start_r2 + K],
++                "total_input_size": end_all
++        }
++        im["input_layout"] = layout
++        im["input_slices"] = slices
++        im["range_dims"] = {"r1": K, "r2": K}
++        bundle["cluster_mapping"] = dict(cluster_mapping) if cluster_mapping is not None else {}
++        bundle["input_meta"] = im
++        out_path = str(path)
++        dirn = os.path.dirname(out_path)
++        if dirn and not os.path.isdir(dirn):
++                os.makedirs(dirn, exist_ok=True)
++        torch.save(bundle, out_path)
++        return out_path
+ 
+ def _load_stage_model(stage_rec, device):
+ 	insz = int(stage_rec.get("input_size", 0))

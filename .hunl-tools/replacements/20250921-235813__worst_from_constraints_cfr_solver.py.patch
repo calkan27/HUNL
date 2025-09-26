@@ -1,0 +1,275 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -1539,256 +1539,19 @@
+ 		return self._info_key(node, player)
+ 
+     def _worst_from_constraints(self, node, us: int) -> float:
+-        key = self._state_key(node)
+-        if not hasattr(self, "opponent_cfv_upper_tracking"):
+-            return 0.0
+-        tracking = getattr(self, "opponent_cfv_upper_tracking", {})
+-        if key not in tracking:
+-            return 0.0
+-        upper = tracking[key]
+-        mx = None
+-        for v in upper.values():
+-            fv = float(v)
+-            if mx is None or fv > mx:
+-                mx = fv
+-        if mx is None:
+-            return 0.0
+-        return -float(mx)
+-
+-	def _ev_from_vec(self, vec, rng) -> float:
+-		if rng is None or len(rng) != len(vec):
+-			return 0.0
+-		return float(np.dot(np.asarray(vec, dtype=float), np.asarray(rng, dtype=float)))
+-
+-	def _traverse(self, node, reach_us, reach_opp, ctx):
+-		ps = node.public_state
+-		if ps.is_terminal:
+-			v_us = self._slt_leaf_cfv(node, node.public_state.current_player)
+-			return self._ev_from_vec(v_us, reach_us), self._ev_from_vec(-v_us, reach_opp)
+-
+-		if int(ps.current_bets[0]) == int(ps.current_bets[1]) and int(ps.current_round) != int(ctx["root"].public_state.current_round):
+-			v_us = self._slt_leaf_cfv(node, node.public_state.current_player)
+-			return self._ev_from_vec(v_us, reach_us), self._ev_from_vec(-v_us, reach_opp)
+-
+-		cur = int(ps.current_player)
+-		us = int(ctx["root"].public_state.current_player)
+-
+-		if cur == us:
+-			menu = self._allowed_actions(ps, True)
+-			ikey = self._info_key_for(node, us)
+-			if ikey not in ctx["regret"]:
+-				ctx["regret"][ikey] = [0.0] * ctx["Aall"]
+-				ctx["strat_sum"][ikey] = [0.0] * ctx["Aall"]
+-
+-			policy = self._rm_plus(ctx["regret"][ikey], menu)
+-
+-			children = []
+-			for a in menu:
+-				new_ps = ps.update_state(node, Action(a))
+-				ch = GameNode(new_ps)
+-				ch.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+-				children.append((a, ch))
+-
+-			action_evs = []
+-			for a, ch in children:
+-				action_ev, _ = self._traverse(ch, reach_us, reach_opp, ctx)
+-				action_evs.append(action_ev)
+-
+-			total = 0.0
+-			for i, a in enumerate(menu):
+-				total += policy[int(a.value)] * action_evs[i]
+-
+-			for i, a in enumerate(menu):
+-				idx = int(a.value)
+-				ctx["regret"][ikey][idx] += (action_evs[i] - total)
+-				ctx["strat_sum"][ikey][idx] += policy[idx]
+-
+-			return total, -total
+-
+-		menu = self._allowed_actions(ps, False)
+-		worst = self._worst_from_constraints(node, us)
+-
+-		if not menu:
+-			return worst, -worst
+-
+-		best = None
+-		for a in menu:
+-			new_ps = ps.update_state(node, Action(a))
+-			ch = GameNode(new_ps)
+-			ch.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+-			ev_child, _ = self._traverse(ch, reach_us, reach_opp, ctx)
+-			if best is None or ev_child < best:
+-				best = ev_child
+-
+-		if best is None:
+-			best = worst
+-		ev = min(best, worst)
+-		return ev, -ev
+-
+-	def solve_subgame(self, root_node, r_us, r_opp, opp_cfv_constraints, T, leaf_value_fn):
+-		K = int(self.num_clusters)
+-
+-		r_self = self._normalize_range(r_us, K)
+-		r_oppo = self._normalize_range(r_opp, K)
+-
+-		root = GameNode(root_node.public_state)
+-		root.player_ranges = [dict(root_node.player_ranges[0]), dict(root_node.player_ranges[1])]
+-		root.player_ranges[root.public_state.current_player] = {i: float(r_self[i]) for i in range(K) if r_self[i] > 0.0}
+-		root.player_ranges[(root.public_state.current_player + 1) % 2] = {i: float(r_oppo[i]) for i in range(K) if r_oppo[i] > 0.0}
+-
+-		ctx = {
+-			"regret": {},
+-			"strat_sum": {},
+-			"Aall": len(ActionType),
+-			"root": root
+-		}
+-
+-		iters = int(T)
+-		for _ in range(iters):
+-			self._traverse(root, r_self, r_oppo, ctx)
+-
+-		ps0 = root.public_state
+-		menu0 = self._allowed_actions(ps0, True)
+-		ikey0 = self._info_key_for(root, root.public_state.current_player)
+-
+-		strat_sum = ctx["strat_sum"]
+-		if ikey0 not in strat_sum:
+-			root_strategy = {a: (1.0 / float(max(1, len(menu0)))) for a in menu0}
+-		else:
+-			avg = strat_sum[ikey0]
+-			s = sum(avg[int(a.value)] for a in menu0)
+-			if s <= 0.0:
+-				root_strategy = {a: (1.0 / float(max(1, len(menu0)))) for a in menu0}
+-			else:
+-				root_strategy = {a: (avg[int(a.value)] / s) for a in menu0}
+-
+-		root_ev, _ = self._traverse(root, r_self, r_oppo, ctx)
+-
+-		key_root = self._state_key(root)
+-		opp_upper = dict(getattr(self, "opponent_cfv_upper_tracking", {}).get(key_root, {}))
+-
+-		return root_strategy, {"ev": float(root_ev)}, opp_upper
+-
+-	def _best_opponent_upper_from_prev(self, prev_node, opponent_player):
+-		src = {}
+-		if hasattr(self, "opponent_counterfactual_values"):
+-			src = self.opponent_counterfactual_values.get(prev_node, {}).get(int(opponent_player), {})
+-		best = {}
+-		for cid, vec in dict(src).items():
+-			if isinstance(vec, (list, tuple)) and len(vec) > 0:
+-				mx = float(max(vec))
+-			else:
+-				mx = float(vec) if isinstance(vec, (int, float)) else 0.0
+-			best[int(cid)] = mx
+-		return best
+-	def apply_opponent_action_update(self, prev_node, new_node, observed_action_type):
+-		if not hasattr(self, "own_range_tracking"):
+-			self.own_range_tracking = {}
+-		if not hasattr(self, "opponent_cfv_upper_tracking"):
+-			self.opponent_cfv_upper_tracking = {}
+-		prev_key = self._state_key(prev_node) if hasattr(self, "_state_key") else None
+-		next_key = self._state_key(new_node) if hasattr(self, "_state_key") else None
+-		if next_key is None:
+-			return
+-		opp = (new_node.public_state.current_player + 1) % 2
+-		best = self._best_opponent_upper_from_prev(prev_node, opp)
+-		self.opponent_cfv_upper_tracking[next_key] = dict(best)
+-
+-
+-	def set_soundness_constants(self, k1: float = 0.0, k2: float = 0.0):
+-		if not hasattr(self, "_soundness"):
+-			self._soundness = {}
+-		try:
+-			self._soundness["k1"] = float(k1)
+-		except Exception:
+-			self._soundness["k1"] = 0.0
+-		try:
+-			self._soundness["k2"] = float(k2)
+-		except Exception:
+-			self._soundness["k2"] = 0.0
+-		return {"k1": float(self._soundness["k1"]), "k2": float(self._soundness["k2"])}
+-	def get_last_diagnostics(self):
+-		out = {}
+-		if hasattr(self, "_last_diagnostics") and isinstance(self._last_diagnostics, dict):
+-			for k, v in self._last_diagnostics.items():
+-				out[k] = v
+-		if hasattr(self, "_soundness") and isinstance(self._soundness, dict):
+-			if "k1" in self._soundness:
+-				out["k1"] = float(self._soundness.get("k1", 0.0))
+-			if "k2" in self._soundness:
+-				out["k2"] = float(self._soundness.get("k2", 0.0))
+-		return out
+-
+-	def _compute_avg_strategy_entropy(self, node):
+-		values = self.cfr_values.get(node, None)
+-		if values is None:
+-			return 0.0
+-		actor = int(node.public_state.current_player)
+-		allowed = self._allowed_actions_agent(node.public_state)
+-		allowed_idx = [a.value for a in allowed]
+-		if not allowed_idx:
+-			return 0.0
+-		cands = [(int(k), float(v)) for k, v in dict(node.player_ranges[actor]).items() if float(v) > 0.0]
+-		if not cands:
+-			return 0.0
+-		acc = 0.0
+-		n = 0
+-		for cid, _ in cands:
+-			strat = values.get_average_strategy(int(cid))
+-			p = [float(strat[i]) if i in allowed_idx else 0.0 for i in range(len(strat))]
+-			t = 0.0
+-			for i in allowed_idx:
+-				t += p[i]
+-			if t > 0.0:
+-				for i in allowed_idx:
+-					p[i] = p[i] / t
+-			else:
+-				u = 1.0 / float(len(allowed_idx))
+-				for i in allowed_idx:
+-					p[i] = u
+-			h = 0.0
+-			for i in allowed_idx:
+-				pi = p[i]
+-				if pi > 0.0:
+-					h -= pi * math.log(pi + 1e-12)
+-			acc += h
+-			n += 1
+-		return float(acc / float(n))
+-
+-
+-	def _public_signature_from_ps(self, ps):
+-		actions_serialized = []
+-		i = 0
+-		while i < len(ps.actions):
+-			pl, act = ps.actions[i]
+-			at = getattr(act, "action_type", None)
+-			av = getattr(at, "value", at)
+-			actions_serialized.append((int(pl), int(av) if isinstance(av, bool) is False and av is not None else 0))
+-			i = i + 1
+-		return (
+-			tuple(ps.board_cards),
+-			int(ps.current_round),
+-			(tuple(ps.current_bets[0:2])),
+-			int(ps.pot_size),
+-			int(ps.current_player) if ps.current_player is not None else -1,
+-			int(ps.dealer),
+-			bool(ps.is_terminal),
+-			bool(ps.is_showdown),
+-			tuple(bool(x) for x in ps.players_in_hand[0:2]),
+-			tuple(actions_serialized),
+-		)
+-
+-
+-	def _upper_from_cfvs(self, cfv_dict_for_opp):
+-		mode = str(getattr(self, "constraint_mode", "sp"))
+-		out = {}
+-		for cid, vals in dict(cfv_dict_for_opp).items():
+-			if isinstance(vals, (list, tuple)) and len(vals) > 0:
+-				if mode == "br":
+-					s = float(max(vals))
+-				else:
+-					s = float(sum(float(x) for x in vals) / float(len(vals)))
+-			else:
+-				s = float(vals) if isinstance(vals, (int, float)) else 0.0
+-			out[int(cid)] = s
+-		return out
++            key = self._state_key(node)
++            if not hasattr(self, "opponent_cfv_upper_tracking"):
++                    return 0.0
++            tracking = getattr(self, "opponent_cfv_upper_tracking", {})
++            if key not in tracking:
++                    return 0.0
++            upper = tracking[key]
++            mx = None
++            for v in upper.values():
++                    fv = float(v)
++                    if mx is None or fv > mx:
++                            mx = fv
++            if mx is None:
++                    return 0.0
++            return -float(mx)
++

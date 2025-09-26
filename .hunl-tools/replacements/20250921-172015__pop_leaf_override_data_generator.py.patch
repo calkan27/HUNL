@@ -1,0 +1,23 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -351,11 +351,12 @@
+                 self.cfr_solver.total_iterations = 1
+         return snap
+ 
+-	def _pop_leaf_override(self, snap):
+-		if not hasattr(self, "cfr_solver") or self.cfr_solver is None:
+-			return False
+-		if isinstance(snap, tuple) and len(snap) == 2:
+-			self.cfr_solver.depth_limit = int(snap[0])
+-			self.cfr_solver.total_iterations = int(snap[1])
+-			return True
+-		return False
++    def _pop_leaf_override(self, snap):
++        if not hasattr(self, "cfr_solver") or self.cfr_solver is None:
++            return False
++        if isinstance(snap, tuple) and len(snap) == 2:
++            self.cfr_solver.depth_limit = int(snap[0])
++            self.cfr_solver.total_iterations = int(snap[1])
++            return True
++        return False
++

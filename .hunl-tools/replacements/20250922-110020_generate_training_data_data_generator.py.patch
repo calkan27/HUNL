@@ -1,0 +1,200 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -76,92 +76,111 @@
+ 		self.torch_frozen_clusters_base = None
+ 		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+ 
+-	def generate_training_data(self, stage='flop', progress=None):
+-		data = []
+-		boards = self.generate_unique_boards(stage, self.num_boards)
+-		leaf_snap = self._push_leaf_override(stage)
+-		for board_index, public_cards in enumerate(boards):
+-				deck_without_board = [c for c in DECK if c not in public_cards]
+-				possible_hands = [' '.join(h) for h in itertools.combinations(deck_without_board, 2)]
+-				hands_set = set(possible_hands)
+-				opponent_range_over_hands = {h: 1.0 / len(hands_set) for h in hands_set}
+-				nominal_pot = 1.0
+-				if self.speed_profile == "test":
+-						if self.torch_frozen_clusters_base is None:
+-								self.torch_frozen_clusters_base = self.hand_clusterer.cluster_hands(hands_set, board=public_cards, opponent_range=opponent_range_over_hands, pot_size=nominal_pot)
+-						clusters = self._filter_clusters_for_board(self.torch_frozen_clusters_base, public_cards)
+-						self.cfr_solver.clusters = clusters
+-						self.clusters = clusters
+-						max_opponent_iterations = 1
+-						cfr_iterations_per_update = 1
+-						force_fcp_only = False
+-				else:
+-						clusters = self.hand_clusterer.cluster_hands(hands_set, board=public_cards, opponent_range=opponent_range_over_hands, pot_size=nominal_pot)
+-						self.cfr_solver.clusters = clusters
+-						self.clusters = clusters
+-						max_opponent_iterations = 1
+-						cfr_iterations_per_update = 1000
+-						force_fcp_only = True
+-				if callable(progress):
+-						progress(1)
+-				cluster_ids = list(range(self.num_clusters))
+-				for sample_index in range(self.num_samples_per_board):
+-						pot_size = self.sample_pot_size()
+-						player_ranges = [self._sample_random_range(cluster_ids), self._sample_random_range(cluster_ids)]
+-						self.normalize_cluster_probabilities(player_ranges)
+-						opponent_range = self.map_handstorcho_clusters(opponent_range_over_hands, self.clusters)
+-						previous_opponent_range = opponent_range.copy()
+-						for _ in range(max_opponent_iterations):
+-								public_state = PublicState(initial_stacks=[self.player_stack, self.player_stack], board_cards=public_cards)
+-								public_state.pot_size = pot_size
+-								target_round = self.get_round_from_stage(stage)
+-								public_state.current_round = target_round
+-								if target_round >= 1:
+-										public_state.current_bets = [0, 0]
+-										public_state.last_raiser = None
+-										public_state.stacks = [self.player_stack, self.player_stack]
+-										public_state.current_player = (public_state.dealer + 1) % 2
+-										while len(public_state.board_cards) > (2 + target_round):
+-												public_state.board_cards.pop()
+-										while len(public_state.board_cards) < (2 + target_round):
+-												for c in DECK:
+-														if (c not in public_state.board_cards and c not in public_state.hole_cards[0] and c not in public_state.hole_cards[1]):
+-																public_state.board_cards.append(c)
+-																break
+-								used = set(public_state.board_cards)
+-								deck_remaining = [c for c in DECK if c not in used]
+-								random.shuffle(deck_remaining)
+-								public_state.hole_cards[0] = deck_remaining[:2]
+-									public_state.hole_cards[1] = deck_remaining[2:4]
+-									used2 = set(public_state.board_cards + public_state.hole_cards[0] + public_state.hole_cards[1])
+-									public_state.deck = [c for c in DECK if c not in used2]
+-									random.shuffle(public_state.deck)
+-									game_node = GameNode(public_state)
+-									game_node.player_ranges[0] = player_ranges[0]
+-									game_node.player_ranges[1] = opponent_range
+-									game_node.players_in_hand = [True, True]
+-									if force_fcp_only:
+-											round_flags_backup = dict(getattr(self.cfr_solver, "_round_actions", {}))
+-											self.cfr_solver._ensure_sparse_schedule()
+-											self.cfr_solver._round_actions[int(target_round)] = {"half_pot": False, "two_pot": False}
+-									self.cfr_solver.total_iterations = int(cfr_iterations_per_update)
+-									self.cfr_solver.run_cfr(game_node)
+-									if force_fcp_only:
+-											self.cfr_solver._round_actions = round_flags_backup
+-									if callable(progress):
+-											progress(1)
+-							game_node.player_ranges[1] = opponent_range
+-							player_ranges_bucketed = self.bucket_player_ranges([player_ranges[0], opponent_range])
+-							self._assert_sampler_invariants(public_cards, [{i: player_ranges_bucketed[0][i] for i in range(self.num_clusters)}, {i: player_ranges_bucketed[1][i] for i in range(self.num_clusters)}], pot_size)
+-							input_vector = self.prepare_input_vector(player_ranges_bucketed, public_cards, pot_size, game_node.public_state.actions)
+-							counterfactual_values = self.compute_counterfactual_values(game_node)
+-							target_v1, target_v2 = self.prepare_target_values(counterfactual_values)
+-							data.append({'input_vector': input_vector, 'target_v1': target_v1, 'target_v2': target_v2})
+-							if callable(progress):
+-									progress(1)
+-			self._pop_leaf_override(leaf_snap)
+-			return data
+-
++    def generate_training_data(self, stage='flop', progress=None):
++        data = []
++        boards = self.generate_unique_boards(stage, self.num_boards)
++        leaf_snap = self._push_leaf_override(stage)
++        for board_index, public_cards in enumerate(boards):
++            deck_without_board = [c for c in DECK if c not in public_cards]
++            possible_hands = [' '.join(h) for h in itertools.combinations(deck_without_board, 2)]
++            hands_set = set(possible_hands)
++            opponent_range_over_hands = {h: 1.0 / len(hands_set) for h in hands_set}
++            nominal_pot = 1.0
++            if self.speed_profile == "test":
++                if self.torch_frozen_clusters_base is None:
++                    self.torch_frozen_clusters_base = self.hand_clusterer.cluster_hands(
++                        hands_set,
++                        board=public_cards,
++                        opponent_range=opponent_range_over_hands,
++                        pot_size=nominal_pot
++                    )
++                clusters = self._filter_clusters_for_board(self.torch_frozen_clusters_base, public_cards)
++                self.cfr_solver.clusters = clusters
++                self.clusters = clusters
++                max_opponent_iterations = 1
++                cfr_iterations_per_update = 1
++                force_fcp_only = False
++            else:
++                clusters = self.hand_clusterer.cluster_hands(
++                    hands_set,
++                    board=public_cards,
++                    opponent_range=opponent_range_over_hands,
++                    pot_size=nominal_pot
++                )
++                self.cfr_solver.clusters = clusters
++                self.clusters = clusters
++                max_opponent_iterations = 1
++                cfr_iterations_per_update = 1000
++                force_fcp_only = True
++            if callable(progress):
++                progress(1)
++            cluster_ids = list(range(self.num_clusters))
++            for sample_index in range(self.num_samples_per_board):
++                pot_size = self.sample_pot_size()
++                player_ranges = [self._sample_random_range(cluster_ids), self._sample_random_range(cluster_ids)]
++                self.normalize_cluster_probabilities(player_ranges)
++                opponent_range = self.map_handstorcho_clusters(opponent_range_over_hands, self.clusters)
++                previous_opponent_range = opponent_range.copy()
++                for _ in range(max_opponent_iterations):
++                    public_state = PublicState(initial_stacks=[self.player_stack, self.player_stack], board_cards=public_cards)
++                    public_state.pot_size = pot_size
++                    target_round = self.get_round_from_stage(stage)
++                    public_state.current_round = target_round
++                    if target_round >= 1:
++                        public_state.current_bets = [0, 0]
++                        public_state.last_raiser = None
++                        public_state.stacks = [self.player_stack, self.player_stack]
++                        public_state.current_player = (public_state.dealer + 1) % 2
++                        while len(public_state.board_cards) > (2 + target_round):
++                            public_state.board_cards.pop()
++                        while len(public_state.board_cards) < (2 + target_round):
++                            for c in DECK:
++                                if (c not in public_state.board_cards and c not in public_state.hole_cards[0] and c not in public_state.hole_cards[1]):
++                                    public_state.board_cards.append(c)
++                                    break
++                    used = set(public_state.board_cards)
++                    deck_remaining = [c for c in DECK if c not in used]
++                    random.shuffle(deck_remaining)
++                    public_state.hole_cards[0] = deck_remaining[:2]
++                    public_state.hole_cards[1] = deck_remaining[2:4]
++                    used2 = set(public_state.board_cards + public_state.hole_cards[0] + public_state.hole_cards[1])
++                    public_state.deck = [c for c in DECK if c not in used2]
++                    random.shuffle(public_state.deck)
++                    game_node = GameNode(public_state)
++                    game_node.player_ranges[0] = player_ranges[0]
++                    game_node.player_ranges[1] = opponent_range
++                    game_node.players_in_hand = [True, True]
++                    if force_fcp_only:
++                        round_flags_backup = dict(getattr(self.cfr_solver, "_round_actions", {}))
++                        self.cfr_solver._ensure_sparse_schedule()
++                        self.cfr_solver._round_actions[int(target_round)] = {"half_pot": False, "two_pot": False}
++                    self.cfr_solver.total_iterations = int(cfr_iterations_per_update)
++                    self.cfr_solver.run_cfr(game_node)
++                    if force_fcp_only:
++                        self.cfr_solver._round_actions = round_flags_backup
++                    if callable(progress):
++                        progress(1)
++                game_node.player_ranges[1] = opponent_range
++                player_ranges_bucketed = self.bucket_player_ranges([player_ranges[0], opponent_range])
++                self._assert_sampler_invariants(
++                    public_cards,
++                    [{i: player_ranges_bucketed[0][i] for i in range(self.num_clusters)},
++                     {i: player_ranges_bucketed[1][i] for i in range(self.num_clusters)}],
++                    pot_size
++                )
++                input_vector = self.prepare_input_vector(
++                    player_ranges_bucketed,
++                    public_cards,
++                    pot_size,
++                    game_node.public_state.actions
++                )
++                counterfactual_values = self.compute_counterfactual_values(game_node)
++                target_v1, target_v2 = self.prepare_target_values(counterfactual_values)
++                data.append({'input_vector': input_vector, 'target_v1': target_v1, 'target_v2': target_v2})
++                if callable(progress):
++                    progress(1)
++        self._pop_leaf_override(leaf_snap)
++        return data
+ 
+ 	def _sample_random_range(self, cluster_ids):
+ 		def _rec(ids, p):

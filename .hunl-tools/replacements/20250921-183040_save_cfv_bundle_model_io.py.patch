@@ -1,0 +1,85 @@
+--- a/model_io.py
++++ b/model_io.py
+@@ -3,41 +3,47 @@
+ import torch
+ from cfv_network import CounterfactualValueNetwork
+ 
+-def save_cfv_bundle(models, cluster_mapping, input_meta, path):
+-	bundle = {}
+-	bundle["version"] = "1.0"
+-	bundle["created_at"] = int(time.time())
+-	bundle["stages"] = {}
+-	max_K = 0
+-	for stage, net in dict(models).items():
+-		if net is None:
+-			continue
+-		stage_rec = {}
+-		stage_rec["input_size"] = int(getattr(net, "input_size", 0))
+-		stage_rec["num_clusters"] = int(getattr(net, "num_clusters", 0))
+-		stage_rec["state_dict"] = {k: v.detach().cpu() for k, v in net.state_dict().items()}
+-		bundle["stages"][str(stage)] = stage_rec
+-		if stage_rec["num_clusters"] > max_K:
+-			max_K = stage_rec["num_clusters"]
+-	if input_meta is None:
+-		input_meta = {}
+-	im = dict(input_meta)
+-	if "num_clusters" not in im or int(im.get("num_clusters", 0)) <= 0:
+-		im["num_clusters"] = int(max_K)
+-	if "board_one_hot_dim" not in im:
+-		im["board_one_hot_dim"] = 52
+-	if "uses_pot_norm" not in im:
+-		im["uses_pot_norm"] = True
+-	if "input_layout" not in im:
+-		im["input_layout"] = {"pot_norm": 1, "board_one_hot": 52, "range_dims": int(im["num_clusters"])}
+-	bundle["cluster_mapping"] = dict(cluster_mapping) if cluster_mapping is not None else {}
+-	bundle["input_meta"] = im
+-	out_path = str(path)
+-	dirn = os.path.dirname(out_path)
+-	if dirn and not os.path.isdir(dirn):
+-		os.makedirs(dirn, exist_ok=True)
+-	torch.save(bundle, out_path)
+-	return out_path
++def save_cfv_bundle(models, cluster_mapping, input_meta, path, seed=None):
++        bundle = {}
++        bundle["version"] = "1.0"
++        bundle["created_at"] = int(time.time())
++        bundle["seed"] = int(seed) if seed is not None else int(os.environ.get("FAST_TEST_SEED", "1729"))
++        bundle["stages"] = {}
++        max_K = 0
++        for stage, net in dict(models).items():
++                if net is None:
++                        continue
++                stage_rec = {}
++                stage_rec["input_size"] = int(getattr(net, "input_size", 0))
++                stage_rec["num_clusters"] = int(getattr(net, "num_clusters", 0))
++                stage_rec["state_dict"] = {k: v.detach().cpu() for k, v in net.state_dict().items()}
++                bundle["stages"][str(stage)] = stage_rec
++                if stage_rec["num_clusters"] > max_K:
++                        max_K = stage_rec["num_clusters"]
++        if input_meta is None:
++                input_meta = {}
++        im = dict(input_meta)
++        if "num_clusters" not in im or int(im.get("num_clusters", 0)) <= 0:
++                im["num_clusters"] = int(max_K)
++        if "board_one_hot_dim" not in im:
++                im["board_one_hot_dim"] = 52
++        if "uses_pot_norm" not in im:
++                im["uses_pot_norm"] = True
++        if "input_layout" not in im:
++                im["input_layout"] = {"pot_norm": 1, "board_one_hot": 52, "range_dims": int(im["num_clusters"])}
++        bundle["cluster_mapping"] = dict(cluster_mapping) if cluster_mapping is not None else {}
++        bundle["input_meta"] = im
++        out_path = str(path)
++        dirn = os.path.dirname(out_path)
++        if dirn and not os.path.isdir(dirn):
++                os.makedirs(dirn, exist_ok=True)
++        torch.save(bundle, out_path)
++        return out_path
++
++
++
++
++
+ 
+ 
+ 

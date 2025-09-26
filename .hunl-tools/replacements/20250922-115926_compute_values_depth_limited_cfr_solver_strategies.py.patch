@@ -1,0 +1,159 @@
+--- a/cfr_solver_strategies.py
++++ b/cfr_solver_strategies.py
+@@ -20,82 +20,80 @@
+ 		return cumulative_strategy
+ 
+ 
+-	def compute_values_depth_limited(self, node: GameNode, player: int):
+-		start_round = int(node.public_state.current_round)
+-		ActionCount = len(ActionType)
+-
+-		def _leaf_eval(nd: GameNode):
+-			if self._is_terminal(nd):
+-				out = {}
+-				u = self._calculate_terminal_utility(nd, player)
+-				for cid in nd.player_ranges[player]:
+-					out[cid] = [u] * ActionCount
+-				return out
+-			if int(nd.public_state.current_round) != start_round:
+-				preds = self.predict_counterfactual_values(nd, player)
+-				scale = float(nd.public_state.pot_size)
+-				out = {}
+-				for cid, vec in preds.items():
+-					if isinstance(vec, (list, tuple)):
+-						out[int(cid)] = [float(x) * scale for x in vec]
+-					else:
+-						out[int(cid)] = [float(vec) * scale] * ActionCount
+-				return out
+-			return None
+-
+-		def _recurse(nd: GameNode):
+-			leaf = _leaf_eval(nd)
+-			if leaf is not None:
+-				return leaf
+-
+-			cf = defaultdict(lambda: [0.0] * ActionCount)
+-			cur = nd.current_player
+-			opp = (player + 1) % 2
+-
+-			if cur == player:
+-				allowed = self._allowed_actions_agent(nd.public_state)
+-				for cid, prior in nd.player_ranges[player].items():
+-					if prior == 0.0:
+-						continue
+-					values = self.cfr_values[nd]
+-					base = values.compute_strategy(cid)
+-					strat = self._mask_strategy(base, allowed)
+-					au = []
+-					for a in allowed:
+-						a_idx = a.value
+-						if a_idx in values.pruned_actions[cid]:
+-							au.append(0.0)
+-							continue
+-						act = Action(a)
+-						new_ps = nd.public_state.update_state(nd, act)
+-						ch = GameNode(new_ps)
+-						ch.player_ranges = {0: dict(nd.player_ranges[0]), 1: dict(nd.player_ranges[1])}
+-						self.update_player_range(ch, player, cid, a_idx)
+-						sub = _recurse(ch)
+-						ev = 0.0
+-						for k, p in ch.player_ranges[player].items():
+-							v = sub.get(k, [0.0])[0]
+-							if isinstance(v, (list, tuple)):
+-								ev += float(p) * float(v[0])
+-							else:
+-								ev += float(p) * float(v)
+-						au.append(ev)
+-					i = 0
+-					while i < len(allowed):
+-						a_idx = allowed[i].value
+-						cf[cid][a_idx] += strat[a_idx] * au[i]
+-						i += 1
+-			else:
+-				allowed = self._allowed_actions_opponent(nd.public_state)
+-				worst = self._opponent_node_value_from_upper_bounds(nd, agent_player=player)
+-				for ocid in nd.player_ranges[opp].keys():
+-					for a in allowed:
+-						cf[ocid][a.value] += worst
+-			return cf
+-
+-		return _recurse(node)
+-
+-	# -------------------- Range updates --------------------
++    def compute_values_depth_limited(self, node: GameNode, player: int):
++        start_round = int(node.public_state.current_round)
++        ActionCount = len(ActionType)
++
++        def _leaf_eval(nd: GameNode):
++            if self._is_terminal(nd):
++                out = {}
++                u = self._calculate_terminal_utility(nd, player)
++                for cid in nd.player_ranges[player]:
++                    out[cid] = [u] * ActionCount
++                return out
++            if int(nd.public_state.current_round) != start_round:
++                preds = self.predict_counterfactual_values(nd, player)
++                scale = float(nd.public_state.pot_size)
++                out = {}
++                for cid, vec in preds.items():
++                    if isinstance(vec, (list, tuple)):
++                        out[int(cid)] = [float(x) * scale for x in vec]
++                    else:
++                        out[int(cid)] = [float(vec) * scale] * ActionCount
++                return out
++            return None
++
++        def _recurse(nd: GameNode):
++            leaf = _leaf_eval(nd)
++            if leaf is not None:
++                return leaf
++
++            cf = defaultdict(lambda: [0.0] * ActionCount)
++            cur = nd.current_player
++            opp = (player + 1) % 2
++
++            if cur == player:
++                allowed = self._allowed_actions_agent(nd.public_state)
++                for cid, prior in nd.player_ranges[player].items():
++                    if prior == 0.0:
++                        continue
++                    values = self.cfr_values[nd]
++                    base = values.compute_strategy(cid)
++                    strat = self._mask_strategy(base, allowed)
++                    au = []
++                    for a in allowed:
++                        a_idx = a.value
++                        if a_idx in values.pruned_actions[cid]:
++                            au.append(0.0)
++                            continue
++                        act = Action(a)
++                        new_ps = nd.public_state.update_state(nd, act)
++                        ch = GameNode(new_ps)
++                        ch.player_ranges = [dict(nd.player_ranges[0]), dict(nd.player_ranges[1])]
++                        self.update_player_range(ch, player, cid, a_idx)
++                        sub = _recurse(ch)
++                        ev = 0.0
++                        for k, p in ch.player_ranges[player].items():
++                            v = sub.get(k, [0.0])[0]
++                            if isinstance(v, (list, tuple)):
++                                ev += float(p) * float(v[0])
++                            else:
++                                ev += float(p) * float(v)
++                        au.append(ev)
++                    i = 0
++                    while i < len(allowed):
++                        a_idx = allowed[i].value
++                        cf[cid][a_idx] += strat[a_idx] * au[i]
++                        i += 1
++            else:
++                allowed = self._allowed_actions_opponent(nd.public_state)
++                worst = self._opponent_node_value_from_upper_bounds(nd, agent_player=player)
++                for ocid in nd.player_ranges[opp].keys():
++                    for a in allowed:
++                        cf[ocid][a.value] += worst
++            return cf
++
++        return _recurse(node)
+ 
+ 	def update_player_range(self, node: GameNode, player: int, cluster_id: int, action_index: int):
+ 		values = self.cfr_values[node]

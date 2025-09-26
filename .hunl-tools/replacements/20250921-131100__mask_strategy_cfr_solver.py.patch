@@ -1,0 +1,62 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -856,32 +856,33 @@
+ 		return out
+ 
+ 
+-	def _mask_strategy(self, strategy, allowed_actions):
+-		m = [0.0] * len(strategy)
+-		allowed_idx = [a.value for a in allowed_actions]
+-		s = 0.0
+-		i = 0
+-		while i < len(strategy):
+-			if i in allowed_idx:
+-				v = strategy[i]
+-				if v < 0.0:
+-					v = 0.0
+-				m[i] = v
+-				s += v
+-			i += 1
+-		if s > 0.0:
+-			i = 0
+-			while i < len(m):
+-				m[i] = m[i] / s
+-				i += 1
+-		else:
+-			u = 1.0 / float(len(allowed_idx)) if allowed_idx else 0.0
+-			i = 0
+-			while i < len(m):
+-				m[i] = u if i in allowed_idx else 0.0
+-				i += 1
+-		return m
+-
++    # Paste FULL corrected Python function below.
++    # First non-comment line must be: def name(...):  (or async def name(...):)
++    def _mask_strategy(self, strategy, allowed_actions):
++        m = [0.0] * len(strategy)
++        allowed_idx = [a.value for a in allowed_actions]
++        s = 0.0
++        i = 0
++        while i < len(strategy):
++            if i in allowed_idx:
++                v = strategy[i]
++                if v < 0.0:
++                    v = 0.0
++                m[i] = v
++                s += v
++            i += 1
++        if s > 0.0:
++            i = 0
++            while i < len(m):
++                m[i] = m[i] / s
++                i += 1
++        else:
++            u = 1.0 / float(len(allowed_idx)) if allowed_idx else 0.0
++            i = 0
++            while i < len(m):
++                m[i] = u if i in allowed_idx else 0.0
++                i += 1
++        return m
+ 
+ 	def _allowed_actions_agent(self, ps):
+ 		out = []

@@ -1,0 +1,62 @@
+--- a/cfv_network.py
++++ b/cfv_network.py
+@@ -36,53 +36,10 @@
+ 		return player1_values, player2_values
+ 
+     def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
+-        s1 = torch.sum(player1_range * player1_values, dim=1, keepdim=True)
+-        s2 = torch.sum(player2_range * player2_values, dim=1, keepdim=True)
+-        rs1 = torch.sum(player1_range, dim=1, keepdim=True)
+-        rs2 = torch.sum(player2_range, dim=1, keepdim=True)
+-        rsum = rs1 + rs2
+-        zero = torch.zeros_like(rsum)
+-        eps = torch.finfo(player1_values.dtype).eps
+-        offset = torch.where(rsum > 0, (s1 + s2) / (rsum + eps), zero)
+-        v1 = player1_values - offset
+-        v2 = player2_values - offset
+-        residual = torch.sum(player1_range * v1, dim=1, keepdim=True) + torch.sum(player2_range * v2, dim=1, keepdim=True)
+-        corr = torch.where(rsum > 0, residual / (rsum + eps), zero)
+-        player1_zero_sum_values = v1 - corr
+-        player2_zero_sum_values = v2 - corr
+-        return player1_zero_sum_values, player2_zero_sum_values
++            s1 = torch.sum(player1_range * player1_values, dim=1, keepdim=True)
++            s2 = torch.sum(player2_range * player2_values, dim=1, keepdim=True)
++            delta = 0.5 * (s1 + s2)
++            f1 = player1_values - delta
++            f2 = player2_values - delta
++            return f1, f2
+ 
+-
+-	def gradcheck_zero_sum_wrapper(self, num_samples=3, num_clusters=None, seed=2027):
+-		device = next(self.parameters(), torch.tensor(0.)).device if any(p.requires_grad for p in self.parameters()) else torch.device("cpu")
+-		K = int(num_clusters if num_clusters is not None else self.num_clusters)
+-		g_ok = True
+-		max_res = 0.0
+-		rng = torch.Generator(device=device)
+-		rng.manual_seed(int(seed))
+-		for _ in range(int(num_samples)):
+-			b = 2
+-			r1_raw = torch.randn(b, K, dtype=torch.double, device=device, generator=rng, requires_grad=True)
+-			r2_raw = torch.randn(b, K, dtype=torch.double, device=device, generator=rng, requires_grad=True)
+-			r1 = torch.softmax(r1_raw, dim=1)
+-			r2 = torch.softmax(r2_raw, dim=1)
+-			v1 = torch.randn(b, K, dtype=torch.double, device=device, generator=rng, requires_grad=True)
+-			v2 = torch.randn(b, K, dtype=torch.double, device=device, generator=rng, requires_grad=True)
+-			def func(r1i, r2i, v1i, v2i):
+-				o1, o2 = self.enforce_zero_sum(r1i, r2i, v1i, v2i)
+-				res = (r1i * o1).sum(dim=1, keepdim=True) + (r2i * o2).sum(dim=1, keepdim=True)
+-				return res
+-			res = func(r1, r2, v1, v2)
+-			max_res = max(max_res, float(res.abs().max().item()))
+-			loss = (res.pow(2).sum())
+-			grads = torch.autograd.grad(loss, [r1_raw, r2_raw, v1, v2], retain_graph=False, allow_unused=False)
+-			for g in grads:
+-				if g is None or torch.isnan(g).any() or torch.isinf(g).any():
+-					g_ok = False
+-			try:
+-				ok = torch.autograd.gradcheck(lambda a,b,c,d: func(a,b,c,d), (r1.detach().requires_grad_(True), r2.detach().requires_grad_(True), v1.detach().requires_grad_(True), v2.detach().requires_grad_(True)), eps=1e-6, atol=1e-4, rtol=1e-3)
+-				g_ok = g_ok and bool(ok)
+-			except Exception:
+-				g_ok = False
+-		return {"grad_ok": bool(g_ok), "max_residual": float(max_res)}
+-

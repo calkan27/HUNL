@@ -1,0 +1,168 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -75,118 +75,53 @@
+ 		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+ 
+ 
+-	def generate_training_data(self, stage='flop', progress=None):
+-		data = []
+-		boards = self.generate_unique_boards(stage, self.num_boards)
+-
+-		for board_index, public_cards in enumerate(boards):
+-			deck_without_board = [c for c in DECK if c not in public_cards]
+-			possible_hands = [' '.join(h) for h in itertools.combinations(deck_without_board, 2)]
+-			hands_set = set(possible_hands)
+-			opponent_range_over_hands = {h: 1.0 / len(hands_set) for h in hands_set}
+-
+-			nominal_pot = 1.0
+-
+-			if self.speed_profile == "test":
+-				if self._test_frozen_clusters_base is None:
+-					self._test_frozen_clusters_base = self.hand_clusterer.cluster_hands(
+-						hands_set, board=public_cards,
+-						opponent_range=opponent_range_over_hands,
+-						pot_size=nominal_pot
+-					)
+-				clusters = self._filter_clusters_for_board(self._test_frozen_clusters_base, public_cards)
+-				self.cfr_solver.clusters = clusters
+-				self.clusters = clusters
+-
+-				max_opponent_iterations = 1
+-				cfr_iterations_per_update = 1
+-			else:
+-				clusters = self.hand_clusterer.cluster_hands(
+-					hands_set, board=public_cards,
+-					opponent_range=opponent_range_over_hands,
+-					pot_size=nominal_pot
+-				)
+-				self.cfr_solver.clusters = clusters
+-				self.clusters = clusters
+-
+-				max_opponent_iterations = 2
+-				cfr_iterations_per_update = 2
+-
+-			if callable(progress):
+-				progress(1)
+-
+-			cluster_ids = list(range(self.num_clusters))
+-			base_range = {cid: 1.0 / self.num_clusters for cid in cluster_ids}
+-
+-			for sample_index in range(self.num_samples_per_board):
+-				pot_size = self.sample_pot_size()
+-				player_ranges = [base_range.copy(), base_range.copy()]
+-				self.normalize_cluster_probabilities(player_ranges)
+-
+-				opponent_range = self.map_hands_to_clusters(opponent_range_over_hands, self.clusters)
+-				previous_opponent_range = opponent_range.copy()
+-
+-				for _ in range(max_opponent_iterations):
+-					public_state = PublicState(initial_stacks=[self.player_stack, self.player_stack],
+-											  board_cards=public_cards)
+-					public_state.pot_size = pot_size
+-					target_round = self.get_round_from_stage(stage)
+-					public_state.current_round = target_round
+-					if target_round >= 1:
+-						public_state.current_bets = [0, 0]
+-						public_state.last_raiser = None
+-						public_state.stacks = [self.player_stack, self.player_stack]
+-						public_state.current_player = (public_state.dealer + 1) % 2
+-						while len(public_state.board_cards) > (2 + target_round):
+-							public_state.board_cards.pop()
+-						while len(public_state.board_cards) < (2 + target_round):
+-							for c in DECK:
+-								if (c not in public_state.board_cards and
+-									c not in public_state.hole_cards[0] and
+-									c not in public_state.hole_cards[1]):
+-									public_state.board_cards.append(c)
+-									break
+-
+-					used = set(public_state.board_cards)
+-					deck_remaining = [c for c in DECK if c not in used]
+-					random.shuffle(deck_remaining)
+-					public_state.hole_cards[0] = deck_remaining[:2]
+-					public_state.hole_cards[1] = deck_remaining[2:4]
+-					used2 = set(public_state.board_cards + public_state.hole_cards[0] + public_state.hole_cards[1])
+-					public_state.deck = [c for c in DECK if c not in used2]
+-					random.shuffle(public_state.deck)
+-
+-					game_node = GameNode(public_state)
+-					game_node.player_ranges[0] = player_ranges[0]
+-					game_node.player_ranges[1] = opponent_range
+-					game_node.players_in_hand = [True, True]
+-
+-					self.simulate_actions(game_node)
+-
+-					self.cfr_solver.total_iterations = cfr_iterations_per_update
+-					self.cfr_solver.run_cfr(game_node)
+-
+-					opponent_cumulative_strategy = self.cfr_solver.get_cumulative_strategy(player=1)
+-					opponent_range = self.update_opponent_range(previous_opponent_range, opponent_cumulative_strategy, beta=0.7)
+-					self.normalize_cluster_probabilities([opponent_range])
+-					previous_opponent_range = opponent_range.copy()
+-
+-					if callable(progress):
+-						progress(1)
+-
+-				game_node.player_ranges[1] = opponent_range
+-				counterfactual_values = self.compute_counterfactual_values(game_node)
+-				player_ranges_bucketed = self.bucket_player_ranges([player_ranges[0], opponent_range])
+-				input_vector = self.prepare_input_vector(player_ranges_bucketed, public_cards, pot_size, game_node.public_state.actions)
+-				target_v1, target_v2 = self.prepare_target_values(counterfactual_values)
+-				data.append({'input_vector': input_vector, 'target_v1': target_v1, 'target_v2': target_v2})
+-
+-				if callable(progress):
+-					progress(1)
+-
+-		return data
+-
+-
++    def generate_training_data(self, stage='flop', progress=None):
++        data = []
++        boards = self.generate_unique_boards(stage, self.num_boards)
++        leaf_snap = self._push_leaf_override(stage)
++
++        for board_index, public_cards in enumerate(boards):
++            deck_without_board = [c for c in DECK if c not in public_cards]
++            possible_hands = [' '.join(h) for h in itertools.combinations(deck_without_board, 2)]
++            hands_set = set(possible_hands)
++            opponent_range_over_hands = {h: 1.0 / len(hands_set) for h in hands_set}
++
++            nominal_pot = 1.0
++
++            if self.speed_profile == "test":
++                if self._test_frozen_clusters_base is None:
++                    self._test_frozen_clusters_base = self.hand_clusterer.cluster_hands(
++                        hands_set, board=public_cards,
++                        opponent_range=opponent_range_over_hands,
++                        pot_size=nominal_pot
++                    )
++                clusters = self._filter_clusters_for_board(self._test_frozen_clusters_base, public_cards)
++                self.cfr_solver.clusters = clusters
++                self.clusters = clusters
++                max_opponent_iterations = 1
++                cfr_iterations_per_update = 1
++            else:
++                clusters = self.hand_clusterer.cluster_hands(
++                    hands_set, board=public_cards,
++                    opponent_range=opponent_range_over_hands,
++                    pot_size=nominal_pot
++                )
++                self.cfr_solver.clusters = clusters
++                self.clusters = clusters
++                max_opponent_iterations = 2
++                cfr_iterations_per_update = 2
++
++            if callable(progress):
++                progress(1)
++
++            cluster_ids = list(range(self.num_clusters))
++
++            for sample_index in range(self.num_samples_per_board):
++                pot_size = self.sample_pot_size()
++                player_ranges = [self._sample_random_range(cluster_ids), self._sample_random_range(cluster_ids)]
++                self.normalize_cluster_probabilities(player_ranges)
++
++                opponent_ra_
+ 
+ 	def legal_actions(self, ps):
+ 		p = ps.current_player

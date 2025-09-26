@@ -1,0 +1,131 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -139,81 +139,53 @@
+ 				else:
+ 					return 0.0
+ 
+-	def _expected_utility_buckets_both(
+-		self,
+-		my_bucket_probs,
+-		opp_bucket_probs,
+-		B,
+-		resolved_pot=None,
+-		my_bet=None,
+-		opp_bet=None,
+-	):
+-		p = list(my_bucket_probs)
+-		q = list(opp_bucket_probs)
+-
+-		def _norm(v):
+-			s = sum(v) or 0.0
+-
+-			if s > 0.0:
+-				return [float(x) / s for x in v]
+-			else:
+-				return [0.0] * len(v)
+-
+-		p = _norm(p)
+-		q = _norm(q)
+-
+-		B = int(B)
+-
+-		if (my_bet is not None) or (opp_bet is not None):
+-			mb = float(my_bet or 0.0)
+-			ob = float(opp_bet or 0.0)
+-
+-			def pay(i, j):
+-				if i > j:
+-					return ob
+-				else:
+-					if i < j:
+-						return -mb
+-					else:
+-						return 0.5 * (ob - mb)
+-		else:
+-			if resolved_pot is not None:
+-				P = float(resolved_pot)
+-			else:
+-				P = 1.0
+-
+-			def pay(i, j):
+-				if i > j:
+-					return P
+-				else:
+-					if i < j:
+-						return -P
+-					else:
+-						return 0.0
+-
+-		ev_p = 0.0
+-
+-		i = 0
+-		while i < B:
+-			if p[i] == 0.0:
+-				i += 1
+-				continue
+-			else:
+-				row = 0.0
+-				j = 0
+-
+-				while j < B:
+-					if q[j] == 0.0:
+-						j += 1
+-						continue
+-					else:
+-						row += q[j] * pay(i, j)
+-						j += 1
+-
+-				ev_p += p[i] * row
+-				i += 1
+-
+-		return ev_p, -ev_p
++    def _expected_utility_buckets_both(
++        self,
++        my_bucket_probs,
++        opp_bucket_probs,
++        B,
++        resolved_pot=None,
++        my_bet=None,
++        opp_bet=None,
++    ):
++        p = river_endgame_norm_vec(list(my_bucket_probs))
++        q = river_endgame_norm_vec(list(opp_bucket_probs))
++
++        B = int(B)
++
++        if (my_bet is not None) or (opp_bet is not None):
++            bet_mode = True
++            mb = float(my_bet or 0.0)
++            ob = float(opp_bet or 0.0)
++            P = 0.0
++        else:
++            bet_mode = False
++            mb = 0.0
++            ob = 0.0
++            if resolved_pot is not None:
++                P = float(resolved_pot)
++            else:
++                P = 1.0
++
++        ev_p = 0.0
++        i = 0
++        while i < B:
++            if float(p[i]) == 0.0:
++                i += 1
++                continue
++            row = 0.0
++            j = 0
++            while j < B:
++                if float(q[j]) == 0.0:
++                    j += 1
++                    continue
++                val = river_endgame_pay(i, j, bet_mode, mb, ob, P)
++                row += float(q[j]) * float(val)
++                j += 1
++            ev_p += float(p[i]) * row
++            i += 1
++
++        return float(ev_p), float(-ev_p)
+ 
+ 	def _expected_utility_pairwise(
+ 		self,

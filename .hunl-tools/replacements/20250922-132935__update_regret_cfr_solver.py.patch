@@ -1,0 +1,81 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -389,41 +389,43 @@
+ 		return expected_value
+ 
+ 
+-	def _update_regret(self, node, player, cfv_by_action):
+-		values = self.cfr_values[node]
+-		stage = self.get_stage(node)
+-		omit = 0
+-		if hasattr(self, "_omit_prefix_iters") and isinstance(self._omit_prefix_iters, dict):
+-			omit = int(self._omit_prefix_iters.get(stage, 0))
+-		allowed = self._allowed_actions_agent(node.public_state) if player == node.public_state.current_player else self._allowed_actions_opponent(node.public_state)
+-		A = len(ActionType)
+-		for cid, pri in node.player_ranges[player].items():
+-			strat = values.compute_strategy(cid)
+-			m = self._mask_strategy(strat, allowed)
+-			action_vals = [0.0] * A
+-			i = 0
+-			while i < len(allowed):
+-				a_idx = allowed[i].value
+-				v = cfv_by_action.get(cid, [0.0] * A)[a_idx]
+-				if isinstance(v, (list, tuple)):
+-					action_vals[a_idx] = float(v[0] if len(v) > 0 else 0.0)
+-				else:
+-					action_vals[a_idx] = float(v)
+-				i += 1
+-			exp = 0.0
+-			j = 0
+-			while j < A:
+-				exp += float(m[j]) * float(action_vals[j])
+-				j += 1
+-			k = 0
+-			while k < A:
+-				reg = float(action_vals[k]) - float(exp)
+-				values.cumulative_regret[cid][k] += reg
+-				values.cumulative_positive_regret[cid][k] = max(0.0, values.cumulative_regret[cid][k])
+-				k += 1
+-			if int(self.iteration) > omit:
+-				values.update_strategy(cid, m)
+-
++    def _update_regret(self, node, player, cfv_by_action):
++        values = self.cfr_values[node]
++        stage = self.get_stage(node)
++        omit = 0
++        if hasattr(self, "_omit_prefix_iters") and isinstance(self._omit_prefix_iters, dict):
++            omit = int(self._omit_prefix_iters.get(stage, 0))
++        allowed = self._allowed_actions_agent(node.public_state) if player == node.public_state.current_player else self._allowed_actions_opponent(node.public_state)
++        A = len(ActionType)
++        for cid, pri in node.player_ranges[player].items():
++            strat = values.compute_strategy(cid)
++            m = self._mask_strategy(strat, allowed)
++            action_vals = [0.0] * A
++            i = 0
++            while i < len(allowed):
++                a_idx = allowed[i].value
++                v = cfv_by_action.get(cid, [0.0] * A)[a_idx]
++                if isinstance(v, (list, tuple)):
++                    action_vals[a_idx] = float(v[0] if len(v) > 0 else 0.0)
++                else:
++                    action_vals[a_idx] = float(v)
++                i += 1
++            exp = 0.0
++            j = 0
++            while j < A:
++                exp += float(m[j]) * float(action_vals[j])
++                j += 1
++            k = 0
++            while k < A:
++                reg = float(action_vals[k]) - float(exp)
++                values.cumulative_regret[cid][k] += reg
++                values.cumulative_positive_regret[cid][k] = max(0.0, values.cumulative_regret[cid][k])
++                values.regret_squared_sums[cid][k] += float(reg * reg)
++                k += 1
++            if int(self.iteration) > omit:
++                values.update_strategy(cid, m)
++            values.prune_actions(cid, int(self.iteration), int(self.total_iterations))
++            values.reassess_pruned_actions(cid, int(self.iteration))
+ 
+ 	def _is_terminal(self, node) -> bool:
+ 		ps = node.public_state

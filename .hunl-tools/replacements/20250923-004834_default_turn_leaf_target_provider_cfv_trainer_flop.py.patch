@@ -1,0 +1,63 @@
+--- a/cfv_trainer_flop.py
++++ b/cfv_trainer_flop.py
+@@ -165,15 +165,51 @@
+ 
+ 
+ def default_turn_leaf_target_provider(xb, y1b, y2b, turn_model):
+-
+-	K = int(getattr(turn_model, "num_clusters", 0))
+-	r1b, r2b = _ranges_from_inputs_inline(xb, K)
+-	with torch.no_grad():
+-		tdev = next(turn_model.parameters()).device
+-		p1, p2 = turn_model(xb.to(tdev))
+-		f1, f2 = turn_model.enforce_zero_sum(r1b.to(tdev), r2b.to(tdev), p1, p2)
+-	return f1.detach(), f2.detach()
+-
++        device_turn = next(turn_model.parameters()).device
++        K = int(getattr(turn_model, "num_clusters", 0))
++        B = 52
++        n = xb.shape[0]
++        t1_out = torch.zeros((n, K), dtype=torch.float32, device=xb.device)
++        t2_out = torch.zeros((n, K), dtype=torch.float32, device=xb.device)
++
++        def _decode_board(one_hot_vec):
++                idx = (one_hot_vec > 0.5).nonzero(as_tuple=False).view(-1).tolist()
++                return [DECK[j] for j in idx]
++
++        def _ranges_from_row(row):
++                pn = float(row[0].item())
++                board_vec = row[1:1 + B]
++                r1 = row[1 + B:1 + B + K].detach().cpu().tolist()
++                r2 = row[1 + B + K:1 + B + 2 * K].detach().cpu().tolist()
++                return pn, _decode_board(board_vec.detach().cpu()), r1, r2
++
++        total_initial = 400.0
++
++        solver = CFRSolver(depth_limit=1, num_clusters=K)
++        solver.models["turn"] = turn_model.to(device_turn).eval()
++        solver.total_iterations = 1000
++
++        i = 0
++        while i < n:
++                pn, board_cards, r1, r2 = _ranges_from_row(xb[i])
++                pot_size = float(max(1e-6, min(1.0, pn)) * total_initial)
++                ps = PublicState(initial_stacks=[200, 200], board_cards=list(board_cards), dealer=0)
++                ps.current_round = 1
++                ps.current_bets = [0, 0]
++                ps.pot_size = pot_size
++                ps.last_raiser = None
++                ps.stacks = [200, 200]
++                ps.current_player = (ps.dealer + 1) % 2
++                node = GameNode(ps)
++                node.player_ranges[0] = {j: float(r1[j]) for j in range(K)}
++                node.player_ranges[1] = {j: float(r2[j]) for j in range(K)}
++                t1, t2 = solver.flop_label_targets_using_turn_net(node)
++                for j in range(K):
++                        t1_out[i, j] = float(t1[j])
++                        t2_out[i, j] = float(t2[j])
++                i += 1
++
++        return t1_out.detach(), t2_out.detach()
+ 
+ def _prepare_targets(xb, y1b, y2b, target_provider, turn_model):
+ 	if callable(target_provider):

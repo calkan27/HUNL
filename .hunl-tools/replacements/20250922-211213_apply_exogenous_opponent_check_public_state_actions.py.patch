@@ -1,0 +1,74 @@
+--- a/public_state_actions.py
++++ b/public_state_actions.py
+@@ -266,38 +266,39 @@
+ 				st._fast_forward_to_showdown_if_allin_locked()
+ 
+ 
+-	def apply_exogenous_opponent_check(self, actor):
+-		if self.is_terminal:
+-			return self
+-		if actor not in (0, 1):
+-			return self
+-		if self.current_player is None or int(self.current_player) != int(actor):
+-			return self
+-		legal = set(self.legal_actions())
+-		if ActionType.CALL not in legal:
+-			return self
+-		p = int(actor)
+-		o = (p + 1) % 2
+-		my_bet = self.current_bets[p]
+-		opp_bet = self.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		if to_call != 0:
+-			return self
+-		prev_pot = float(self.pot_size)
+-		self.last_refund_amount = 0.0
+-		self.consecutive_checks = self.consecutive_checks + 1
+-		self._last_action_was_call_on_bet = False
+-		if self.current_bets[p] == self.current_bets[o]:
+-			self._advance_street_if_closed(actor=p)
+-			self._fast_forward_to_showdown_if_allin_locked()
+-		if not self.is_terminal:
+-			if not (self.current_bets[0] == 0 and self.current_bets[1] == 0 and self.current_round >= 1 and self.last_raiser is None):
+-				self.current_player = o
+-		self.last_action = ("EXOGENOUS_CHECK", p)
+-		self._assert_invariants(prev_pot=prev_pot)
+-		return self
++    def apply_exogenous_opponent_check(self, actor):
++        if self.is_terminal:
++            return self
++        if actor not in (0, 1):
++            return self
++        if self.current_player is None or int(self.current_player) != int(actor):
++            return self
++        legal = set(self.legal_actions())
++        if ActionType.CALL not in legal:
++            return self
++        p = int(actor)
++        o = (p + 1) % 2
++        my_bet = self.current_bets[p]
++        opp_bet = self.current_bets[o]
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        if to_call != 0:
++            return self
++        prev_pot = float(self.pot_size)
++        prev_round = int(self.current_round)
++        self.last_refund_amount = 0.0
++        self.consecutive_checks = self.consecutive_checks + 1
++        self._last_action_was_call_on_bet = False
++        if self.current_bets[p] == self.current_bets[o]:
++            self._advance_street_if_closed(actor=p)
++            self._fast_forward_to_showdown_if_allin_locked()
++        if not self.is_terminal and int(self.current_round) == int(prev_round):
++            self.current_player = o
++        self.last_action = ("EXOGENOUS_CHECK", p)
++        self._assert_invariants(prev_pot=prev_pot)
++        return self
++
+ 	def apply_exogenous_opponent_bet(self, bettor, kind):
+ 		if self.is_terminal:
+ 			return self

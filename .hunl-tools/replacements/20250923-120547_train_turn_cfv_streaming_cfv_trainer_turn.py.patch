@@ -1,0 +1,13 @@
+--- a/cfv_trainer_turn.py
++++ b/cfv_trainer_turn.py
+@@ -270,7 +270,9 @@
+         final_state = (
+                 best_state
+                 if best_state is not None
+-                else {
++                else {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
++        )
++        return {"best_state": final_state, "history": history}
+ 
+ def _cfv_batcher(samples, batch_size, shuffle, device):
+ 	n = len(samples)

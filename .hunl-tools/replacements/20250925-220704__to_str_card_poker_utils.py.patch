@@ -1,0 +1,35 @@
+--- a/poker_utils.py
++++ b/poker_utils.py
+@@ -29,11 +29,27 @@
+ 
+ 
+ def _to_str_card(c):
+-	if isinstance(c, str):
+-		return c
+-	else:
+-		return "".join(c)
+-
++    if isinstance(c, str):
++        s = c.strip().upper()
++        if len(s) >= 2:
++            r = s[0]
++            t = s[1]
++            if (r in RANKS) and (t in SUITS):
++                return r + t
++        return s[:2].upper()
++    else:
++        if isinstance(c, (list, tuple)):
++            if len(c) >= 2:
++                a = str(c[0]).strip().upper()
++                b = str(c[1]).strip().upper()
++                ra = a[0] if a else ""
++                sb = b[1] if (len(b) > 1) else ""
++                r = a[0] if a else ""
++                t = b[0] if b else ""
++                if (r in RANKS) and (t in SUITS):
++                    return r + t
++                return (ra + sb) if (ra and sb) else (a[:1] + b[:1])
++    return str(c).strip().upper()[:2]
+ 
+ def _normalize_cards(card_iterable):
+ 	out = []

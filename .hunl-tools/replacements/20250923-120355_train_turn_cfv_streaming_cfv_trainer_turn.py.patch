@@ -1,0 +1,202 @@
+--- a/cfv_trainer_turn.py
++++ b/cfv_trainer_turn.py
+@@ -181,110 +181,96 @@
+ 		return {"best_state": final_state, "history": history}
+ 
+ def train_turn_cfv_streaming(
+-	model,
+-	train_iter,
+-	val_iter=None,
+-	epochs=200,
+-	batch_size=1000,
+-	lr=1e-3,
+-	lr_after=1e-4,
+-	lr_drop_epoch=150,
+-	weight_decay=1e-6,
+-	device=None,
+-	seed=None,
+-	ckpt_dir=None,
+-	save_best=True,
++        model,
++        train_iter,
++        val_iter=None,
++        epochs=200,
++        batch_size=1000,
++        lr=1e-3,
++        lr_after=1e-4,
++        lr_drop_epoch=150,
++        weight_decay=1e-6,
++        device=None,
++        seed=None,
++        ckpt_dir=None,
++        save_best=True,
+ ):
+-	if seed is not None:
+-		random.seed(int(seed))
+-		torch.manual_seed(int(seed))
+-		if torch.cuda.is_available():
+-			torch.cuda.manual_seed_all(int(seed))
+-	if device is None:
+-		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+-	model = model.to(device)
+-	optimizer = Adam(model.parameters(), lr=lr, weight_decay=float(weight_decay))
+-	criterion = nn.SmoothL1Loss(reduction="mean")
+-	K = int(getattr(model, "num_clusters", 0))
+-
+-	best_metric = None
+-	best_state = None
+-	history = {"train_huber": [], "val_huber": [], "val_mae": []}
+-
+-	for e in range(int(epochs)):
+-		if e == int(lr_drop_epoch):
+-			for g in optimizer.param_groups:
+-				g["lr"] = float(lr_after)
+-
+-		model.train()
+-		for xb, y1b, y2b in batcher_from_iter(train_iter(), int(batch_size), device):
+-			sr1 = 1 + 52
+-			er1 = sr1 + int(K)
+-			sr2 = er1
+-			er2 = sr2 + int(K)
+-			r1b = xb[:, sr1:er1]
+-			r2b = xb[:, sr2:er2]
+-
+-			p1, p2 = model(xb)
+-			f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
+-			l1 = criterion(f1, y1b)
+-			l2 = criterion(f2, y2b)
+-			loss = 0.5 * (l1 + l2)
+-
+-			optimizer.zero_grad(set_to_none=True)
+-			loss.backward()
+-			optimizer.step()
+-
+-		tr_huber, _ = eval_stream(model, train_iter(), batch_size, device, K, criterion)
+-		if val_iter is not None:
+-			val_huber, val_mae = eval_stream(model, val_iter(), batch_size, device, K, criterion)
+-		else:
+-			val_huber, val_mae = tr_huber, 0.0
+-
+-		history["train_huber"].append(float(tr_huber))
+-		history["val_huber"].append(float(val_huber))
+-		history["val_mae"].append(float(val_mae))
+-
+-		cur = float(val_huber)
+-		if save_best and (best_metric is None or cur < best_metric):
+-			best_metric = cur
+-			best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+-			if ckpt_dir:
+-				path = f"{ckpt_dir.rstrip('/')}/turn_cfv_best.pt"
+-				torch.save(
+-					{
+-						"epoch": int(e),
+-						"val_huber": float(val_huber),
+-						"val_mae": float(val_mae),
+-						"state_dict": best_state,
+-						"num_clusters": int(K),
+-					},
+-					path,
+-				)
+-
+-		if ckpt_dir:
+-			path_epoch = f"{ckpt_dir.rstrip('/')}/turn_cfv_epoch_{int(e)}.pt"
+-			torch.save(
+-				{
+-					"epoch": int(e),
+-					"val_huber": float(val_huber),
+-					"val_mae": float(val_mae),
+-					"state_dict": {k: v.detach().cpu() for k, v in model.state_dict().items()},
+-					"num_clusters": int(K),
+-				},
+-				path_epoch,
+-			)
+-
+-	if save_best and best_state is not None:
+-		model.load_state_dict(best_state)
+-
+-	final_state = (
+-		best_state
+-		if best_state is not None
+-		else {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+-	)
+-	return {"best_state": final_state, "history": history}
+-
++        if seed is not None:
++                random.seed(int(seed))
++                torch.manual_seed(int(seed))
++                if torch.cuda.is_available():
++                        torch.cuda.manual_seed_all(int(seed))
++        if device is None:
++                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
++        model = model.to(device)
++        optimizer = Adam(model.parameters(), lr=lr, weight_decay=float(weight_decay))
++        criterion = nn.SmoothL1Loss(reduction="mean")
++        K = int(getattr(model, "num_clusters", 0))
++        best_metric = None
++        best_state = None
++        history = {"train_huber": [], "val_huber": [], "val_mae": []}
++        for e in range(int(epochs)):
++                if e == int(lr_drop_epoch):
++                        for g in optimizer.param_groups:
++                                g["lr"] = float(lr_after)
++                model.train()
++                for xb, y1b, y2b in batcher_from_iter(train_iter(), int(batch_size), device):
++                        sr1 = 1 + 52
++                        er1 = sr1 + int(K)
++                        sr2 = er1
++                        er2 = sr2 + int(K)
++                        r1b = xb[:, sr1:er1]
++                        r2b = xb[:, sr2:er2]
++                        p1, p2 = model(xb)
++                        f1, f2 = model.enforce_zero_sum(r1b, r2b, p1, p2)
++                        l1 = criterion(f1, y1b)
++                        l2 = criterion(f2, y2b)
++                        loss = 0.5 * (l1 + l2)
++                        optimizer.zero_grad(set_to_none=True)
++                        loss.backward()
++                        optimizer.step()
++                tr_huber, _tr_mae, _tr_res = eval_stream(model, train_iter(), batch_size, device, K, criterion)
++                if val_iter is not None:
++                        val_huber, val_mae, _val_res = eval_stream(model, val_iter(), batch_size, device, K, criterion)
++                else:
++                        val_huber, val_mae = tr_huber, 0.0
++                history["train_huber"].append(float(tr_huber))
++                history["val_huber"].append(float(val_huber))
++                history["val_mae"].append(float(val_mae))
++                cur = float(val_huber)
++                if save_best and (best_metric is None or cur < best_metric):
++                        best_metric = cur
++                        best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
++                        if ckpt_dir:
++                                path = f"{ckpt_dir.rstrip('/')}/turn_cfv_best.pt"
++                                torch.save(
++                                        {
++                                                "epoch": int(e),
++                                                "val_huber": float(val_huber),
++                                                "val_mae": float(val_mae),
++                                                "state_dict": best_state,
++                                                "num_clusters": int(K),
++                                        },
++                                        path,
++                                )
++                if ckpt_dir:
++                        path_epoch = f"{ckpt_dir.rstrip('/')}/turn_cfv_epoch_{int(e)}.pt"
++                        torch.save(
++                                {
++                                        "epoch": int(e),
++                                        "val_huber": float(val_huber),
++                                        "val_mae": float(val_mae),
++                                        "state_dict": {k: v.detach().cpu() for k, v in model.state_dict().items()},
++                                        "num_clusters": int(K),
++                                },
++                                path_epoch,
++                        )
++        if save_best and best_state is not None:
++                model.load_state_dict(best_state)
++        final_state = (
++                best_state
++                if best_state is not None
++                else {
+ 
+ def _cfv_batcher(samples, batch_size, shuffle, device):
+ 	n = len(samples)

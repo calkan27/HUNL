@@ -1,0 +1,54 @@
+--- a/hand_clusterer_features.py
++++ b/hand_clusterer_features.py
+@@ -105,31 +105,26 @@
+ 
+ 		return total_improvement / float(trials) if trials > 0 else 0.0
+ 
+-	def _calculate_counterfactual_value(self, hand: str, board: List[str], opponent_range: Dict[Any, float], pot_size: float) -> float:
+-		"""
+-		Proxy CFV: expected terminal payoff at pot_size if we ran to showdown now (or after sampling).
+-		Sums over either explicit opponent hands or over hands drawn from opponent clusters.
+-		"""
+-		hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-		items = list(opponent_range.items())
+-		items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
+-
+-		total_cfv = 0.0
+-		for opp_id, prob in items:
+-			if isinstance(opp_id, (int, np.integer)):
+-				opp_hands = self.cfr_solver.clusters.get(int(opp_id), [])
+-				if not opp_hands:
+-					continue
+-				opp_hand_prob = prob / len(opp_hands)
+-				for opp_hand_str in list(opp_hands):
+-					opp_hand_cards = opp_hand_str.split()
+-					payoff = self._calculate_payoff(hand_cards, opp_hand_cards, board, pot_size)
+-					total_cfv += opp_hand_prob * payoff
+-			else:
+-				opp_hand_cards = str(opp_id).split()
+-				payoff = self._calculate_payoff(hand_cards, opp_hand_cards, board, pot_size)
+-				total_cfv += prob * payoff
+-		return total_cfv
++    def _calculate_counterfactual_value(self, hand: str, board: List[str], opponent_range: Dict[Any, float], pot_size: float) -> float:
++        hand_cards = hand.split() if isinstance(hand, str) else list(hand)
++        items = list(opponent_range.items())
++        items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
++        total_cfv = 0.0
++        for opp_id, prob in items:
++            if isinstance(opp_id, (int, np.integer)):
++                opp_hands = self.cfr_solver.clusters.get(int(opp_id), [])
++                if not opp_hands:
++                    continue
++                opp_hand_prob = prob / len(opp_hands)
++                for opp_hand_str in list(opp_hands):
++                    opp_hand_cards = opp_hand_str.split()
++                    payoff = self._calculate_payoff(hand_cards, opp_hand_cards, board, 1.0)
++                    total_cfv += opp_hand_prob * payoff
++            else:
++                opp_hand_cards = str(opp_id).split()
++                payoff = self._calculate_payoff(hand_cards, opp_hand_cards, board, 1.0)
++                total_cfv += prob * payoff
++        return total_cfv
+ 
+ 	def _calculate_payoff(self, player_hand: List[str], opponent_hand: List[str], board: List[str], pot_size: float) -> float:
+ 

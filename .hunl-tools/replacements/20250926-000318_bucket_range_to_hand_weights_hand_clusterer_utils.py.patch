@@ -1,0 +1,77 @@
+--- a/hand_clusterer_utils.py
++++ b/hand_clusterer_utils.py
+@@ -72,42 +72,38 @@
+ 
+ 		return out
+ 
+-	def bucket_range_to_hand_weights(
+-		self,
+-		bucket_probs: Dict[int, float]
+-	) -> Dict[str, float]:
+-		out: Dict[str, float] = {}
+-
+-		if not bucket_probs:
+-			return out
+-
+-		if getattr(self, "clusters", None):
+-			for cid, p in list(bucket_probs.items()):
+-				hands = sorted(list(self.clusters.get(int(cid), [])))
+-
+-				if not hands:
+-					continue
+-
+-				w = float(p) / float(len(hands))
+-
+-				i = 0
+-				while i < len(hands):
+-					h = hands[i]
+-					if h in out:
+-						out[h] = out[h] + w
+-					else:
+-						out[h] = w
+-					i += 1
+-
+-		s = 0.0
+-		for v in out.values():
+-			s += float(v)
+-
+-		if s > 0.0:
+-			for k in list(out.keys()):
+-				out[k] = out[k] / s
+-
+-		return out
++    def bucket_range_to_hand_weights(
++        self,
++        bucket_probs: Dict[int, float]
++    ) -> Dict[str, float]:
++        out: Dict[str, float] = {}
++        if not bucket_probs:
++            return out
++
++        if getattr(self, "clusters", None):
++            for cid in sorted(int(k) for k in bucket_probs.keys()):
++                p = float(bucket_probs[cid])
++                hands = sorted(list(self.clusters.get(int(cid), [])))
++                if not hands:
++                    continue
++                w = p / float(len(hands))
++                i = 0
++                while i < len(hands):
++                    h = hands[i]
++                    if h in out:
++                        out[h] = out[h] + w
++                    else:
++                        out[h] = w
++                    i += 1
++
++        s = 0.0
++        for v in out.values():
++            s += float(v)
++        if s > 0.0:
++            for k in list(out.keys()):
++                out[k] = out[k] / s
++
++        return out
+ 
+ 	def persist_mapping(self) -> Dict[int, List[str]]:
+ 		m: Dict[int, List[str]] = {}

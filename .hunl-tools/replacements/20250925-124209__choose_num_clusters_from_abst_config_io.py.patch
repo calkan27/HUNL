@@ -1,0 +1,47 @@
+--- a/config_io.py
++++ b/config_io.py
+@@ -77,26 +77,24 @@
+ 	return int(seed) if seed is not None else int(os.environ.get("FAST_TEST_SEED", "1729"))
+ 
+ def _choose_num_clusters_from_abst(abst: dict) -> int:
+-	K_flop = None
+-	K_turn = None
+-	if isinstance(abst, dict) and "bucket_counts" in abst and isinstance(abst["bucket_counts"], dict):
+-		if "flop" in abst["bucket_counts"]:
+-			try:
+-				K_flop = int(abst["bucket_counts"]["flop"])
+-			except Exception:
+-				K_flop = None
+-		if "turn" in abst["bucket_counts"]:
+-			try:
+-				K_turn = int(abst["bucket_counts"]["turn"])
+-			except Exception:
+-				K_turn = None
+-	if K_flop is not None and K_turn is not None and K_flop != K_turn:
+-		raise ValueError("InconsistentBucketCounts: flop and turn num_clusters must match")
+-	if K_turn is not None:
+-		return int(K_turn)
+-	if K_flop is not None:
+-		return int(K_flop)
+-	return None
++        K_flop = None
++        K_turn = None
++        if isinstance(abst, dict) and "bucket_counts" in abst and isinstance(abst["bucket_counts"], dict):
++                if "flop" in abst["bucket_counts"]:
++                        try:
++                                K_flop = int(abst["bucket_counts"]["flop"])
++                        except Exception:
++                                K_flop = None
++                if "turn" in abst["bucket_counts"]:
++                        try:
++                                K_turn = int(abst["bucket_counts"]["turn"])
++                        except Exception:
++                                K_turn = None
++        if K_turn is not None:
++                return int(K_turn)
++        if K_flop is not None:
++                return int(K_flop)
++        return None
+ 
+ def _apply_abstraction_to_cfg(cfg, abst: dict):
+ 	K = _choose_num_clusters_from_abst(abst if isinstance(abst, dict) else {})

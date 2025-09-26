@@ -1,0 +1,200 @@
+--- a/hand_clusterer_features.py
++++ b/hand_clusterer_features.py
+@@ -8,186 +8,19 @@
+ class HandClustererFeaturesMixin:
+     def calculate_hand_features(self, hand: str, board: List[str], opponent_range: Dict[Any, float], pot_size: float) -> np.ndarray:
+         board_key = ",".join(board)
+-        cache_key = f"sig|hand={hand}|board={board_key}"
++        opp_sig = self._opponent_range_signature(opponent_range)
++        cache_key = f"specP3.1|hand={hand}|board={board_key}|pot={float(pot_size):.6f}|opp={opp_sig}"
+         if cache_key in self._cache:
+             self._cache_hits += 1
+             return self._cache[cache_key]
+         self._cache_misses += 1
+-        B = 21
+-        hist = np.zeros((B,), dtype=float)
+-        hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-        used_base = set(hand_cards + board)
+-        avail_base = [c for c in DECK if c not in used_base]
+-        num_to_come = max(0, 5 - len(board))
+-        rng = random.Random(self._stable_seed(hand, board))
+-        trials = max(1, int(getattr(self, "_mc_samples_potential", 200)))
+-        t = 0
+-        while t < trials:
+-            t += 1
+-            if len(avail_base) < num_to_come:
+-                new_board = list(board)
+-            else:
+-                picks = rng.sample(avail_base, num_to_come) if num_to_come > 0 else []
+-                new_board = list(board) + list(picks)
+-            opp_used = set(hand_cards + new_board)
+-            opp_avail = [c for c in DECK if c not in opp_used]
+-            if len(opp_avail) < 2:
+-                eq = 0.5
+-            else:
+-                oh = rng.sample(opp_avail, 2)
+-                eq = self._evaluate_win_percentage(hand_cards, oh, new_board)
+-            idx = int(eq * (B - 1))
+-            if idx < 0:
+-                idx = 0
+-            if idx >= B:
+-                idx = B - 1
+-            hist[idx] += 1.0
+-        if hist.sum() > 0:
+-            hist = hist / hist.sum()
+-        self._cache[cache_key] = hist
+-        return hist
++        eq = float(self._calculate_equity(hand, board, opponent_range))
++        deq = float(self._calculate_potential_equity_improvement(hand, board, opponent_range))
++        cfv = float(self._calculate_counterfactual_value(hand, board, opponent_range, pot_size))
++        vec = np.asarray([eq, deq, cfv], dtype=float)
++        n = float(np.linalg.norm(vec))
++        if n > 0.0:
++            vec = vec / n
++        self._cache[cache_key] = vec
++        return vec
+ 
+-	def _calculate_equity(self, hand: str, board: List[str], opponent_range: Dict[Any, float]) -> float:
+-		hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-		used = set(hand_cards + board)
+-		avail = [c for c in DECK if c not in used]
+-		opp_hands = []
+-		i = 0
+-		while i + 1 < len(avail):
+-			a = avail[i]
+-			j = i + 1
+-			while j < len(avail):
+-				b = avail[j]
+-				if a != b:
+-					opp_hands.append([a, b])
+-				j += 1
+-			i += 1
+-		if not opp_hands:
+-			return 0.5
+-		sample_n = min(len(opp_hands), max(1, int(getattr(self, "_mc_samples_win", 200))))
+-		rng = random.Random(self._stable_seed(hand, board))
+-		if len(opp_hands) > sample_n:
+-			opp_hands = rng.sample(opp_hands, sample_n)
+-		total = 0.0
+-		count = 0
+-		for oh in opp_hands:
+-			total += self._evaluate_win_percentage(hand_cards, oh, board)
+-			count += 1
+-		return total / float(count) if count > 0 else 0.5
+-
+-	def _calculate_potential_equity_improvement(self, hand: str, board: List[str], opponent_range: Dict[Any, float]) -> float:
+-		if len(board) >= 5:
+-			return 0.0
+-		hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-		used_base = set(hand_cards + board)
+-		avail_base = [c for c in DECK if c not in used_base]
+-		num_to_come = 5 - len(board)
+-		rng = random.Random(self._stable_seed(hand, board))
+-		trials = max(1, int(getattr(self, "_mc_samples_potential", 200)))
+-		cur_equity = self._calculate_equity(hand, board, opponent_range)
+-		acc = 0.0
+-		n = 0
+-		t = 0
+-		while t < trials:
+-			t += 1
+-			if num_to_come <= 0 or len(avail_base) < num_to_come:
+-				new_board = list(board)
+-			else:
+-				picks = rng.sample(avail_base, num_to_come)
+-				new_board = list(board) + list(picks)
+-			fut_equity = self._calculate_equity(hand, new_board, opponent_range)
+-			acc += (fut_equity - cur_equity)
+-			n += 1
+-		return acc / float(n) if n > 0 else 0.0
+-
+-	def _calculate_counterfactual_value(self, hand: str, board: List[str], opponent_range: Dict[Any, float], pot_size: float) -> float:
+-		hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-		used = set(hand_cards + board)
+-		avail = [c for c in DECK if c not in used]
+-		opp_hands = []
+-		i = 0
+-		while i + 1 < len(avail):
+-			a = avail[i]
+-			j = i + 1
+-			while j < len(avail):
+-				b = avail[j]
+-				if a != b:
+-					opp_hands.append([a, b])
+-				j += 1
+-			i += 1
+-		if not opp_hands:
+-			return 0.0
+-		rng = random.Random(self._stable_seed(hand, board))
+-		sample_n = min(len(opp_hands), max(1, int(getattr(self, "_mc_samples_win", 200))))
+-		if len(opp_hands) > sample_n:
+-			opp_hands = rng.sample(opp_hands, sample_n)
+-		total = 0.0
+-		den = float(len(opp_hands))
+-		for oh in opp_hands:
+-			res = self.cfr_solver._player_wins(hand_cards, oh, board)
+-			if res > 0:
+-				total += 1.0
+-			elif res < 0:
+-				total += -1.0
+-			else:
+-				total += 0.0
+-		return total / den if den > 0 else 0.0
+-
+-	def _calculate_payoff(self, player_hand: List[str], opponent_hand: List[str], board: List[str], pot_size: float) -> float:
+-		result = self.cfr_solver._player_wins(player_hand, opponent_hand, board)
+-		if result == 1:
+-			return 1.0
+-		elif result == -1:
+-			return -1.0
+-		else:
+-			return 0.0
+-
+-	def _evaluate_win_percentage(self, hand_cards: List[str], opp_hand_cards: List[str], board: List[str]) -> float:
+-
+-		used_cards = set(hand_cards + opp_hand_cards + board)
+-		available_cards = [c for c in DECK if c not in used_cards]
+-		cards_to_come = 5 - len(board)
+-
+-		if cards_to_come <= 0:
+-			result = self.cfr_solver._player_wins(hand_cards, opp_hand_cards, board)
+-			return 1.0 if result == 1 else (0.5 if result == 0 else 0.0)
+-
+-		samples = min(self._mc_samples_win, len(available_cards)) if len(available_cards) > 0 else 0
+-		win_total = 0.0
+-		trials = 0
+-		for _ in range(samples):
+-			if len(available_cards) >= cards_to_come and cards_to_come > 0:
+-				picks = random.sample(available_cards, cards_to_come)
+-			else:
+-				picks = []
+-			full_board = board + list(picks)
+-			if len(full_board) == 5:
+-				result = self.cfr_solver._player_wins(hand_cards, opp_hand_cards, full_board)
+-				if result == 1:
+-					win_total += 1.0
+-				elif result == 0:
+-					win_total += 0.5
+-				trials += 1
+-
+-		return (win_total / float(trials)) if trials > 0 else 0.5
+-
+-	def calculate_hand_distance(self, features1: np.ndarray, features2: np.ndarray) -> float:
+-
+-		distance = np.linalg.norm(np.array(features1) - np.array(features2))
+-		return float(distance)
+-
+-	def _emd_distance(self, sig1: np.ndarray, sig2: np.ndarray) -> float:
+-		a = np.asarray(sig1, dtype=float).ravel()
+-		b = np.asarray(sig2, dtype=float).ravel()
+-		n = min(a.size, b.size)
+-		if n == 0:
+-			return 0.0
+-		cs = 0.0
+-		acc = 0.0
+-		i = 0
+-		while i < n:
+-			cs += (a[i] - b[i])
+-			acc += abs(cs)
+-			i += 1
+-		return float(acc)
+-

@@ -1,0 +1,37 @@
+--- a/cfv_network.py
++++ b/cfv_network.py
+@@ -48,18 +48,22 @@
+ 		p2 = self.output_player2_values(h)
+ 		return p1, p2
+ 
+-	def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
+-		eps = 1e-6
+-		s1 = torch.sum(player1_range, dim=1, keepdim=True)
+-		s2 = torch.sum(player2_range, dim=1, keepdim=True)
+-		if not torch.all(torch.abs(s1 - 1.0) <= eps) or not torch.all(torch.abs(s2 - 1.0) <= eps):
+-			raise ValueError("RangeNotNormalized")
+-		sv1 = torch.sum(player1_range * player1_values, dim=1, keepdim=True)
+-		sv2 = torch.sum(player2_range * player2_values, dim=1, keepdim=True)
+-		delta = 0.5 * (sv1 + sv2)
+-		f1 = player1_values - delta
+-		f2 = player2_values - delta
+-		return f1, f2
++    def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
++        eps = 1e-9
++        s1 = torch.sum(player1_range, dim=1, keepdim=True)
++        s2 = torch.sum(player2_range, dim=1, keepdim=True)
++        u1 = player1_values.new_full((player1_values.shape[0], player1_values.shape[1]),
++                                     1.0 / max(1, player1_values.shape[1]))
++        u2 = player2_values.new_full((player2_values.shape[0], player2_values.shape[1]),
++                                     1.0 / max(1, player2_values.shape[1]))
++        w1 = torch.where(s1 > eps, player1_range / torch.clamp(s1, min=eps), u1)
++        w2 = torch.where(s2 > eps, player2_range / torch.clamp(s2, min=eps), u2)
++        sv1 = torch.sum(w1 * player1_values, dim=1, keepdim=True)
++        sv2 = torch.sum(w2 * player2_values, dim=1, keepdim=True)
++        delta = 0.5 * (sv1 + sv2)
++        f1 = player1_values - delta
++        f2 = player2_values - delta
++        return f1, f2
+ 
+ 	def predict_with_zero_sum(self, input_tensor, player1_range, player2_range):
+ 		p1, p2 = self(input_tensor)

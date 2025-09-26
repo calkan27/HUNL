@@ -1,0 +1,24 @@
+--- a/resolver_integration.py
++++ b/resolver_integration.py
+@@ -243,12 +243,12 @@
+ 
+ 
+ def _bet_fracs_from_mode(mode: str, stage: str) -> List[float]:
+-	m = str(mode).strip().lower()
+-	if m == "sparse_2":
+-		return [0.5, 1.0]
+-	if m == "sparse_3":
+-		return [0.5, 1.0, 2.0]
+-	if m == "full":
+-		return [0.5, 1.0, 2.0]
+-	return [0.5, 1.0, 2.0] if stage == "turn" else [0.5, 1.0]
+-
++        m = str(mode).strip().lower()
++        if m == "sparse_2":
++                return [0.5, 1.0]
++        if m == "sparse_3":
++                return [0.5, 1.0, 2.0]
++        if m == "full":
++                return [0.5, 1.0, 2.0]
++        return [1.0]
++

@@ -1,0 +1,102 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -117,64 +117,41 @@
+ 
+ 
+ def _block_metrics(results: List[Tuple[float, float]], block_size: int = 100) -> Dict[str, Dict[str, float]]:
+-		n = len(results)
+-		if n == 0:
+-				return {
+-						"blocks": 0,
+-						"naive": {"chips100": 0.0, "bb100": 0.0, "mbb_g": 0.0, "ci95_chips100": [0.0, 0.0], "ci95_bb100": [0.0, 0.0], "ci95_mbb_g": [0.0, 0.0]},
+-						"aivat": {"chips100": 0.0, "bb100": 0.0, "mbb_g": 0.0, "ci95_chips100": [0.0, 0.0], "ci95_bb100": [0.0, 0.0], "ci95_mbb_g": [0.0, 0.0]},
+-				}
+-		bb = 2.0
+-		def _blocks(series: List[float]) -> List[float]:
+-				blocks = []
+-				for i in range(0, len(series), block_size):
+-						chunk = series[i : i + block_size]
+-						if len(chunk) == block_size:
+-								blocks.append(sum(chunk) / float(block_size))
+-				return blocks
+-		na = [x[0] for x in results]
+-		av = [x[1] for x in results]
+-		na_b = _blocks(na)
+-		av_b = _blocks(av)
+-		def _ci(blocks: List[float]) -> Dict[str, object]:
+-				if not blocks:
+-						return {
+-								"chips100": 0.0,
+-								"bb100": 0.0,
+-								"mbb_g": 0.0,
+-								"ci95_chips100": [0.0, 0.0],
+-								"ci95_bb100": [0.0, 0.0],
+-								"ci95_mbb_g": [0.0, 0.0],
+-						}
+-				m = sum(blocks) / float(len(blocks))
+-				var = 0.0
+-				for v in blocks:
+-						d = v - m
+-						var += d * d
+-				var = var / float(len(blocks) - 1 if len(blocks) > 1 else 1)
+-				se = (var / float(len(blocks))) ** 0.5
+-				chips100 = m * 100.0
+-				half_cw = 1.96 * (se * 100.0)
+-				bb100 = (m / bb) * 100.0
+-				half_bb = 1.96 * ((se / bb) * 100.0)
+-				mbb_g = bb100 * 10.0
+-				half_mbbg = half_bb * 10.0
+-				return {
+-						"chips100": float(chips100),
+-						"bb100": float(bb100),
+-						"mbb_g": float(mbb_g),
+-						"ci95_chips100": [float(chips100 - half_cw), float(chips100 + half_cw)],
+-						"ci95_bb100": [float(bb100 - half_bb), float(bb100 + half_bb)],
+-						"ci95_mbb_g": [float(mbb_g - half_mbbg), float(mbb_g + half_mbbg)],
+-				}
+-		na_stats = _ci(na_b)
+-		av_stats = _ci(av_b)
+-		return {
+-				"blocks": int(len(na_b)),
+-				"naive": na_stats,
+-				"aivat": av_stats,
+-		}
+-
++        n = len(results)
++        if n == 0:
++                return {
++                        "blocks": 0,
++                        "naive": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
++                        "aivat": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
++                }
++        bb = 2.0
++        def _blocks(series: List[float]) -> List[float]:
++                blocks = []
++                for i in range(0, len(series), block_size):
++                        chunk = series[i : i + block_size]
++                        if len(chunk) == block_size:
++                                blocks.append(sum(chunk) / float(block_size))
++                return blocks
++        na = [x[0] for x in results]
++        av = [x[1] for x in results]
++        na_b = _blocks(na)
++        av_b = _blocks(av)
++        def _ci(blocks: List[float]) -> Dict[str, object]:
++                if not blocks:
++                        return {"mbb100": 0.0, "ci95": [0.0, 0.0]}
++                m = sum(blocks) / float(len(blocks))
++                var = 0.0
++                for v in blocks:
++                        d = v - m
++                        var += d * d
++                var = var / float(len(blocks) - 1 if len(blocks) > 1 else 1)
++                se = (var / float(len(blocks))) ** 0.5
++                mbb100 = (m / bb) * 100.0
++                half = 1.96 * ((se / bb) * 100.0)
++                return {"mbb100": float(mbb100), "ci95": [float(mbb100 - half), float(mbb100 + half)]}
++        na_stats = _ci(na_b)
++        av_stats = _ci(av_b)
++        return {"blocks": int(len(na_b)), "naive": na_stats, "aivat": av_stats}
+ 
+ def _chance_policy_uniform(node: GameNode) -> Dict[str, float]:
+ 	ps = node.public_state

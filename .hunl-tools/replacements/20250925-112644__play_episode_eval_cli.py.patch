@@ -1,0 +1,27 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -46,6 +46,7 @@
+         step_guard = 0
+         while not node.public_state.is_terminal and step_guard < 200:
+                 step_guard += 1
++                prev_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+                 cur = node.public_state.current_player
+                 if cur == 0:
+                         dist = pol_agent(node, player=0)
+@@ -53,14 +54,14 @@
+                         events.append({"type": "agent", "action": chosen, "policy": {k: float(v) for k, v in dist.items()}})
+                         new_ps = node.public_state.update_state(node, Action(chosen))
+                         node = GameNode(new_ps)
+-                        node.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++                        node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
+                 else:
+                         dist = pol_opp(node, player=1)
+                         chosen = _sample_from_policy(dist)
+                         events.append({"type": "opponent", "action": chosen, "policy": {k: float(v) for k, v in dist.items()}})
+                         new_ps = node.public_state.update_state(node, Action(chosen))
+                         node = GameNode(new_ps)
+-                        node.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++                        node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
+ 
+         if not node.public_state.is_terminal:
+                 return 0.0, {"initial_node": None, "events": []}

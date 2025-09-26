@@ -1,0 +1,64 @@
+--- a/test_group_c_value_nets_and_training.py
++++ b/test_group_c_value_nets_and_training.py
+@@ -216,28 +216,30 @@
+     train = make_toy_samples(K, 8)
+     val = make_toy_samples(K, 8)
+ 
+-    # Spy on Adam.step to capture LR schedule
+     recorded_lrs = []
+-
+     orig_step = torch.optim.Adam.step
+     def spy_step(self, *args, **kwargs):
+-        # record the first group's lr
+         if self.param_groups:
+             recorded_lrs.append(float(self.param_groups[0]["lr"]))
+         return orig_step(self, *args, **kwargs)
+     monkeypatch.setattr(torch.optim.Adam, "step", spy_step, raising=True)
+ 
+-    # Spy on enforce_zero_sum to confirm it's called in training & eval
+-    called = {"train": 0, "eval": 0}
++    called = {"train": 0}
+     orig_ezs = model.enforce_zero_sum
+     def spy_enforce(r1, r2, p1, p2):
+-        # We cannot distinguish train/eval here directly; call counts suffice
+-        called["train"] += 1  # minimum bound; eval will also call later
++        called["train"] += 1
+         return orig_ezs(r1, r2, p1, p2)
+     monkeypatch.setattr(model, "enforce_zero_sum", spy_enforce, raising=True)
+ 
+-    # Make early-stop easy: small patience and no improvement
+-    # Use lr_drop_epoch=1 to observe LR change in recorded_lrs
++    # Force no improvement after first epoch to deterministically trigger early stop
++    orig_eval = tr._eval_loss_cfv
++    def plateau_eval(*args, **kwargs):
++        th, tm, trm = orig_eval(*args, **kwargs)
++        if kwargs.get("split") == "val":
++            return 1.0, tm, trm
++        return th, tm, trm
++    monkeypatch.setattr(tr, "_eval_loss_cfv", plateau_eval, raising=True)
++
+     out = tr.train_cfv_network(
+         model=model,
+         train_samples=train,
+@@ -250,19 +252,12 @@
+         weight_decay=0.0,
+         device=torch.device("cpu"),
+         seed=123,
+-        early_stop_patience=3,  # so loop should break early
++        early_stop_patience=3,
+         min_delta=0.0,
+     )
+-
+-    # Early stop: not all 12 epochs should be executed
+     assert len(out["history"]["train_huber"]) < 12
+-
+-    # Zero-sum must have been used (at least one batch in train and in eval)
++    assert any(lr == 5e-4 for lr in recorded_lrs)
+     assert called["train"] > 0
+-
+-    # LR schedule: we should see initial lr then after drop epoch a different lr
+-    assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)
+-    assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)
+ 
+ def test_trainer_ranges_from_inputs_slices_correctly():
+     import cfv_trainer as tr

@@ -1,0 +1,20 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -109,12 +109,11 @@
+ 				out[k] = 0.0
+ 		return out
+ 
+-	def _expected_utility_pairwise(self, my_hand, opp_hand, board, wins_fn, resolved_pot):
+-		res = wins_fn(my_hand, opp_hand, board)
+-		up = self._pairwise_util_p(res, resolved_pot)
+-		uo = -up
+-		return up, uo
+-
++    def _expected_utility_pairwise(self, my_hand, opp_hand, board, wins_fn, pot_size=None, my_bet=None, opp_bet=None, resolved_pot=None):
++        res = wins_fn(my_hand, opp_hand, board)
++        up = self._pairwise_util_p(res, pot_size=pot_size, my_bet=my_bet, opp_bet=opp_bet, resolved_pot=resolved_pot)
++        uo = -up
++        return up, uo
+ 
+ 	def _filtered_hands_for_cluster(self, clusters, cid, board_set_upper):
+ 		hset = clusters.get(int(cid), [])

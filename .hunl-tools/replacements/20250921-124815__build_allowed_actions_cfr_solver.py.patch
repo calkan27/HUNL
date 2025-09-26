@@ -1,0 +1,73 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -811,29 +811,47 @@
+ 		return (tag, sb, bb, dealer, init_stacks, curr_stacks, curr_bets, pot, K, cluster_summary, r1_sig, r2_sig)
+ 
+ 
+-	def _build_allowed_actions(self, ps):
+-		out = []
+-		p = ps.current_player
+-		o = (p + 1) % 2
+-		my_bet = ps.current_bets[p]
+-		opp_bet = ps.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		if to_call > 0:
+-			out.append(ActionType.FOLD)
+-		out.append(ActionType.CALL)
+-		mode = getattr(self._config, "bet_size_mode", "sparse_2") if getattr(self, "_config", None) is not None else "sparse_2"
+-		if to_call == 0:
+-			out.append(ActionType.HALF_POT_BET)
+-			out.append(ActionType.POT_SIZED_BET)
++def _build_allowed_actions(self, ps):
++	out = []
++	p = ps.current_player
++	o = (p + 1) % 2
++	my_bet = ps.current_bets[p]
++	opp_bet = ps.current_bets[o]
++	to_call = opp_bet - my_bet
++	if to_call < 0:
++		to_call = 0
++	mode = getattr(self._config, "bet_size_mode", "sparse_2") if getattr(self, "_config", None) is not None else "sparse_2"
++	if to_call > 0:
++		out.append(ActionType.FOLD)
++	out.append(ActionType.CALL)
++	min_raise_inc = ps._min_raise_size()
++	if to_call == 0:
++		if ps.stacks[p] > 0:
++			half = max(min_raise_inc, int(ps.pot_size * 0.5))
++			if ps.stacks[p] >= half and half > 0:
++				out.append(ActionType.HALF_POT_BET)
++			pot = max(min_raise_inc, int(ps.pot_size))
++			if ps.stacks[p] >= pot and pot > 0:
++				out.append(ActionType.POT_SIZED_BET)
+ 			if mode == "sparse_3":
+-				out.append(ActionType.TWO_POT_BET)
+-		else:
+-			out.append(ActionType.HALF_POT_BET)
+-			out.append(ActionType.POT_SIZED_BET)
++				two = max(min_raise_inc, int(ps.pot_size * 2.0))
++				if ps.stacks[p] >= two and two > 0:
++					out.append(ActionType.TWO_POT_BET)
++			out.append(ActionType.ALL_IN)
++	else:
++		remaining_after_call = ps.stacks[p] - to_call
++		if remaining_after_call > 0:
++			pot_after_call = ps.pot_size + to_call
++			half = max(min_raise_inc, int(pot_after_call * 0.5))
++			if remaining_after_call >= half and half > 0:
++				out.append(ActionType.HALF_POT_BET)
++			pot = max(min_raise_inc, int(pot_after_call))
++			if remaining_after_call >= pot and pot > 0:
++				out.append(ActionType.POT_SIZED_BET)
+ 			if mode == "sparse_3":
+-				out.append(ActionType.TWO_POT_BET)
++				two = max(min_raise_inc, int(pot_after_call * 2.0))
++				if remaining_after_call >= two and two > 0:
++					out.append(ActionType.TWO_POT_BET)
+ 		out.append(ActionType.ALL_IN)
+-		return out
+-
++	return out
++

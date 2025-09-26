@@ -1,0 +1,134 @@
+--- a/cfr_solver_models.py
++++ b/cfr_solver_models.py
+@@ -180,70 +180,67 @@
+ 
+ 	# ---------- prediction / labels ----------
+ 
+-	def predict_counterfactual_values(self, node, player):
+-		if not hasattr(self, "_diag_cfv_calls"):
+-			self._diag_cfv_calls = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
+-		stage = self.get_stage(node)
+-		if stage in self._diag_cfv_calls:
+-			self._diag_cfv_calls[stage] += 1
+-
+-		if stage == 'river':
+-			def wins_fn(ph, oh, board):
+-				return self._player_wins(ph, oh, board)
+-			cf = self.river_endgame.compute_cluster_cfvs(self.clusters, node, player, wins_fn, best_hand, hand_rank)
+-			out = {}
+-			for cid, val in cf.items():
+-				out[int(cid)] = val
+-			return out
+-
+-		if stage not in self.models:
+-			counterfactual_values = {}
+-			for cluster_id in node.player_ranges[player]:
+-				counterfactual_values[cluster_id] = [0.0] * len(ActionType)
+-			return counterfactual_values
+-
+-		if stage == 'preflop':
+-			input_vector = self.prepare_input_vector(node)
+-			stage_model = self.models['flop']
+-			K = self.num_clusters
+-			start_r1 = 1 + len(DECK)
+-			end_r1 = start_r1 + K
+-			start_r2 = end_r1
+-			end_r2 = start_r2 + K
+-		else:
+-			input_vector = self.prepare_input_vector(node)
+-			stage_model = self.models[stage]
+-			K = self.num_clusters
+-			start_r1 = 1 + len(DECK)
+-			end_r1 = start_r1 + K
+-			start_r2 = end_r1
+-			end_r2 = start_r2 + K
+-
+-		input_tensor = torch.tensor([input_vector], dtype=torch.float32).to(self.device)
+-		with torch.no_grad():
+-			v1, v2 = stage_model(input_tensor)
+-			r1 = input_tensor[:, start_r1:end_r1]
+-			r2 = input_tensor[:, start_r2:end_r2]
+-			v1_adj, v2_adj = stage_model.enforce_zero_sum(r1, r2, v1, v2)
+-			try:
+-				s1 = torch.sum(r1 * v1_adj, dim=1, keepdim=True)
+-				s2 = torch.sum(r2 * v2_adj, dim=1, keepdim=True)
+-				res = torch.abs(s1 + s2).view(-1).detach().cpu().tolist()
+-				if hasattr(self, "_zs_residual_samples"):
+-					self._zs_residual_samples.extend([float(x) for x in res])
+-			except Exception:
+-				pass
+-
+-		pred = v1_adj if player == 0 else v2_adj
+-		counterfactual_values = {}
+-		for cluster_id in node.player_ranges[player]:
+-			idx = int(cluster_id)
+-			if 0 <= idx < self.num_clusters:
+-				scalar = float(pred[0][idx].item())
+-			else:
+-				scalar = 0.0
+-			counterfactual_values[cluster_id] = [scalar] * len(ActionType)
+-		return counterfactual_values
++    def predict_counterfactual_values(self, node, player):
++        if not hasattr(self, "_diag_cfv_calls"):
++            self._diag_cfv_calls = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
++        stage = self.get_stage(node)
++        if stage in self._diag_cfv_calls:
++            self._diag_cfv_calls[stage] += 1
++
++        if stage == 'river':
++            def wins_fn(ph, oh, board):
++                return self._player_wins(ph, oh, board)
++            cf = self.river_endgame.compute_cluster_cfvs(self.clusters, node, player, wins_fn, best_hand, hand_rank)
++            out = {}
++            for cid, val in cf.items():
++                out[int(cid)] = val
++            return out
++
++        if stage not in ("preflop", "flop", "turn") or ("preflop" not in self.models and "flop" not in self.models and "turn" not in self.models):
++            counterfactual_values = {}
++            for cluster_id in node.player_ranges[player]:
++                counterfactual_values[cluster_id] = [0.0] * len(ActionType)
++            return counterfactual_values
++
++        input_vector = self.prepare_input_vector(node)
++        if stage == 'preflop':
++            stage_model = self.models['flop']
++        elif stage == 'flop':
++            stage_model = self.models['turn']
++        else:
++            stage_model = self.models['turn']
++
++        K = self.num_clusters
++        start_r1 = 1 + len(DECK)
++        end_r1 = start_r1 + K
++        start_r2 = end_r1
++        end_r2 = start_r2 + K
++
++        input_tensor = torch.tensor([input_vector], dtype=torch.float32).to(self.device)
++        with torch.no_grad():
++            v1, v2 = stage_model(input_tensor)
++            r1 = input_tensor[:, start_r1:end_r1]
++            r2 = input_tensor[:, start_r2:end_r2]
++            v1_adj, v2_adj = stage_model.enforce_zero_sum(r1, r2, v1, v2)
++            try:
++                s1 = torch.sum(r1 * v1_adj, dim=1, keepdim=True)
++                s2 = torch.sum(r2 * v2_adj, dim=1, keepdim=True)
++                res = torch.abs(s1 + s2).view(-1).detach().cpu().tolist()
++                if hasattr(self, "_zs_residual_samples"):
++                    self._zs_residual_samples.extend([float(x) for x in res])
++            except Exception:
++                pass
++
++        pred = v1_adj if player == 0 else v2_adj
++        counterfactual_values = {}
++        for cluster_id in node.player_ranges[player]:
++            idx = int(cluster_id)
++            if 0 <= idx < self.num_clusters:
++                scalar = float(pred[0][idx].item())
++            else:
++                scalar = 0.0
++            counterfactual_values[cluster_id] = [scalar] * len(ActionType)
++        return counterfactual_values
+ 
+ 	def flop_label_targets_using_turn_net(self, node):
+ 		K = int(self.num_clusters)

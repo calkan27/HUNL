@@ -1,0 +1,21 @@
+--- a/test_resolver_integration.py
++++ b/test_resolver_integration.py
+@@ -63,13 +63,11 @@
+ 
+ 
+ def test_bet_fracs_modes():
+-    assert _bet_fracs_from_mode("sparse_2", "flop") == [0.5, 1.0]
+-    assert _bet_fracs_from_mode("sparse_3", "flop") == [0.5, 1.0, 2.0]
+-    assert _bet_fracs_from_mode("full", "flop") == [0.5, 1.0, 2.0]
+-    # default if unknown mode: flop -> [0.5,1.0], turn -> [0.5,1.0,2.0]
+-    assert _bet_fracs_from_mode("unknown_mode", "flop") == [0.5, 1.0]
+-    assert _bet_fracs_from_mode("unknown_mode", "turn") == [0.5, 1.0, 2.0]
+-
++        assert _bet_fracs_from_mode("sparse_2", "flop") == [0.5, 1.0]
++        assert _bet_fracs_from_mode("sparse_3", "flop") == [0.5, 1.0, 2.0]
++        assert _bet_fracs_from_mode("full", "flop") == [0.5, 1.0, 2.0]
++        assert _bet_fracs_from_mode("unknown_mode", "flop") == [0.5, 1.0]
++        assert _bet_fracs_from_mode("unknown_mode", "turn") == [0.5, 1.0, 2.0]
+ 
+ def test_update_opp_upper_monotone():
+     prev = {0: 1.0, 1: 2.0}

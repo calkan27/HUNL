@@ -1,0 +1,239 @@
+--- a/play_cli.py
++++ b/play_cli.py
+@@ -101,185 +101,55 @@
+ 				h -= p * math.log(p + 1e-12)
+ 		return h
+ 
+-	def _diag_from_solver(ps, K, r_us, r_opp):
+-		try:
+-			solver = CFRSolver(depth_limit=int(args.depth), num_clusters=int(K))
+-			solver.total_iterations = int(args.iters)
+-			solver.set_soundness_constants(float(args.k1), float(args.k2))
++    def _diag_from_solver(ps, K, r_us, r_opp):
++        try:
++            solver = CFRSolver(depth_limit=int(args.depth), num_clusters=int(K))
++            solver.total_iterations = int(args.iters)
++            solver.set_soundness_constants(float(args.k1), float(args.k2))
++            used = set(ps.board_cards)
++            cards = [c for c in DECK if c not in used]
++            clusters = {}
++            i = 0
++            j = 0
++            while i < K and j + 1 < len(cards):
++                h = f"{cards[j]} {cards[j+1]}"
++                clusters[i] = {h}
++                i += 1
++                j += 2
++            while i < K:
++                clusters[i] = set()
++                i += 1
++            solver.clusters = clusters
++            node = GameNode(ps)
++            node.player_ranges[ps.current_player] = dict(r_us)
++            node.player_ranges[(ps.current_player + 1) % 2] = dict(r_opp)
++            _ = solver.run_cfr(node)
++            diag = solver.get_last_diagnostics()
++            return {
++                "depth_limit": int(diag.get("depth_limit", args.depth)),
++                "iterations": int(diag.get("iterations", args.iters)),
++                "zero_sum_residual": float(diag.get("zero_sum_residual", 0.0)),
++                "zero_sum_residual_mean": float(diag.get("zero_sum_residual_mean", 0.0)),
++                "regret_l2": float(diag.get("regret_l2", 0.0)),
++                "avg_strategy_entropy": float(diag.get("avg_strategy_entropy", 0.0)),
++                "cfv_calls": dict(diag.get("cfv_calls", {})),
++                "constraint_mode": str(diag.get("constraint_mode", "")),
++                "preflop_cache": dict(diag.get("preflop_cache", {})),
++                "k1": float(diag.get("k1", args.k1)),
++                "k2": float(diag.get("k2", args.k2)),
++            }
++        except Exception:
++            return {
++                "depth_limit": int(args.depth),
++                "iterations": int(args.iters),
++                "zero_sum_residual": 0.0,
++                "zero_sum_residual_mean": 0.0,
++                "regret_l2": 0.0,
++                "avg_strategy_entropy": 0.0,
++                "cfv_calls": {},
++                "constraint_mode": "",
++                "preflop_cache": {},
++                "k1": float(args.k1),
++                "k2": float(args.k2),
++            }
+ 
+-			used = set(ps.board_cards)
+-			cards = [c for c in DECK if c not in used]
+-
+-			clusters = {}
+-			i = 0
+-			j = 0
+-			while i < K and j + 1 < len(cards):
+-				h = f"{cards[j]} {cards[j+1]}"
+-				clusters[i] = {h}
+-				i += 1
+-				j += 2
+-			while i < K:
+-				clusters[i] = set()
+-				i += 1
+-			solver.clusters = clusters
+-
+-			node = GameNode(ps)
+-			node.player_ranges[ps.current_player] = dict(r_us)
+-			node.player_ranges[(ps.current_player + 1) % 2] = dict(r_opp)
+-
+-			_ = solver.run_cfr(node)
+-			diag = solver.get_last_diagnostics()
+-			return {
+-				"depth_limit": int(diag.get("depth_limit", args.depth)),
+-				"iterations": int(diag.get("iterations", args.iters)),
+-				"zero_sum_residual": float(diag.get("zero_sum_residual", 0.0)),
+-				"regret_l2": float(diag.get("regret_l2", 0.0)),
+-				"avg_strategy_entropy": float(diag.get("avg_strategy_entropy", 0.0)),
+-				"k1": float(diag.get("k1", args.k1)),
+-				"k2": float(diag.get("k2", args.k2)),
+-			}
+-		except Exception:
+-			return {
+-				"depth_limit": int(args.depth),
+-				"iterations": int(args.iters),
+-				"zero_sum_residual": 0.0,
+-				"regret_l2": 0.0,
+-				"avg_strategy_entropy": 0.0,
+-				"k1": float(args.k1),
+-				"k2": float(args.k2),
+-			}
+-
+-	if args.mode == "acpc-client":
+-		for line in iter(input, ""):
+-			try:
+-				msg = json.loads(line.strip())
+-			except Exception:
+-				continue
+-			if msg.get("type") == "query":
+-				psd = msg.get("public_state", {})
+-				ps = PublicState(
+-					initial_stacks=[int(psd.get("s0", args.stack)), int(psd.get("s1", args.stack))],
+-					small_blind=args.sb,
+-					big_blind=args.bb,
+-					board_cards=psd.get("board", []),
+-					dealer=int(psd.get("dealer", 0)),
+-				)
+-				ps.current_round = int(psd.get("round", 0))
+-				ps.current_bets = [int(psd.get("b0", 0)), int(psd.get("b1", 0))]
+-				ps.pot_size = float(psd.get("pot", 0.0))
+-				ps.current_player = int(psd.get("player", 0))
+-				K = int(psd.get("K", 6))
+-				r = _r_uniform(K)
+-				w = {i: 0.0 for i in range(K)}
+-				t0 = time.time()
+-				policy, w_next, _ = resolve_at(
+-					ps,
+-					r,
+-					w,
+-					config={"depth_limit": args.depth, "iterations": args.iters, "bet_fractions": args.bet_frac},
+-					value_server=None,
+-				)
+-				t1 = time.time()
+-				action = _choose_action(policy) if policy else ActionType.CALL
+-				diag = _diag_from_solver(ps, K, r_us=r, r_opp=w)
+-				_log(
+-					{
+-						"mode": "acpc-client",
+-						"t_ms": int((t1 - t0) * 1000),
+-						"policy": {str(k): float(v) for k, v in policy.items()},
+-						"action": int(action.value),
+-						"diag": diag,
+-					},
+-					args.log,
+-				)
+-				resp = {"type": "action", "action": int(action.value)}
+-				print(json.dumps(resp), flush=True)
+-			if msg.get("type") == "close":
+-				break
+-		return
+-
+-	for h in range(int(args.hands)):
+-		ps = PublicState(
+-			initial_stacks=[args.stack, args.stack],
+-			small_blind=args.sb,
+-			big_blind=args.bb,
+-			board_cards=None,
+-			dealer=int(args.dealer if h % 2 == 0 else (1 - args.dealer)),
+-		)
+-		node = GameNode(ps)
+-		K = 6
+-		r = _r_uniform(K)
+-		w = {i: 0.0 for i in range(K)}
+-		hand_log = {"hand": h + 1, "decisions": []}
+-		step_guard = 0
+-		while not ps.is_terminal and step_guard < 200:
+-			step_guard += 1
+-			t0 = time.time()
+-			if args.mode == "self":
+-				policy, w_next, _ = resolve_at(
+-					ps,
+-					r,
+-					w,
+-					config={"depth_limit": args.depth, "iterations": args.iters, "bet_fractions": args.bet_frac},
+-					value_server=None,
+-				)
+-				act_type = _choose_action(policy) if policy else ActionType.CALL
+-			elif args.mode == "baseline":
+-				if ps.current_player == ps.dealer:
+-					policy, w_next, _ = resolve_at(
+-						ps,
+-						r,
+-						w,
+-						config={"depth_limit": args.depth, "iterations": args.iters, "bet_fractions": args.bet_frac},
+-						value_server=None,
+-					)
+-					act_type = _choose_action(policy) if policy else ActionType.CALL
+-				else:
+-					w_next = w
+-					policy = {}
+-					act_type = _heuristic_action(ps)
+-			else:
+-				policy, w_next, _ = resolve_at(
+-					ps,
+-					r,
+-					w,
+-					config={"depth_limit": args.depth, "iterations": args.iters, "bet_fractions": args.bet_frac},
+-					value_server=None,
+-				)
+-				act_type = _choose_action(policy) if policy else ActionType.CALL
+-
+-			new_ps = ps.update_state(node, Action(act_type))
+-			t1 = time.time()
+-
+-			diag = _diag_from_solver(ps, K, r_us=r, r_opp=w)
+-			hand_log["decisions"].append(
+-				{
+-					"round": int(ps.current_round),
+-					"player": int(ps.current_player),
+-					"pot": float(ps.pot_size),
+-					"bets": [int(ps.current_bets[0]), int(ps.current_bets[1])],
+-					"action": int(act_type.value),
+-					"t_ms": int((t1 - t0) * 1000),
+-					"policy": {str(k): float(v) for k, v in policy.items()},
+-					"diag": diag,
+-				}
+-			)
+-
+-			ps = new_ps
+-			node = GameNode(ps)
+-			r = r
+-			w = w_next
+-
+-		_log(
+-			{
+-				"mode": args.mode,
+-				"result": ps.terminal_utility() if hasattr(ps, "terminal_utility") else [0.0, 0.0],
+-				"hand": h + 1,
+-				"steps": step_guard,
+-				"dealer": int(ps.dealer),
+-				"final_pot": float(ps.pot_size),
+-				"log": hand_log,
+-			},
+-			args.log,
+-		)
+-

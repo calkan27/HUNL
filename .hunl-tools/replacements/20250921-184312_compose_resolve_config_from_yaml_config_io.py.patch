@@ -1,0 +1,158 @@
+--- a/config_io.py
++++ b/config_io.py
+@@ -39,74 +39,84 @@
+ 
+ 
+ def compose_resolve_config_from_yaml(abstraction_yaml_path, value_nets_yaml_path, solver_yaml_path, overrides=None):
+-	abst = load_config(abstraction_yaml_path) if abstraction_yaml_path else {}
+-	vnets = load_config(value_nets_yaml_path) if value_nets_yaml_path else {}
+-	solv = load_config(solver_yaml_path) if solver_yaml_path else {}
+-	seed = None
+-	for d in (abst, vnets, solv):
+-		if isinstance(d, dict) and "seed" in d and d["seed"] is not None:
+-			try:
+-				seed = int(d["seed"])
+-				break
+-			except Exception:
+-				pass
+-	if seed is None:
+-		seed = int(os.environ.get("FAST_TEST_SEED", "1729"))
+-	set_global_seed(seed)
+-	cfg = ResolveConfig.from_env(overrides or {})
+-	if isinstance(abst, dict):
+-		if "bucket_counts" in abst and isinstance(abst["bucket_counts"], dict):
+-			try:
+-				cfg.num_clusters = int(abst["bucket_counts"].get("turn", cfg.num_clusters))
+-			except Exception:
+-				pass
+-		if "tau_re" in abst:
+-			try:
+-				cfg.tau_re = float(abst["tau_re"])
+-			except Exception:
+-				pass
+-		if "drift_sample_size" in abst:
+-			try:
+-				cfg.drift_sample_size = int(abst["drift_sample_size"])
+-			except Exception:
+-				pass
+-		if "use_cfv_in_features" in abst:
+-			try:
+-				cfg.use_cfv_in_features = bool(abst["use_cfv_in_features"])
+-			except Exception:
+-				pass
+-	if isinstance(vnets, dict):
+-		if "outer_zero_sum" in vnets:
+-			cfg.enforce_zero_sum_outer = True
+-		if "mc_samples_win" in vnets:
+-			try:
+-				cfg.mc_samples_win = int(vnets["mc_samples_win"])
+-			except Exception:
+-				pass
+-		if "mc_samples_potential" in vnets:
+-			try:
+-				cfg.mc_samples_potential = int(vnets["mc_samples_potential"])
+-			except Exception:
+-				pass
+-	if isinstance(solv, dict):
+-		if "depth_limit" in solv:
+-			try:
+-				cfg.depth_limit = int(solv["depth_limit"])
+-			except Exception:
+-				pass
+-		if "total_iterations" in solv:
+-			try:
+-				cfg.total_iterations = int(solv["total_iterations"])
+-			except Exception:
+-				pass
+-		if "bet_size_mode" in solv:
+-			try:
+-				cfg.bet_size_mode = str(solv["bet_size_mode"])
+-			except Exception:
+-				pass
+-		if "profile" in solv:
+-			try:
+-				cfg.profile = str(solv["profile"])
+-			except Exception:
+-				pass
+-	return {"seed": int(seed), "config": cfg}
++        abst = load_config(abstraction_yaml_path) if abstraction_yaml_path else {}
++        vnets = load_config(value_nets_yaml_path) if value_nets_yaml_path else {}
++        solv = load_config(solver_yaml_path) if solver_yaml_path else {}
++        seed = None
++        for d in (abst, vnets, solv):
++                if isinstance(d, dict) and "seed" in d and d["seed"] is not None:
++                        try:
++                                seed = int(d["seed"])
++                                break
++                        except Exception:
++                                pass
++        if seed is None:
++                seed = int(os.environ.get("FAST_TEST_SEED", "1729"))
++        set_global_seed(seed)
++        cfg = ResolveConfig.from_env(overrides or {})
++        if isinstance(abst, dict):
++                if "bucket_counts" in abst and isinstance(abst["bucket_counts"], dict):
++                        try:
++                                cfg.num_clusters = int(abst["bucket_counts"].get("turn", cfg.num_clusters))
++                        except Exception:
++                                pass
++                if "tau_re" in abst:
++                        try:
++                                cfg.tau_re = float(abst["tau_re"])
++                        except Exception:
++                                pass
++                if "drift_sample_size" in abst:
++                        try:
++                                cfg.drift_sample_size = int(abst["drift_sample_size"])
++                        except Exception:
++                                pass
++                if "use_cfv_in_features" in abst:
++                        try:
++                                cfg.use_cfv_in_features = bool(abst["use_cfv_in_features"])
++                        except Exception:
++                                pass
++        if isinstance(vnets, dict):
++                if "outer_zero_sum" in vnets:
++                        cfg.enforce_zero_sum_outer = True
++                if "mc_samples_win" in vnets:
++                        try:
++                                cfg.mc_samples_win = int(vnets["mc_samples_win"])
++                        except Exception:
++                                pass
++                if "mc_samples_potential" in vnets:
++                        try:
++                                cfg.mc_samples_potential = int(vnets["mc_samples_potential"])
++                        except Exception:
++                                pass
++        if isinstance(solv, dict):
++                if "depth_limit" in solv:
++                        try:
++                                cfg.depth_limit = int(solv["depth_limit"])
++                        except Exception:
++                                pass
++                if "total_iterations" in solv:
++                        try:
++                                cfg.total_iterations = int(solv["total_iterations"])
++                        except Exception:
++                                pass
++                if "bet_size_mode" in solv:
++                        try:
++                                cfg.bet_size_mode = str(solv["bet_size_mode"])
++                        except Exception:
++                                pass
++                if "profile" in solv:
++                        try:
++                                cfg.profile = str(solv["profile"])
++                        except Exception:
++                                pass
++                if "soundness" in solv and isinstance(solv["soundness"], dict):
++                        try:
++                                setattr(cfg, "k1", float(solv["soundness"].get("k1", 0.0)))
++                        except Exception:
++                                setattr(cfg, "k1", 0.0)
++                        try:
++                                setattr(cfg, "k2", float(solv["soundness"].get("k2", 0.0)))
++                        except Exception:
++                                setattr(cfg, "k2", 0.0)
++        return {"seed": int(seed), "config": cfg}
++

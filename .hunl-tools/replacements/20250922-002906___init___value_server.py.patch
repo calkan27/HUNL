@@ -1,0 +1,25 @@
+--- a/value_server.py
++++ b/value_server.py
+@@ -6,9 +6,19 @@
+ import torch
+ 
+ class _ResultHandle:
+-	def __init__(self):
+-		self._evt = threading.Event()
+-		self._out: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
++    def __init__(self, models: Dict[str, torch.nn.Module], device: Optional[torch.device] = None, max_batch_size: int = 1024, max_wait_ms: int = 2):
++        self.models = {str(k): v for k, v in models.items()}
++        self.device = device if device is not None else torch.device("cuda" if torch.cuda.is_available() else "cpu")
++        for k in list(self.models.keys()):
++            self.models[k] = self.models[k].to(self.device)
++            self.models[k].eval()
++        self.max_batch = int(max_batch_size)
++        self.max_wait_ms = int(max_wait_ms)
++        self._q: "queue.Queue[Tuple[str, torch.Tensor, bool, _ResultHandle]]" = queue.Queue()
++        self._stop = threading.Event()
++        self._thr: Optional[threading.Thread] = None
++        self._counters: Dict[str, int] = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
++
+ 	def set(self, value: Tuple[torch.Tensor, torch.Tensor]) -> None:
+ 		self._out = value
+ 		self._evt.set()

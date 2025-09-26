@@ -1,0 +1,107 @@
+--- a/public_state.py
++++ b/public_state.py
+@@ -5,60 +5,50 @@
+ 
+ 
+ class PublicState:
+-	def __init__(self, initial_stacks=[200, 200], small_blind=1, big_blind=2, board_cards=None, dealer=0):
+-		if board_cards is not None:
+-			self.board_cards = list(board_cards)
+-		else:
+-			self.board_cards = []
+-
+-		self.pot_size = 0
+-		self.current_bets = [0, 0]
+-		self.current_round = 0
+-		self.is_terminal = False
+-		self.is_showdown = False
+-		self.last_action = None
+-
+-		self.deck = []
+-		i = 0
+-		while i < len(DECK):
+-			c = DECK[i]
+-			if c not in self.board_cards:
+-				self.deck.append(c)
+-			i = i + 1
+-		random.shuffle(self.deck)
+-
+-		self.stacks = initial_stacks.copy()
+-		self.initial_stacks = initial_stacks.copy()
+-		self.small_blind = small_blind
+-		self.big_blind = big_blind
+-		self.dealer = dealer
+-		self.current_player = None
+-		self.actions = []
+-		self.players_in_hand = [True, True]
+-
+-		self.last_raiser = None
+-		self.last_raise_increment = self.big_blind
+-
+-		self.hole_cards = [[], []]
+-		self.hole_cards[0] = [self.deck.pop(), self.deck.pop()]
+-		self.hole_cards[1] = [self.deck.pop(), self.deck.pop()]
+-
+-		sb_player = self.dealer
+-		bb_player = (self.dealer + 1) % 2
+-
+-		self.current_bets[sb_player] = self.small_blind
+-		self.current_bets[bb_player] = self.big_blind
+-
+-		self.stacks[sb_player] = self.stacks[sb_player] - self.small_blind
+-		self.stacks[bb_player] = self.stacks[bb_player] - self.big_blind
+-
+-		self.pot_size = self.small_blind + self.big_blind
+-
+-		self.current_player = self.dealer
+-
+-
+-
+-
++    def __init__(self, initial_stacks=[200, 200], small_blind=1, big_blind=2, board_cards=None, dealer=0):
++        if board_cards is not None:
++            self.board_cards = list(board_cards)
++        else:
++            self.board_cards = []
++        self.pot_size = 0
++        self.current_bets = [0, 0]
++        self.current_round = 0
++        self.is_terminal = False
++        self.is_showdown = False
++        self.last_action = None
++        self.deck = []
++        i = 0
++        while i < len(DECK):
++            c = DECK[i]
++            if c not in self.board_cards:
++                self.deck.append(c)
++            i = i + 1
++        random.shuffle(self.deck)
++        self.stacks = initial_stacks.copy()
++        self.initial_stacks = initial_stacks.copy()
++        self.small_blind = small_blind
++        self.big_blind = big_blind
++        self.dealer = dealer
++        self.current_player = None
++        self.actions = []
++        self.players_in_hand = [True, True]
++        self.last_raiser = None
++        self.last_raise_increment = self.big_blind
++        self.last_raise_was_allin_below_min = None
++        self.hole_cards = [[], []]
++        self.hole_cards[0] = [self.deck.pop(), self.deck.pop()]
++        self.hole_cards[1] = [self.deck.pop(), self.deck.pop()]
++        sb_player = self.dealer
++        bb_player = (self.dealer + 1) % 2
++        self.current_bets[sb_player] = self.small_blind
++        self.current_bets[bb_player] = self.big_blind
++        self.stacks[sb_player] = self.stacks[sb_player] - self.small_blind
++        self.stacks[bb_player] = self.stacks[bb_player] - self.big_blind
++        self.pot_size = self.small_blind + self.big_blind
++        self.total_contrib = [0, 0]
++        self.total_contrib[sb_player] += self.small_blind
++        self.total_contrib[bb_player] += self.big_blind
++        self.current_player = self.dealer
+ 
+ 	def _non_dealer(self) -> int:
+ 		return (self.dealer + 1) % 2

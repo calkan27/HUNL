@@ -1,0 +1,7 @@
+--- a/public_state_actions.py
++++ b/public_state_actions.py
+@@ -277,3 +277,4 @@
+                             new_state.current_bets[i] = 0
+             new_state._assert_invariants(prev_pot=prev_pot)
+             return new_state
++

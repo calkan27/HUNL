@@ -1,0 +1,32 @@
+--- a/cfr_solver_utils.py
++++ b/cfr_solver_utils.py
+@@ -37,18 +37,17 @@
+             return -1
+         return 0
+ 
+-	def get_stage(self, node: GameNode) -> str:
+-		cr = int(node.public_state.current_round)
+-		if cr == 0:
+-			return 'preflop'
+-		elif cr == 1:
+-			return 'flop'
+-		elif cr == 2:
+-			return 'turn'
+-		elif cr == 3:
+-			return 'river'
+-		return 'none'
+-
++    def get_stage(self, node: GameNode) -> str:
++        cr = int(node.public_state.current_round)
++        if cr == 0:
++            return 'preflop'
++        elif cr == 1:
++            return 'flop'
++        elif cr == 2:
++            return 'turn'
++        elif cr == 3:
++            return 'river'
++        return 'none'
+ 
+ 	def lift_ranges_after_chance(self, node: GameNode) -> dict:
+ 		ps = node.public_state

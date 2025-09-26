@@ -1,0 +1,13 @@
+--- a/agent.py
++++ b/agent.py
+@@ -57,8 +57,8 @@
+ 			r[int(cid)] = 1.0
+ 		return r
+ 
+-	def _public_key(self, ps):
+-		return (tuple(ps.board_cards), int(ps.current_round), (int(ps.current_bets[0]), int(ps.current_bets[1])), int(ps.pot_size), int(ps.current_player) if ps.current_player is not None else -1, int(ps.dealer), bool(ps.is_terminal), bool(ps.is_showdown), (bool(ps.players_in_hand[0]), bool(ps.players_in_hand[1])))
++    def _public_key(self, ps):
++        return GameNode(ps)._public_signature()
+ 
+     def act(self, public_state, our_private_cards):
+             node = GameNode(public_state)

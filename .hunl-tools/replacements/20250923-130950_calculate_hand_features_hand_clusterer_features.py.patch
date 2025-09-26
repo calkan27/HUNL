@@ -1,0 +1,67 @@
+--- a/hand_clusterer_features.py
++++ b/hand_clusterer_features.py
+@@ -6,24 +6,46 @@
+ 
+ 
+ class HandClustererFeaturesMixin:
+-	def calculate_hand_features(self, hand: str, board: List[str], opponent_range: Dict[Any, float], pot_size: float) -> np.ndarray:
+-		board_key = ",".join(board)
+-		cache_key = f"hand={hand}|board={board_key}"
+-		if cache_key in self._cache:
+-			self._cache_hits += 1
+-			return self._cache[cache_key]
+-		self._cache_misses += 1
+-		equity = self._calculate_equity(hand, board, opponent_range)
+-		potential_equity = self._calculate_potential_equity_improvement(hand, board, opponent_range)
+-		if getattr(self, "use_cfv_in_features", True):
+-			cfv_proxy = self._calculate_counterfactual_value(hand, board, opponent_range, 1.0)
+-		else:
+-			cfv_proxy = 0.0
+-		features = np.array([equity, potential_equity, cfv_proxy], dtype=float)
+-		norm = float(np.linalg.norm(features))
+-		features = (features / norm) if norm > 0.0 else features
+-		self._cache[cache_key] = features
+-		return features
++    def calculate_hand_features(self, hand: str, board: List[str], opponent_range: Dict[Any, float], pot_size: float) -> np.ndarray:
++        board_key = ",".join(board)
++        cache_key = f"sig|hand={hand}|board={board_key}"
++        if cache_key in self._cache:
++            self._cache_hits += 1
++            return self._cache[cache_key]
++        self._cache_misses += 1
++        B = 21
++        hist = np.zeros((B,), dtype=float)
++        hand_cards = hand.split() if isinstance(hand, str) else list(hand)
++        used_base = set(hand_cards + board)
++        avail_base = [c for c in DECK if c not in used_base]
++        num_to_come = max(0, 5 - len(board))
++        rng = random.Random(self._stable_seed(hand, board))
++        trials = max(1, int(getattr(self, "_mc_samples_potential", 200)))
++        t = 0
++        while t < trials:
++            t += 1
++            if len(avail_base) < num_to_come:
++                new_board = list(board)
++            else:
++                picks = rng.sample(avail_base, num_to_come) if num_to_come > 0 else []
++                new_board = list(board) + list(picks)
++            opp_used = set(hand_cards + new_board)
++            opp_avail = [c for c in DECK if c not in opp_used]
++            if len(opp_avail) < 2:
++                eq = 0.5
++            else:
++                oh = rng.sample(opp_avail, 2)
++                eq = self._evaluate_win_percentage(hand_cards, oh, new_board)
++            idx = int(eq * (B - 1))
++            if idx < 0:
++                idx = 0
++            if idx >= B:
++                idx = B - 1
++            hist[idx] += 1.0
++        if hist.sum() > 0:
++            hist = hist / hist.sum()
++        self._cache[cache_key] = hist
++        return hist
+ 
+ 	def _calculate_equity(self, hand: str, board: List[str], opponent_range: Dict[Any, float]) -> float:
+ 		hand_cards = hand.split() if isinstance(hand, str) else list(hand)

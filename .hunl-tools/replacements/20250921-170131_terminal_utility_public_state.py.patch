@@ -1,0 +1,77 @@
+--- a/public_state.py
++++ b/public_state.py
+@@ -575,34 +575,46 @@
+                 acts.append(ActionType.ALL_IN)
+         return acts
+ 
+-	def terminal_utility(self):
+-		u = [0.0, 0.0]
+-		if not self.is_terminal:
+-			return u
+-		if self.players_in_hand.count(True) == 1:
+-			winner = 0 if self.players_in_hand[0] else 1
+-			loser = 1 - winner
+-			u[winner] = float(self.pot_size - self.current_bets[winner])
+-			u[loser] = float(-self.current_bets[loser])
+-			return u
+-		if self.is_showdown:
+-			from poker_utils import best_hand, hand_rank
+-			h0 = list(self.hole_cards[0]) + list(self.board_cards)
+-			h1 = list(self.hole_cards[1]) + list(self.board_cards)
+-			r0 = hand_rank(best_hand(h0))
+-			r1 = hand_rank(best_hand(h1))
+-			if r0 > r1:
+-				u[0] = float(self.pot_size - self.current_bets[0])
+-				u[1] = float(-self.current_bets[1])
+-			elif r1 > r0:
+-				u[1] = float(self.pot_size - self.current_bets[1])
+-				u[0] = float(-self.current_bets[0])
+-			else:
+-				split = 0.5 * float(self.pot_size)
+-				u[0] = float(split - self.current_bets[0])
+-				u[1] = float(split - self.current_bets[1])
+-			return u
+-		return u
++    def terminal_utility(self):
++        u = [0.0, 0.0]
++        if not self.is_terminal:
++            return u
++        if self.players_in_hand.count(True) == 1:
++            winner = 0 if self.players_in_hand[0] else 1
++            loser = 1 - winner
++            u[winner] = float(self.pot_size - self.total_contrib[winner])
++            u[loser] = float(-self.total_contrib[loser])
++            return u
++        if self.is_showdown:
++            from poker_utils import best_hand, hand_rank
++            h0 = list(self.hole_cards[0]) + list(self.board_cards)
++            h1 = list(self.hole_cards[1]) + list(self.board_cards)
++            r0 = hand_rank(best_hand(h0))
++            r1 = hand_rank(best_hand(h1))
++            c0 = float(self.total_contrib[0])
++            c1 = float(self.total_contrib[1])
++            m = min(c0, c1)
++            main_pot = 2.0 * m
++            extra0 = max(0.0, c0 - m)
++            extra1 = max(0.0, c1 - m)
++            if r0 > r1:
++                win0 = main_pot + extra0
++                win1 = extra1
++                u[0] = win0 - c0
++                u[1] = win1 - c1
++            elif r1 > r0:
++                win1 = main_pot + extra1
++                win0 = extra0
++                u[1] = win1 - c1
++                u[0] = win0 - c0
++            else:
++                win0 = 0.5 * main_pot + extra0
++                win1 = 0.5 * main_pot + extra1
++                u[0] = win0 - c0
++                u[1] = win1 - c1
++            return u
++        return u
++
+ 	def street_index(self):
+ 		return int(self.current_round)
+ 	def board_one_hot(self):

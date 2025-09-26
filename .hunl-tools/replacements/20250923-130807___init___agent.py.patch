@@ -1,0 +1,49 @@
+--- a/agent.py
++++ b/agent.py
+@@ -8,26 +8,26 @@
+ from model_io import load_cfv_bundle
+ 
+ class Agent:
+-	def __init__(self, num_clusters=10, depth_limit=1, iterations=None, device=None, profile=None, config=None):
+-		if config is None:
+-			cfg = ResolveConfig.from_env({
+-				"num_clusters": int(num_clusters),
+-				"depth_limit": int(depth_limit),
+-				"total_iterations": int(iterations) if iterations is not None else 1000,
+-			})
+-			if profile is not None:
+-				cfg.profile = str(profile)
+-			self._config = cfg
+-		else:
+-			self._config = config
+-		self.solver = CFRSolver(config=self._config)
+-		self.solver.num_clusters = int(self._config.num_clusters)
+-		self.device = torch.device(device) if device is not None else torch.device("cuda" if torch.cuda.is_available() and getattr(self._config, "prefer_gpu", True) else "cpu")
+-		for k in list(self.solver.models.keys()):
+-			self.solver.models[k] = self.solver.models[k].to(self.device)
+-		self.clusterer = self.solver.hand_clusterer if hasattr(self.solver, "hand_clusterer") else HandClusterer(self.solver, num_clusters=int(self._config.num_clusters), profile=self._config.profile)
+-		self.num_clusters = int(self._config.num_clusters)
+-		self.last_public_key = None
++    def __init__(self, num_clusters=1000, depth_limit=1, iterations=None, device=None, profile=None, config=None):
++        if config is None:
++            cfg = ResolveConfig.from_env({
++                "num_clusters": int(num_clusters),
++                "depth_limit": int(depth_limit),
++                "total_iterations": int(iterations) if iterations is not None else 1000,
++            })
++            if profile is not None:
++                cfg.profile = str(profile)
++            self._config = cfg
++        else:
++            self._config = config
++        self.solver = CFRSolver(config=self._config)
++        self.solver.num_clusters = int(self._config.num_clusters)
++        self.device = torch.device(device) if device is not None else torch.device("cuda" if torch.cuda.is_available() and getattr(self._config, "prefer_gpu", True) else "cpu")
++        for k in list(self.solver.models.keys()):
++            self.solver.models[k] = self.solver.models[k].to(self.device)
++        self.clusterer = self.solver.hand_clusterer if hasattr(self.solver, "hand_clusterer") else HandClusterer(self.solver, num_clusters=int(self._config.num_clusters), profile=self._config.profile)
++        self.num_clusters = int(self._config.num_clusters)
++        self.last_public_key = None
+ 
+ 	def set_device(self, device):
+ 		self.device = torch.device(device)

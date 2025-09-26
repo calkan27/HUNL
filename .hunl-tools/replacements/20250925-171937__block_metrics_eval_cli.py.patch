@@ -1,0 +1,104 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -218,74 +218,34 @@
+ 
+ 
+ def _block_metrics(
+-	results: List[Tuple[float, float]],
+-	block_size: int = 100,
++        results: List[Tuple[float, float]],
++        block_size: int = 100,
+ ) -> Dict[str, Dict[str, float]]:
+-	n = len(results)
+-
+-	if n == 0:
+-		return {
+-			"blocks": 0,
+-			"naive": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
+-			"aivat": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
+-		}
+-
+-	bb = 2.0  # blinds for mbb/100 normalization
+-
+-	def _blocks(series: List[float]) -> List[float]:
+-		blocks = []
+-
+-		i = 0
+-		while i < len(series):
+-			chunk = series[i : i + block_size]
+-			i += block_size
+-
+-			if len(chunk) == block_size:
+-				blocks.append(sum(chunk) / float(block_size))
+-
+-		return blocks
+-
+-	na = [x[0] for x in results]
+-	av = [x[1] for x in results]
+-
+-	na_b = _blocks(na)
+-	av_b = _blocks(av)
+-
+-	def _ci(blocks: List[float]) -> Dict[str, object]:
+-		if not blocks:
+-			return {"mbb100": 0.0, "ci95": [0.0, 0.0]}
+-
+-		m = sum(blocks) / float(len(blocks))
+-
+-		var = 0.0
+-		for v in blocks:
+-			d = v - m
+-			var += d * d
+-
+-		if len(blocks) > 1:
+-			var = var / float(len(blocks) - 1)
+-		else:
+-			var = var / 1.0
+-
+-		se = (var / float(len(blocks))) ** 0.5
+-
+-		mbb100 = (m / bb) * 100.0
+-		half = 1.96 * ((se / bb) * 100.0)
+-
+-		return {
+-			"mbb100": float(mbb100),
+-			"ci95": [float(mbb100 - half), float(mbb100 + half)],
+-		}
+-
+-	na_stats = _ci(na_b)
+-	av_stats = _ci(av_b)
+-
+-	return {
+-		"blocks": int(len(na_b)),
+-		"naive": na_stats,
+-		"aivat": av_stats,
+-	}
+-
++        n = len(results)
++
++        if n == 0:
++                return {
++                        "blocks": 0,
++                        "naive": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
++                        "aivat": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
++                }
++
++        bb = 2.0
++
++        na = [x[0] for x in results]
++        av = [x[1] for x in results]
++
++        na_b = _blocks_from_series(na, int(block_size))
++        av_b = _blocks_from_series(av, int(block_size))
++
++        na_stats = _ci_from_blocks(na_b, float(bb))
++        av_stats = _ci_from_blocks(av_b, float(bb))
++
++        return {
++                "blocks": int(len(na_b)),
++                "naive": na_stats,
++                "aivat": av_stats,
++        }
+ 
+ def _chance_policy_uniform(node: GameNode) -> Dict[str, float]:
+ 	ps = node.public_state

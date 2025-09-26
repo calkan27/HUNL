@@ -1,0 +1,107 @@
+--- a/public_state_streets.py
++++ b/public_state_streets.py
+@@ -10,63 +10,51 @@
+ 		self.consecutive_checks = 0
+ 		self._last_action_was_call_on_bet = False
+ 
+-	def _min_raise_size(self) -> int:
+-		val = getattr(self, "last_raise_increment", None)
++    def _min_raise_size(self) -> int:
++        val = getattr(self, "last_raise_increment", None)
+ 
+-		if type(val) in (int, float, bool):
+-			inc = int(val)
+-		elif type(val) in (tuple, list):
+-			if len(val) > 0:
+-				head = val[0]
+-				if type(head) in (int, float, bool):
+-					inc = int(head)
+-				elif type(head) is str:
+-					s = str(head).strip()
+-					if s.lstrip("+-").isdigit():
+-						inc = int(s)
+-					else:
+-						inc = 0
+-				else:
+-					inc = 0
+-			else:
+-				inc = 0
+-		elif type(val) is str:
+-			s = str(val).strip()
+-			if s.lstrip("+-").isdigit():
+-				inc = int(s)
+-			else:
+-				inc = 0
+-		else:
+-			if callable(val):
+-				inc = 0
+-			else:
+-				if val is None:
+-					inc = 0
+-				else:
+-					s2 = str(val).strip()
+-					if s2.lstrip("+-").isdigit():
+-						inc = int(s2)
+-					else:
+-						inc = 0
++        inc = None
++        try:
++            inc = int(val)
++        except Exception:
++            if type(val) in (tuple, list) and len(val) > 0:
++                try:
++                    inc = int(val[0])
++                except Exception:
++                    try:
++                        inc = int(str(val[0]).strip())
++                    except Exception:
++                        inc = None
++            elif type(val) is str:
++                s = val.strip()
++                try:
++                    inc = int(s)
++                except Exception:
++                    inc = None
++            else:
++                try:
++                    inc = int(str(val).strip())
++                except Exception:
++                    inc = None
+ 
+-		bb_raw = getattr(self, "big_blind", 2)
+-		if type(bb_raw) in (int, float, bool):
+-			bb = int(bb_raw)
+-		elif type(bb_raw) is str:
+-			sbb = str(bb_raw).strip()
+-			if sbb.lstrip("+-").isdigit():
+-				bb = int(sbb)
+-			else:
+-				bb = 2
+-		else:
+-			bb = 2
++        if inc is None:
++            inc = 0
+ 
+-		if inc < bb:
+-			inc = bb
+-		if inc < 0:
+-			inc = 0
++        bb_raw = getattr(self, "big_blind", 2)
++        try:
++            bb = int(bb_raw)
++        except Exception:
++            try:
++                bb = int(str(bb_raw).strip())
++            except Exception:
++                bb = 2
+ 
+-		return int(inc)
++        if inc < bb:
++            inc = bb
++        if inc < 0:
++            inc = 0
++
++        return int(inc)
+ 
+ 	def _deal_for_new_street(self) -> None:
+ 		used = set(list(getattr(self, "board_cards", [])))

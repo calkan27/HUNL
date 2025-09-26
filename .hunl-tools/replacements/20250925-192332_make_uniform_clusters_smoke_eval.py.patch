@@ -1,0 +1,62 @@
+--- a/smoke_eval.py
++++ b/smoke_eval.py
+@@ -45,22 +45,43 @@
+ 	return ps
+ 
+ 
+-def make_uniform_clusters(solver: CFRSolver, K: int = 5) -> Dict[int, Set[str]]:
+-	hands = []
+-	used = {"AH", "KD", "2C", "QS", "JC", "9H", "9D"}
+-	for c1 in DECK:
+-		if c1 in used:
+-			continue
+-		for c2 in DECK:
+-			if c2 == c1 or c2 in used:
+-				continue
+-			h = f"{c1} {c2}"
+-			if h not in hands and (c2 + " " + c1) not in hands:
+-				hands.append(h)
+-	clusters = {i: {hands[i]} for i in range(K)}
+-	solver.clusters = clusters
+-	return clusters
+-
++def make_uniform_clusters(
++        solver: CFRSolver,
++        K: int = 5,
++) -> Dict[int, Set[str]]:
++        hands: list[str] = []
++        used: Set[str] = {"AH", "KD", "2C", "QS", "JC", "9H", "9D"}
++
++        for c1 in DECK:
++                if c1 in used:
++                        continue
++                else:
++                        for c2 in DECK:
++                                if c2 == c1:
++                                        continue
++                                else:
++                                        if c2 in used:
++                                                continue
++                                        else:
++                                                h = f"{c1} {c2}"
++                                                h_rev = f"{c2} {c1}"
++
++                                                if h in hands:
++                                                        pass
++                                                else:
++                                                        if h_rev in hands:
++                                                                pass
++                                                        else:
++                                                                hands.append(h)
++
++        clusters: Dict[int, Set[str]] = {}
++        i = 0
++        while i < K:
++                clusters[i] = {hands[i]}
++                i += 1
++
++        solver.clusters = clusters
++        return clusters
+ 
+ def uniform_ranges(K: int) -> Dict[int, float]:
+ 	u = 1.0 / float(K) if K > 0 else 0.0

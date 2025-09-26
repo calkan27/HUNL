@@ -1,0 +1,121 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -28,62 +28,62 @@
+ 	DataGeneratorDatasetsMixin,
+ 	DataGeneratorUtilsMixin,
+ ):
+-	def __init__(self, num_boards, num_samples_per_board, player_stack=200, num_clusters=1000,
+-				 speed_profile: str = None, config=None):
+-
+-		self._config = config
+-		self.num_boards = num_boards
+-		self.num_samples_per_board = num_samples_per_board
+-		self.player_stack = player_stack
+-
+-		if self._config is not None:
+-			self.num_clusters = int(self._config.num_clusters)
+-			self.speed_profile = self._config.profile
+-
+-			self.cfr_solver = CFRSolver(config=self._config)
+-			self.cfr_solver.total_iterations = int(self._config.total_iterations)
+-
+-			self.hand_clusterer = HandClusterer(
+-				self.cfr_solver,
+-				num_clusters=self.num_clusters,
+-				profile=self.speed_profile,
+-				opp_sample_size=self._config.opp_sample_size,
+-				use_cfv_in_features=self._config.use_cfv_in_features,
+-				config=self._config,
+-			)
+-			self.cfr_solver.hand_clusterer = self.hand_clusterer
+-			self.cfr_solver.num_clusters = self.num_clusters
+-
+-			if self._config.profile == "test":
+-				self.cfr_solver.depth_limit = 0
+-				self.cfr_solver.total_iterations = 1
+-
+-			self.torch_frozen_clusters_base = None
+-			self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+-			return
+-
+-		self.num_clusters = num_clusters
+-		env_fast = os.getenv("FAST_TESTS") == "1"
+-		self.speed_profile = speed_profile or ("test" if env_fast else "bot")
+-
+-		self.cfr_solver = CFRSolver(depth_limit=4, num_clusters=self.num_clusters)
+-		self.cfr_solver.total_iterations = 20
+-		self.hand_clusterer = HandClusterer(
+-			self.cfr_solver,
+-			num_clusters=self.num_clusters,
+-			profile=self.speed_profile,
+-			opp_sample_size=None,
+-			use_cfv_in_features=(self.speed_profile != "test"),
+-		)
+-		self.cfr_solver.hand_clusterer = self.hand_clusterer
+-		self.cfr_solver.num_clusters = self.num_clusters
+-
+-		if self.speed_profile == "test":
+-			self.cfr_solver.depth_limit = 0
+-			self.cfr_solver.total_iterations = 1
+-
+-		self.torch_frozen_clusters_base = None
+-		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
++    def __init__(self, num_boards, num_samples_per_board, player_stack=200, num_clusters=1000,
++                 speed_profile: str = None, config=None):
++
++        self._config = config
++        self.num_boards = num_boards
++        self.num_samples_per_board = num_samples_per_board
++        self.player_stack = player_stack
++
++        if self._config is not None:
++            self.num_clusters = int(self._config.num_clusters)
++            self.speed_profile = self._config.profile
++
++            self.cfr_solver = CFRSolver(config=self._config)
++            self.cfr_solver.total_iterations = int(self._config.total_iterations)
++
++            self.hand_clusterer = HandClusterer(
++                self.cfr_solver,
++                num_clusters=self.num_clusters,
++                profile=self.speed_profile,
++                opp_sample_size=self._config.opp_sample_size,
++                use_cfv_in_features=self._config.use_cfv_in_features,
++                config=self._config,
++            )
++            self.cfr_solver.hand_clusterer = self.hand_clusterer
++            self.cfr_solver.num_clusters = self.num_clusters
++
++            if self._config.profile == "test" and not bool(getattr(self._config, "paper_faithful", True)):
++                self.cfr_solver.depth_limit = 0
++                self.cfr_solver.total_iterations = 1
++
++            self.torch_frozen_clusters_base = None
++            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
++            return
++
++        self.num_clusters = num_clusters
++        env_fast = os.getenv("FAST_TESTS") == "1"
++        self.speed_profile = speed_profile or ("test" if env_fast else "bot")
++
++        self.cfr_solver = CFRSolver(depth_limit=4, num_clusters=self.num_clusters)
++        self.cfr_solver.total_iterations = 20
++        self.hand_clusterer = HandClusterer(
++            self.cfr_solver,
++            num_clusters=self.num_clusters,
++            profile=self.speed_profile,
++            opp_sample_size=None,
++            use_cfv_in_features=(self.speed_profile != "test"),
++        )
++        self.cfr_solver.hand_clusterer = self.hand_clusterer
++        self.cfr_solver.num_clusters = self.num_clusters
++
++        if self.speed_profile == "test":
++            self.cfr_solver.depth_limit = 0
++            self.cfr_solver.total_iterations = 1
++
++        self.torch_frozen_clusters_base = None
++        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+ 
+ 	def generate_training_data(self, stage='flop', progress=None) -> List[Dict[str, Any]]:
+ 		data = []

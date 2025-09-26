@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/data_generator_utils.py
+# hypothesis_version: 6.133.2
+
+[0.0, 1e-09, 1.0, '_label_pot_fraction', 'bot', 'cfr_solver', 'depth_limit', 'flop', 'hand_clusterer', 'hc_profile', 'label_pot_fraction', 'preflop', 'profile', 'river', 'solver_depth_limit', 'speed_profile', 'test', 'total_iterations', 'turn', 'utf-8']

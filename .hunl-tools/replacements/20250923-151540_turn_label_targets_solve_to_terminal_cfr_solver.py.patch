@@ -1,0 +1,53 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -580,21 +580,32 @@
+ 					vals.append(val)
+ 				out[int(cid)] = [float(min(vals) if vals else 0.0)]
+ 		return out
+-	def turn_label_targets_solve_to_terminal(self, node):
+-		old_depth = int(getattr(self, "depth_limit", 1))
+-		try:
+-			self.depth_limit = 99
+-			self.run_cfr(node)
+-			v0 = self._expected_cfv_vector(node, player=0)
+-			v1 = self._expected_cfv_vector(node, player=1)
+-			K = int(self.num_clusters)
+-			out0 = [0.0] * K
+-			out1 = [0.0] * K
+-			for cid in range(K):
+-				a = v0.get(int(cid), [0.0])
+-				b = v1.get(int(cid), [0.0])
+-				out0[cid] = float(a[0] if isinstance(a, (list, tuple)) and len(a) > 0 else a)
+-				out1[cid] = float(b[0] if isinstance(b, (list, tuple)) and len(b) > 0 else b)
+-			return out0, out1
+-		finally:
+-			self.depth_limit = old_depth
++    def turn_label_targets_solve_to_terminal(self, node):
++        old_depth = int(getattr(self, "depth_limit", 1))
++        try:
++            self.depth_limit = 99
++            self.run_cfr(node)
++            v0 = self._expected_cfv_vector(node, player=0)
++            v1 = self._expected_cfv_vector(node, player=1)
++            K = int(self.num_clusters)
++            out0 = [0.0] * K
++            out1 = [0.0] * K
++            for cid in range(K):
++                a = v0.get(int(cid), [0.0])
++                b = v1.get(int(cid), [0.0])
++                va = float(a[0] if isinstance(a, (list, tuple)) and len(a) > 0 else a)
++                vb = float(b[0] if isinstance(b, (list, tuple)) and len(b) > 0 else b)
++                out0[cid] = va
++                out1[cid] = vb
++            p = float(getattr(node.public_state, "pot_size", 0.0))
++            if p <= 0.0:
++                return out0, out1
++            i = 0
++            while i < K:
++                out0[i] = out0[i] / p
++                out1[i] = out1[i] / p
++                i += 1
++            return out0, out1
++        finally:
++            self.depth_limit = old_depth
++

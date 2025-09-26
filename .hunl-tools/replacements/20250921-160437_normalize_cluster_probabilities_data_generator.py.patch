@@ -1,0 +1,36 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -229,19 +229,20 @@
+ 			seen.add(b)
+ 			out.append(list(b))
+ 		return out
+-	def normalize_cluster_probabilities(self, ranges_list):
+-		for r in ranges_list:
+-			s = sum(float(v) for v in r.values()) or 0.0
+-			if s > 0.0:
+-				for k in list(r.keys()):
+-					r[k] = float(r[k]) / float(s)
+-			else:
+-				K = int(self.num_clusters)
+-				if K > 0:
+-					u = 1.0 / float(K)
+-					for i in range(K):
+-						r[i] = u
+-			return ranges_list
++    def normalize_cluster_probabilities(self, ranges_list):
++        K = int(self.num_clusters)
++        for r in ranges_list:
++            s = sum(float(v) for v in r.values()) or 0.0
++            if s > 0.0:
++                for k in list(r.keys()):
++                    r[k] = float(r[k]) / float(s)
++            else:
++                if K > 0:
++                    u = 1.0 / float(K)
++                    for i in range(K):
++                        r[i] = u
++        return ranges_list
++
+ 	def bucket_player_ranges(self, ranges_pair):
+ 		K = int(self.num_clusters)
+ 		r1 = [0.0] * K

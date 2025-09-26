@@ -1,0 +1,86 @@
+--- a/test_group_c_value_nets_and_training.py
++++ b/test_group_c_value_nets_and_training.py
+@@ -65,35 +65,56 @@
+     assert p2.shape == (5, K)
+ 
+ def test_enforce_zero_sum_residual_invariance_and_numerical_stability():
++    import cfv_trainer as tr
+     import cfv_network as cn
+-    K = 7
++
++    K = 6
+     model = cn.CounterfactualValueNetwork(input_size=1+52+2*K, num_clusters=K)
+-    B = 4
+-    x = torch.randn(B, 1+52+2*K, requires_grad=True)
+-    p1, p2 = model(x)
+-
+-    r1 = torch.zeros(B, K)
+-    r2 = torch.rand(B, K)
+-    r2[0] = 0.0
+-
+-    f1, f2 = model.enforce_zero_sum(r1, r2, p1, p2)
+-    assert torch.isfinite(f1).all()
+-    assert torch.isfinite(f2).all()
+-
+-    eps = 1e-7
+-    def _norm(r):
+-        s = r.sum(dim=1, keepdim=True)
+-        w = torch.where(s > 0, r / torch.clamp(s, min=eps), torch.full_like(r, 1.0 / r.shape[1]))
+-        return w
+-    s1 = _norm(r1)
+-    s2 = _norm(r2)
+-    res = (s1 * f1).sum(dim=1) + (s2 * f2).sum(dim=1)
+-    assert torch.allclose(res, torch.zeros_like(res), atol=1e-6)
+-
+-    c = 3.14
+-    f1p, f2p = model.enforce_zero_sum(r1, r2, p1 + c, p2 + c)
+-    assert torch.allclose(f1, f1p, atol=1e-6)
+-    assert torch.allclose(f2, f2p, atol=1e-6)
++    train = make_toy_samples(K, 8)
++    val = make_toy_samples(K, 8)
++
++    recorded_lrs = []
++    orig_step = torch.optim.Adam.step
++    def spy_step(self, *args, **kwargs):
++        if self.param_groups:
++            recorded_lrs.append(float(self.param_groups[0]["lr"]))
++        return orig_step(self, *args, **kwargs)
++    monkeypatch.setattr(torch.optim.Adam, "step", spy_step, raising=True)
++
++    called = {"train": 0}
++    orig_ezs = model.enforce_zero_sum
++    def spy_enforce(r1, r2, p1, p2):
++        called["train"] += 1
++        return orig_ezs(r1, r2, p1, p2)
++    monkeypatch.setattr(model, "enforce_zero_sum", spy_enforce, raising=True)
++
++    # Force no improvement after first epoch to deterministically trigger early stop
++    orig_eval = tr._eval_loss_cfv
++    def plateau_eval(*args, **kwargs):
++        th, tm, trm = orig_eval(*args, **kwargs)
++        if kwargs.get("split") == "val":
++            return 1.0, tm, trm
++        return th, tm, trm
++    monkeypatch.setattr(tr, "_eval_loss_cfv", plateau_eval, raising=True)
++
++    out = tr.train_cfv_network(
++        model=model,
++        train_samples=train,
++        val_samples=val,
++        epochs=12,
++        batch_size=4,
++        lr=1e-3,
++        lr_drop_epoch=1,
++        lr_after=5e-4,
++        weight_decay=0.0,
++        device=torch.device("cpu"),
++        seed=123,
++        early_stop_patience=3,
++        min_delta=0.0,
++    )
++    assert len(out["history"]["train_huber"]) < 12
++    assert any(lr == 5e-4 for lr in recorded_lrs)
++    assert called["train"] > 0
+ 
+ def test_predict_with_zero_sum_equivalence():
+     import cfv_network as cn

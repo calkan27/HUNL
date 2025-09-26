@@ -1,0 +1,10 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -233,5 +233,6 @@
+                             ev_o_by_cluster[int(oid)] = ev_o
+ 
+             scale = (1.0 / float(pot_size)) if pot_size > 0.0 else 1.0
+-            out = {int(cid): [ev_p_by_cluster.get(int(cid), 0.0) * scale] * 4 for cid in my_range.keys()}
++            out = {int(cid): float(ev_p_by_cluster.get(int(cid), 0.0) * scale) for cid in my_range.keys()}
+             return out
++

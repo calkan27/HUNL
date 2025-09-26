@@ -1,0 +1,66 @@
+--- a/public_state_streets.py
++++ b/public_state_streets.py
+@@ -3,11 +3,59 @@
+ 
+ 
+ class PublicStateStreetsMixin:
+-	def _reset_street_bookkeeping(self) -> None:
++    def _reset_street_bookkeeping(self) -> None:
++        self.last_raiser = None
++        self.last_raise_increment = self.big_blind
++        self.last_raise_was_allin_below_min = None
++        self.consecutive_checks = 0
+ 
+-		self.last_raiser = None
+-		self.last_raise_increment = self.big_blind
+-		self.last_raise_was_allin_below_min = None
++    def _min_raise_size(self) -> int:
++        inc = self.last_raise_increment
++        if inc < self.big_blind:
++            inc = self.big_blind
++        return inc
++
++    def _deal_for_new_street(self) -> None:
++        if self.current_round == 1:
++            while len(self.board_cards) < 3 and self.deck:
++                self.board_cards.append(self.deck.pop())
++        elif self.current_round == 2:
++            while len(self.board_cards) < 4 and self.deck:
++                self.board_cards.append(self.deck.pop())
++        elif self.current_round == 3:
++            while len(self.board_cards) < 5 and self.deck:
++                self.board_cards.append(self.deck.pop())
++
++    def _advance_street_if_closed(self, actor: int) -> None:
++        opp = (actor + 1) % 2
++        if self.players_in_hand[0] and self.players_in_hand[1]:
++            if self.current_bets[actor] == self.current_bets[opp]:
++                if self.last_raiser is None:
++                    if self.consecutive_checks >= 2:
++                        if self.current_round < 3:
++                            self.current_round = self.current_round + 1
++                            self.current_bets = [0, 0]
++                            self._reset_street_bookkeeping()
++                            if self.current_round >= 1:
++                                self.current_player = (self.dealer + 1) % 2
++                            else:
++                                self.current_player = self.dealer
++                        else:
++                            self.is_terminal = True
++                            self.is_showdown = True
++                else:
++                    if actor != self.last_raiser:
++                        if self.current_round < 3:
++                            self.current_round = self.current_round + 1
++                            self.current_bets = [0, 0]
++                            self._reset_street_bookkeeping()
++                            if self.current_round >= 1:
++                                self.current_player = (self.dealer + 1) % 2
++                            else:
++                                self.current_player = self.dealer
++                        else:
++                            self.is_terminal = True
++                            self.is_showdown = True
+ 
+ 	def _min_raise_size(self) -> int:
+ 

@@ -1,0 +1,130 @@
+--- a/play_cli.py
++++ b/play_cli.py
+@@ -340,74 +340,59 @@
+ 
+ 
+ 
+-def _acpc_loop(
+-	args
+-):
+-	for line in iter(input, ""):
+-		msg = _safe_json_line_to_obj(line)
+-
+-		if msg is None:
+-			print("[SKIP] invalid json line", flush=True)
+-			continue
+-
+-		typ = str(msg.get("type", ""))
+-
+-		if typ == "query":
+-			ps = _parse_query_ps(msg, args.stack)
+-
+-			K = int(msg.get("K", 6))
+-			if K < 0:
+-				K = 0
+-
+-			r = _r_uniform(K)
+-			w = {i: 0.0 for i in range(K)}
+-
+-			diag_solver = _build_diag_solver(
+-				ps,
+-				K,
+-				r,
+-				w,
+-				args.depth,
+-				args.iters,
+-				args.k1,
+-				args.k2,
+-			)
+-
+-			t0 = time.time()
+-
+-			policy, w_next, _, diag = _resolve_with_diag(
+-				ps,
+-				r,
+-				w,
+-				args.depth,
+-				args.iters,
+-				args.bet_frac,
+-				diag_solver,
+-			)
+-
+-			t1 = time.time()
+-
+-			if policy:
+-				action = _choose_action(policy)
+-			else:
+-				action = ActionType.CALL
+-
+-			_log(
+-				{
+-					"mode": "acpc-client",
+-					"t_ms": int((t1 - t0) * 1000.0),
+-					"policy": {str(k): float(v) for k, v in policy.items()},
+-					"action": int(action.value),
+-					"diag": diag,
+-				},
+-				args.log,
+-			)
+-
+-			resp = {"type": "action", "action": int(action.value)}
+-			print(json.dumps(resp), flush=True)
+-
+-		if typ == "close":
+-			break
++
++def _acpc_loop(args):
++        for line in iter(input, ""):
++                msg = _safe_json_line_to_obj(line)
++                if msg is None:
++                        continue
++                typ = str(msg.get("type", ""))
++                if typ == "query":
++                        ps = _parse_query_ps(msg, args.stack)
++                        K = int(msg.get("K", 6)) if isinstance(msg.get("K", 6), (int, float, str)) else 6
++                        if K < 0:
++                                K = 0
++                        r = _r_uniform(int(K))
++                        w = {i: 0.0 for i in range(int(K))}
++                        diag_solver = _build_diag_solver(
++                                ps,
++                                int(K),
++                                r,
++                                w,
++                                int(args.depth),
++                                int(args.iters),
++                                float(args.k1),
++                                float(args.k2),
++                        )
++                        t0 = time.time()
++                        policy, w_next, _, diag = _resolve_with_diag(
++                                ps,
++                                r,
++                                w,
++                                int(args.depth),
++                                int(args.iters),
++                                list(args.bet_frac),
++                                diag_solver,
++                        )
++                        t1 = time.time()
++                        if policy:
++                                action = _choose_action(policy)
++                        else:
++                                action = ActionType.CALL
++                        _log(
++                                {
++                                        "mode": "acpc-client",
++                                        "t_ms": int((t1 - t0) * 1000),
++                                        "policy": {str(k): float(v) for k, v in policy.items()},
++                                        "action": int(action.value),
++                                        "diag": diag,
++                                },
++                                args.log,
++                        )
++                        resp = {"type": "action", "action": int(action.value)}
++                        print(json.dumps(resp), flush=True)
++                if typ == "close":
++                        break
+ 
+ 
+ def _init_hand_state(

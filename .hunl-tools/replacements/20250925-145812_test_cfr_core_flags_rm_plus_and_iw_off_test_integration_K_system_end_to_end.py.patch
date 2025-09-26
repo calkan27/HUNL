@@ -1,0 +1,70 @@
+--- a/test_integration_K_system_end_to_end.py
++++ b/test_integration_K_system_end_to_end.py
+@@ -451,33 +451,43 @@
+ 
+ # (C3) CFR core knobs: rm_plus off and importance_weighting off should still run and yield a policy
+ def test_cfr_core_flags_rm_plus_and_iw_off():
+-    import numpy as np
+-    from cfr_core import PublicChanceCFR
+-    from lookahead_tree import LookaheadTreeBuilder
+-    from public_state import PublicState
+-
+-    # flop root, 2 actions; trivial leaves
+-    deck = __import__("poker_utils").poker_utils.DECK
+-    board = list(deck[:3])
+-    ps = PublicState(initial_stacks=[200,200], board_cards=board)
++    # Build a minimal flop tree with pot-sized bet available; trivial leaf values
++    ps = PublicState(initial_stacks=[200, 200], board_cards=[deck[6], deck[7], deck[8]], dealer=0)
+     ps.current_round = 1
+-    ps.current_bets = [10, 0]
+-    ps.last_raiser = 0
+-    ps.current_player = 1
+-    root = LookaheadTreeBuilder(depth_limit=1, bet_fractions=[1.0], include_all_in=True).build(ps)
+-
+-    def _leaf(ps_, pov, r1, r2):
+-        return np.array([0.0], dtype=float)
+-
++    ps.current_bets = [0, 0]
++    ps.pot_size = 40.0
++    ps.current_player = (ps.dealer + 1) % 2
++
++    builder = LookaheadTreeBuilder(depth_limit=1, bet_fractions=[1.0], include_all_in=True)
++    root = builder.build(ps)
++
++    # Turn off regret-matching+ and importance weighting
+     cfr = PublicChanceCFR(depth_limit=1, bet_fractions=[1.0], include_all_in=True,
+                           regret_matching_plus=False, importance_weighting=False)
+-    pol, node_vals, opp = cfr.solve_subgame(root, r_us=[0.5,0.5], r_opp=[0.5,0.5],
+-                                            opp_cfv_constraints=[0.0,0.0], T=2, leaf_value_fn=_leaf)
+-    s = sum(pol.values()) if pol else 0.0
+-    assert pol and abs(s - 1.0) < 1e-9
+-
+-
+-# (C4) Model sharing fallback: when one stage is zero-initialized, share weights across flop/turn
++
++    # Uniform ranges for a small synthetic K
++    K = 6
++    r_us = [1.0 / K] * K
++    r_opp = [1.0 / K] * K
++    opp_upper = [float("inf")] * K  # SP gadget off here; just exercise flags
++
++    def leaf_value_fn(_ps, _pov, _r1, _r2):
++        return torch.tensor([0.0], dtype=torch.float32)  # trivial scalar leaf
++
++    policy, node_vals, opp_cfv = cfr.solve_subgame(
++        root_node=root,
++        r_us=r_us,
++        r_opp=r_opp,
++        opp_cfv_constraints=opp_upper,
++        T=5,
++        leaf_value_fn=leaf_value_fn,
++    )
++
++    # Basic sanity: policy is a distribution over legal root actions and sums to ~1
++    assert isinstance(policy, dict) and len(policy) > 0
++    s = sum(float(p) for p in policy.values())
++    assert pytest.approx(s, rel=0, abs=1e-6) == 1.0
++
+ def test_cfr_solver_models_share_flop_turn_if_missing(cfg):
+     s = CFRSolver(config=cfg)
+     # Ensure shapes agree and turn has non-zero params; zero out flop weights

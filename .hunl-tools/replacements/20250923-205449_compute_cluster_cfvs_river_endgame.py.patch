@@ -1,0 +1,305 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -87,154 +87,154 @@
+ 			i += 1
+ 		return ev_p, ev_o
+ 
+-	def compute_cluster_cfvs(self, clusters, node, player, wins_fn, best_hand_fn, hand_rank_fn):
+-			board = list(node.public_state.board_cards)
+-			board_set = set(board)
+-			pot_size = float(node.public_state.pot_size)
+-			p0_bet = float(node.public_state.current_bets[0])
+-			p1_bet = float(node.public_state.current_bets[1])
+-
+-			total_initial = sum(node.public_state.initial_stacks) if getattr(node.public_state, "initial_stacks", None) else 1.0
+-			if total_initial <= 0:
+-					total_initial = 1.0
+-
+-			my = player
+-			opp = (player + 1) % 2
+-
+-			my_range_raw = dict(node.player_ranges[my])
+-			opp_range_raw = dict(node.player_ranges[opp])
+-
+-			s1 = sum(my_range_raw.values())
+-			s2 = sum(opp_range_raw.values())
+-			if s1 > 0:
+-					for k in list(my_range_raw.keys()):
+-							my_range_raw[k] = my_range_raw[k] / s1
+-			else:
+-					for k in list(my_range_raw.keys()):
+-							my_range_raw[k] = 0.0
+-			if s2 > 0:
+-					for k in list(opp_range_raw.keys()):
+-							opp_range_raw[k] = opp_range_raw[k] / s2
+-			else:
+-					for k in list(opp_range_raw.keys()):
+-							opp_range_raw[k] = 0.0
+-
+-			my_range = my_range_raw
+-			opp_range = opp_range_raw
+-
+-			ev_p_by_cluster = {}
+-			ev_o_by_cluster = {}
+-
+-			if self.num_buckets is None or self.num_buckets <= 0:
+-					for cid in my_range.keys():
+-							my_hands_full = self._filter_hands(clusters.get(int(cid), []), board_set)
+-							my_hands = self._sample(my_hands_full, self.max_sample_per_cluster, 1000 + int(cid))
+-							if not my_hands:
+-									ev_p_by_cluster[int(cid)] = 0.0
+-									continue
+-
+-							ev_total_p = 0.0
+-							my_w = 1.0 / float(len(my_hands))
+-
+-							for my_h in my_hands:
+-									c1, c2 = my_h.split()
+-									my_cards = [c1, c2]
+-									for oid, oprob in opp_range.items():
+-											if float(oprob) <= 0.0:
+-													continue
+-											opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
+-											opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
+-											if not opp_hands:
+-													continue
+-											opp_w = (oprob / float(len(opp_hands))) if len(opp_hands) > 0 else 0.0
+-											for o_h in opp_hands:
+-													d1, d2 = o_h.split()
+-													opp_cards = [d1, d2]
+-													up, uo = self._expected_utility_pairwise(
+-															my_cards, opp_cards, board, wins_fn,
+-															pot_size, p0_bet if my == 0 else p1_bet, p1_bet if my == 0 else p0_bet
+-													)
+-													ev_total_p += my_w * opp_w * up
+-													if oid not in ev_o_by_cluster:
+-															ev_o_by_cluster[int(oid)] = 0.0
+-													ev_o_by_cluster[int(oid)] += my_w * opp_w * uo
+-							ev_p_by_cluster[int(cid)] = ev_total_p
+-
+-					for k in list(opp_range.keys()):
+-							if int(k) not in ev_o_by_cluster:
+-									ev_o_by_cluster[int(k)] = 0.0
+-
+-			else:
+-					all_strengths = []
+-					for cid in my_range.keys():
+-							my_hands_full = self._filter_hands(clusters.get(int(cid), []), board_set)
+-							my_hands = self._sample(my_hands_full, self.max_sample_per_cluster, 1000 + int(cid))
+-							if my_hands:
+-									all_strengths.extend(self._cluster_distribution(my_hands, board, best_hand_fn, hand_rank_fn))
+-					for oid in opp_range.keys():
+-							opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
+-							opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
+-							if opp_hands:
+-									all_strengths.extend(self._cluster_distribution(opp_hands, board, best_hand_fn, hand_rank_fn))
+-
+-					bmap, B = self._bucketize(all_strengths)
+-					if bmap is None:
+-							return self.compute_cluster_cfvs(clusters, node, player, wins_fn, best_hand_fn, hand_rank_fn)
+-
+-					opp_bucket_mix = [0.0] * B
+-					for oid, oprob in opp_range.items():
+-							if float(oprob) <= 0.0:
+-									continue
+-							opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
+-							opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
+-							if not opp_hands:
+-									continue
+-							for s in self._cluster_distribution(opp_hands, board, best_hand_fn, hand_rank_fn):
+-									opp_bucket_mix[bmap[s]] += float(oprob)
+-					t = sum(opp_bucket_mix)
+-					if t > 0:
+-							for i in range(B):
+-									opp_bucket_mix[i] = opp_bucket_mix[i] / t
+-
+-					for cid in my_range.keys():
+-							my_hands_full = self._filter_hands(clusters.get(int(cid), []), board_set)
+-							my_hands = self._sample(my_hands_full, self.max_sample_per_cluster, 1000 + int(cid))
+-							if not my_hands:
+-									ev_p_by_cluster[int(cid)] = 0.0
+-									continue
+-							my_bucket_mix = [0.0] * B
+-							for s in self._cluster_distribution(my_hands, board, best_hand_fn, hand_rank_fn):
+-									my_bucket_mix[bmap[s]] += 1.0
+-							tm = sum(my_bucket_mix)
+-							if tm > 0:
+-									for i in range(B):
+-											my_bucket_mix[i] = my_bucket_mix[i] / tm
+-							ev_p, _ = self._expected_utility_buckets_both(
+-									my_bucket_mix, opp_bucket_mix, B, pot_size
+-							)
+-							ev_p_by_cluster[int(cid)] = ev_p
+-
+-					for oid in opp_range.keys():
+-							opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
+-							opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
+-							if not opp_hands:
+-									ev_o_by_cluster[int(oid)] = 0.0
+-									continue
+-							opp_bucket_mix_local = [0.0] * B
+-							for s in self._cluster_distribution(opp_hands, board, best_hand_fn, hand_rank_fn):
+-									opp_bucket_mix_local[bmap[s]] += 1.0
+-							tm = sum(opp_bucket_mix_local)
+-							if tm > 0:
+-									for i in range(B):
+-											opp_bucket_mix_local[i] = opp_bucket_mix_local[i] / tm
+-							_, ev_o = self._expected_utility_buckets_both(
+-									opp_bucket_mix_local, opp_bucket_mix, B, pot_size
+-							)
+-							ev_o_by_cluster[int(oid)] = ev_o
+-
+-			scale = (1.0 / float(pot_size)) if pot_size > 0.0 else 1.0
+-			out = {int(cid): float(ev_p_by_cluster.get(int(cid), 0.0) * scale) for cid in my_range.keys()}
+-			return out
++    def compute_cluster_cfvs(self, clusters, node, player, wins_fn, best_hand_fn, hand_rank_fn):
++        board = list(node.public_state.board_cards)
++        board_set = set(board)
++        pot_size = float(node.public_state.pot_size)
++        p0_bet = float(node.public_state.current_bets[0])
++        p1_bet = float(node.public_state.current_bets[1])
++
++        total_initial = sum(node.public_state.initial_stacks) if getattr(node.public_state, "initial_stacks", None) else 1.0
++        if total_initial <= 0:
++            total_initial = 1.0
++
++        my = player
++        opp = (player + 1) % 2
++
++        my_range_raw = dict(node.player_ranges[my])
++        opp_range_raw = dict(node.player_ranges[opp])
++
++        s1 = sum(my_range_raw.values())
++        s2 = sum(opp_range_raw.values())
++        if s1 > 0:
++            for k in list(my_range_raw.keys()):
++                my_range_raw[k] = my_range_raw[k] / s1
++        else:
++            for k in list(my_range_raw.keys()):
++                my_range_raw[k] = 0.0
++        if s2 > 0:
++            for k in list(opp_range_raw.keys()):
++                opp_range_raw[k] = opp_range_raw[k] / s2
++        else:
++            for k in list(opp_range_raw.keys()):
++                opp_range_raw[k] = 0.0
++
++        my_range = my_range_raw
++        opp_range = opp_range_raw
++
++        ev_p_by_cluster = {}
++        ev_o_by_cluster = {}
++
++        if self.num_buckets is None or self.num_buckets <= 0:
++            for cid in my_range.keys():
++                my_hands_full = self._filter_hands(clusters.get(int(cid), []), board_set)
++                my_hands = self._sample(my_hands_full, self.max_sample_per_cluster, 1000 + int(cid))
++                if not my_hands:
++                    ev_p_by_cluster[int(cid)] = 0.0
++                    continue
++
++                ev_total_p = 0.0
++                my_w = 1.0 / float(len(my_hands))
++
++                for my_h in my_hands:
++                    c1, c2 = my_h.split()
++                    my_cards = [c1, c2]
++                    for oid, oprob in opp_range.items():
++                        if float(oprob) <= 0.0:
++                            continue
++                        opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
++                        opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
++                        if not opp_hands:
++                            continue
++                        opp_w = (oprob / float(len(opp_hands))) if len(opp_hands) > 0 else 0.0
++                        for o_h in opp_hands:
++                            d1, d2 = o_h.split()
++                            opp_cards = [d1, d2]
++                            up, uo = self._expected_utility_pairwise(
++                                my_cards, opp_cards, board, wins_fn,
++                                pot_size, p0_bet if my == 0 else p1_bet, p1_bet if my == 0 else p0_bet
++                            )
++                            ev_total_p += my_w * opp_w * up
++                            if oid not in ev_o_by_cluster:
++                                ev_o_by_cluster[int(oid)] = 0.0
++                            ev_o_by_cluster[int(oid)] += my_w * opp_w * uo
++                ev_p_by_cluster[int(cid)] = ev_total_p
++
++            for k in list(opp_range.keys()):
++                if int(k) not in ev_o_by_cluster:
++                    ev_o_by_cluster[int(k)] = 0.0
++
++        else:
++            all_strengths = []
++            for cid in my_range.keys():
++                my_hands_full = self._filter_hands(clusters.get(int(cid), []), board_set)
++                my_hands = self._sample(my_hands_full, self.max_sample_per_cluster, 1000 + int(cid))
++                if my_hands:
++                    all_strengths.extend(self._cluster_distribution(my_hands, board, best_hand_fn, hand_rank_fn))
++            for oid in opp_range.keys():
++                opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
++                opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
++                if opp_hands:
++                    all_strengths.extend(self._cluster_distribution(opp_hands, board, best_hand_fn, hand_rank_fn))
++
++            bmap, B = self._bucketize(all_strengths)
++            if bmap is None:
++                return self.compute_cluster_cfvs(clusters, node, player, wins_fn, best_hand_fn, hand_rank_fn)
++
++            opp_bucket_mix = [0.0] * B
++            for oid, oprob in opp_range.items():
++                if float(oprob) <= 0.0:
++                    continue
++                opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
++                opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
++                if not opp_hands:
++                    continue
++                for s in self._cluster_distribution(opp_hands, board, best_hand_fn, hand_rank_fn):
++                    opp_bucket_mix[bmap[s]] += float(oprob)
++            t = sum(opp_bucket_mix)
++            if t > 0:
++                for i in range(B):
++                    opp_bucket_mix[i] = opp_bucket_mix[i] / t
++
++            for cid in my_range.keys():
++                my_hands_full = self._filter_hands(clusters.get(int(cid), []), board_set)
++                my_hands = self._sample(my_hands_full, self.max_sample_per_cluster, 1000 + int(cid))
++                if not my_hands:
++                    ev_p_by_cluster[int(cid)] = 0.0
++                    continue
++                my_bucket_mix = [0.0] * B
++                for s in self._cluster_distribution(my_hands, board, best_hand_fn, hand_rank_fn):
++                    my_bucket_mix[bmap[s]] += 1.0
++                tm = sum(my_bucket_mix)
++                if tm > 0:
++                    for i in range(B):
++                        my_bucket_mix[i] = my_bucket_mix[i] / tm
++                ev_p, _ = self._expected_utility_buckets_both(
++                    my_bucket_mix, opp_bucket_mix, B, pot_size
++                )
++                ev_p_by_cluster[int(cid)] = ev_p
++
++            for oid in opp_range.keys():
++                opp_hands_full = self._filter_hands(clusters.get(int(oid), []), board_set)
++                opp_hands = self._sample(opp_hands_full, self.max_sample_per_cluster, 2000 + int(oid))
++                if not opp_hands:
++                    ev_o_by_cluster[int(oid)] = 0.0
++                    continue
++                opp_bucket_mix_local = [0.0] * B
++                for s in self._cluster_distribution(opp_hands, board, best_hand_fn, hand_rank_fn):
++                    opp_bucket_mix_local[bmap[s]] += 1.0
++                tm = sum(opp_bucket_mix_local)
++                if tm > 0:
++                    for i in range(B):
++                        opp_bucket_mix_local[i] = opp_bucket_mix_local[i] / tm
++                _, ev_o = self._expected_utility_buckets_both(
++                    opp_bucket_mix_local, opp_bucket_mix, B, pot_size
++                )
++                ev_o_by_cluster[int(oid)] = ev_o
++
++        scale = (1.0 / float(pot_size)) if pot_size > 0.0 else 1.0
++        out = {int(cid): float(ev_p_by_cluster.get(int(cid), 0.0) * scale) for cid in my_range.keys()}
++        return out
+ 
+ 	def _node_signature(self, node, my_range, opp_range):
+ 		board = tuple(node.public_state.board_cards)

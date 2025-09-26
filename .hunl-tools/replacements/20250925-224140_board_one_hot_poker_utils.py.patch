@@ -1,0 +1,29 @@
+--- a/poker_utils.py
++++ b/poker_utils.py
+@@ -316,17 +316,15 @@
+         return (ri * len(SUITS)) + si
+ 
+ def board_one_hot(board):
+-	vec = [0] * (len(RANKS) * len(SUITS))
+-
+-	i = 0
+-	while i < len(board):
+-		k = card_to_index(board[i])
+-		if (0 <= k) and (k < len(vec)):
+-			vec[k] = 1
+-		i += 1
+-
+-	return vec
+-
++        # One-hot without calling str/upper/strip on raw inputs.
++        vec = [0] * (len(RANKS) * len(SUITS))
++        i = 0
++        while i < len(board):
++                k = card_to_index(board[i])
++                if (0 <= k) and (k < len(vec)):
++                        vec[k] = 1
++                i += 1
++        return vec
+ 
+ def evaluate_7card(hole, board):
+ 	return hand_rank(hole, board)

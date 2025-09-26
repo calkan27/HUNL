@@ -1,0 +1,53 @@
+--- a/resolver_integration.py
++++ b/resolver_integration.py
+@@ -99,26 +99,27 @@
+ 	)
+ 
+ def resolve_at(public_state, r_us: Dict[int, float], w_opp: Dict[int, float], config: Optional[Dict[str, Any]] = None, value_server: Optional[ValueServer] = None) -> Tuple[Dict[Any, float], Dict[int, float], Dict[int, float]]:
+-	if config is None:
+-		config = {}
+-	stage = _stage_from_round(int(getattr(public_state, "current_round", 0)))
+-	K = int(len(r_us))
+-	r_our_vec = _to_vec(r_us, K)
+-	r_opp_init = config.get("r_opp_init", None)
+-	r_opp_vec = _to_vec(r_opp_init, K) if isinstance(r_opp_init, dict) else ([1.0 / float(K)] * K if K > 0 else [])
+-	w_vec = _to_vec(w_opp, K)
+-	vs = _ensure_value_server(config, value_server)
+-	user_depth = int(config.get("depth_limit", 1))
+-	depth_limit, bet_fractions, include_all_in = _depth_and_bets(stage, user_depth, config)
+-	root = _build_root(public_state, depth_limit, bet_fractions, include_all_in)
+-	leaf_value_fn = _leaf_value_fn_factory(vs)
+-	T = int(config.get("iterations", 1000))
+-	root_policy, node_values, opp_cfv = _solve_subgame(root, r_our_vec, r_opp_vec, w_vec, depth_limit, bet_fractions, include_all_in, T, leaf_value_fn, config)
+-	our_cfv_vec = {}
+-	if isinstance(node_values, dict):
+-		for i, v in node_values.items():
+-			try:
+-				our_cfv_vec[int(i)] = float(v)
+-			except Exception:
+-				continue
+-	return root_policy, {int(k): float(v) for k, v in opp_cfv.items()}, our_cfv_vec
++        if config is None:
++                config = {}
++        stage = _stage_from_round(int(getattr(public_state, "current_round", 0)))
++        K = int(len(r_us))
++        r_our_vec = _to_vec(r_us, K)
++        r_opp_init = config.get("r_opp_init", None)
++        r_opp_vec = _to_vec(r_opp_init, K) if isinstance(r_opp_init, dict) else ([1.0 / float(K)] * K if K > 0 else [])
++        w_vec = _to_vec(w_opp, K)
++        vs = _ensure_value_server(config, value_server)
++        user_depth = int(config.get("depth_limit", 1))
++        depth_limit, bet_fractions, include_all_in = _depth_and_bets(stage, user_depth, config)
++        root = _build_root(public_state, depth_limit, bet_fractions, include_all_in)
++        leaf_value_fn = _leaf_value_fn_factory(vs)
++        T = int(config.get("iterations", 1000))
++        root_policy, node_values, opp_cfv = _solve_subgame(root, r_our_vec, r_opp_vec, w_vec, depth_limit, bet_fractions, include_all_in, T, leaf_value_fn, config)
++        our_cfv_vec = {}
++        if isinstance(node_values, dict):
++                for i, v in node_values.items():
++                        try:
++                                our_cfv_vec[int(i)] = float(v)
++                        except Exception:
++                                continue
++        return root_policy, {int(k): float(v) for k, v in opp_cfv.items()}, our_cfv_vec
++

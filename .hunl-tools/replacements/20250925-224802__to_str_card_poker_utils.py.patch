@@ -1,0 +1,148 @@
+--- a/poker_utils.py
++++ b/poker_utils.py
+@@ -30,92 +30,59 @@
+ 
+ 
+ def _to_str_card(c):
+-		# Normalize any card-like input to canonical "RS" (rank+suit), e.g. "TH", "9D".
+-		# No nested helpers. Avoids calling .upper()/.isspace() on user-overridden types.
+-		# Only ASCII transforms are used to prevent recursion on monkey-patched methods.
+-
+-		# 1) Build a flat ASCII string s (no whitespace), then ASCII-uppercase.
+-		if isinstance(c, str):
+-				raw = c
+-		elif isinstance(c, (list, tuple)):
+-				parts = []
+-				i = 0
+-				while i < len(c):
+-						x = c[i]
+-						if isinstance(x, str):
+-								parts.append(x)
+-						else:
+-								parts.append(f"{x}")
+-						i += 1
+-				raw = "".join(parts)
+-		else:
+-				raw = f"{c}"
+-
+-		# remove whitespace manually (ASCII only)
+-		ws_ords = {9, 10, 11, 12, 13, 32}  # \t\n\v\f\r and space
+-		buf = []
+-		i = 0
+-		while i < len(raw):
+-				ch = raw[i]
+-				oc = ord(ch) if isinstance(ch, str) and len(ch) == 1 else None
+-				if (oc is not None) and (oc in ws_ords):
+-						pass
+-				else:
+-						buf.append(ch)
+-				i += 1
+-		s_no_space = "".join(buf)
+-
+-		# ASCII uppercase without .upper()
+-		out = []
+-		i = 0
+-		while i < len(s_no_space):
+-				ch = s_no_space[i]
+-				oc = ord(ch) if (isinstance(ch, str) and (len(ch) == 1)) else None
+-				if (oc is not None) and (97 <= oc <= 122):  # a..z
+-						out.append(chr(oc - 32))
+-				else:
+-						out.append(ch)
+-				i += 1
+-		s = "".join(out)
+-
+-		# 2) Fast paths: exact "RS" and "SR"
+-		if len(s) >= 2:
+-				r0 = s[0]
+-				t0 = s[1]
+-				if (r0 in RANKS) and (t0 in SUITS):
+-						return r0 + t0
+-				if (r0 in SUITS) and (t0 in RANKS):
+-						return t0 + r0
+-
+-		# 3) Handle "10X" -> "TX"
+-		if len(s) >= 3:
+-				if (s[0] == "1") and (s[1] == "0") and (s[2] in SUITS):
+-						return "T" + s[2]
+-
+-		# 4) Scan anywhere: first rank ("10"→"T" or any single RANK) + first suit
+-		r_pick = None
+-		t_pick = None
+-		i = 0
+-		n = len(s)
+-		while i < n:
+-				ch = s[i]
+-				if r_pick is None:
+-						if (ch == "1") and (i + 1 < n) and (s[i + 1] == "0"):
+-								r_pick = "T"
+-								i += 1  # skip the '0' in "10"
+-						elif ch in RANKS:
+-								r_pick = ch
+-				if (t_pick is None) and (ch in SUITS):
+-						t_pick = ch
+-				if (r_pick is not None) and (t_pick is not None):
+-						break
+-				i += 1
+-
+-		if (r_pick is not None) and (t_pick is not None):
+-				return r_pick + t_pick
+-
+-		# 5) Fallback: best-effort two-char token (already uppercased)
+-		return s[:2]
++        # Normalize diverse card representations to canonical "RS" (e.g., "TH", "9D").
++        # Handles: "JH", ["J","H"], ("10","c"), objects with __str__ like "10h", "h10".
++        # Robust: never calls back into this function via custom __str__ recursion.
++        if isinstance(c, str):
++                s = c.strip().upper()
++        elif isinstance(c, (list, tuple)):
++                parts = []
++                i = 0
++                while i < len(c):
++                        x = c[i]
++                        if isinstance(x, str):
++                                parts.append(x)
++                        else:
++                                parts.append(str(x))
++                        i += 1
++                s = "".join(parts).strip().upper()
++        else:
++                s = str(c).strip().upper()
++
++        # Fast-path exact or suit-first forms
++        if len(s) >= 2:
++                r0, t0 = s[0], s[1]
++                if (r0 in RANKS) and (t0 in SUITS):
++                        return r0 + t0
++                if (r0 in SUITS) and (t0 in RANKS):
++                        return t0 + r0
++
++        # Handle "10X" variants
++        if len(s) >= 3 and s[0] == "1" and s[1] == "0" and (s[2] in SUITS):
++                return "T" + s[2]
++
++        # Scan and pick first rank + first suit anywhere in the token stream.
++        r_pick = None
++        t_pick = None
++        i = 0
++        while i < len(s):
++                ch = s[i]
++                if (r_pick is None) and (ch == "1") and (i + 1 < len(s)) and (s[i + 1] == "0"):
++                        r_pick = "T"
++                        i += 1  # skip the '0' of "10"
++                elif (r_pick is None) and (ch in RANKS):
++                        r_pick = ch
++                elif (t_pick is None) and (ch in SUITS):
++                        t_pick = ch
++                if (r_pick is not None) and (t_pick is not None):
++                        break
++                i += 1
++
++        if (r_pick is not None) and (t_pick is not None):
++                return r_pick + t_pick
++
++        # Fallback: best-effort two-char token
++        return s[:2].upper()
+ 
+ def _normalize_cards(card_iterable):
+ 		out = []

@@ -1,0 +1,36 @@
+--- a/test_group_G_river_endgame_and_bucket_aux.py
++++ b/test_group_G_river_endgame_and_bucket_aux.py
+@@ -66,20 +66,19 @@
+ 
+ 
+ def _score_7cards(cards: List[str]) -> int:
+-    """
+-    Simple deterministic 7-card strength surrogate (NOT poker-correct, but consistent).
+-    Higher is better. Ties possible.
+-    """
+-    # Sum ranks (heavier weight on pairs/trips by squaring repeated ranks)
+-    counts = {}
+-    for c in cards:
+-        r = c[0]
+-        counts[r] = counts.get(r, 0) + 1
+-    # rank sum + bonus for multiplicities + tiny suit hash for tie variety
+-    rank_sum = sum(RANK_ORDER[c[0]] for c in cards)
+-    bonus = sum((cnt * cnt) for cnt in counts.values())
+-    suit_hash = sum("cdhs".index(c[1]) for c in cards)  # small proxy
+-    return 1000 * bonus + 10 * rank_sum + suit_hash
++        """
++        Simple deterministic 7-card strength surrogate (NOT poker-correct, but consistent).
++        Higher is better. Ties possible.
++        """
++        counts = {}
++        for c in cards:
++                r = c[0]
++                counts[r] = counts.get(r, 0) + 1
++        rank_sum = sum(RANK_ORDER[c[0]] for c in cards)
++        bonus = sum((cnt * cnt) for cnt in counts.values())
++        _suit_idx = {"C": 0, "D": 1, "H": 2, "S": 3}
++        suit_hash = sum(_suit_idx.get(c[1].upper(), 0) for c in cards)
++        return 1000 * bonus + 10 * rank_sum + suit_hash
+ 
+ def best_hand_fn(full7: List[str]) -> int:
+     return _score_7cards(full7)

@@ -1,0 +1,41 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -1538,22 +1538,22 @@
+ 	def _info_key_for(self, node, player: int):
+ 		return self._info_key(node, player)
+ 
+-	def _worst_from_constraints(self, node, us: int) -> float:
+-		key = self._state_key(node)
+-		if not hasattr(self, "opponent_cfv_upper_tracking"):
+-			return 0.0
+-		tracking = getattr(self, "opponent_cfv_upper_tracking", {})
+-		if key not in tracking:
+-			return 0.0
+-		upper = tracking[key]
+-		mx = None
+-		for v in upper.values():
+-			fv = float(v)
+-			if mx is None or fv > mx:
+-				mx = fv
+-		if mx is None:
+-			return 0.0
+-		return -float(mx)
++    def _worst_from_constraints(self, node, us: int) -> float:
++        key = self._state_key(node)
++        if not hasattr(self, "opponent_cfv_upper_tracking"):
++            return 0.0
++        tracking = getattr(self, "opponent_cfv_upper_tracking", {})
++        if key not in tracking:
++            return 0.0
++        upper = tracking[key]
++        mx = None
++        for v in upper.values():
++            fv = float(v)
++            if mx is None or fv > mx:
++                mx = fv
++        if mx is None:
++            return 0.0
++        return -float(mx)
+ 
+ 	def _ev_from_vec(self, vec, rng) -> float:
+ 		if rng is None or len(rng) != len(vec):

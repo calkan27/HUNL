@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/model_io.py
+# hypothesis_version: 6.133.2
+
+[-0.5, 1e-09, '1.0', '1729', 'FAST_TEST_SEED', 'bias', 'board_one_hot', 'board_one_hot_dim', 'cluster_mapping', 'cpu', 'created_at', 'input_layout', 'input_meta', 'input_size', 'meta', 'models', 'num_clusters', 'pot_norm', 'range_dims', 'seed', 'stages', 'state_dict', 'uses_pot_norm', 'version']

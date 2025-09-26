@@ -1,0 +1,56 @@
+--- a/game_node.py
++++ b/game_node.py
+@@ -5,29 +5,30 @@
+ 		self.current_player = public_state.current_player
+ 		self.player_ranges = [{}, {}]
+ 
+-	def _public_signature(self):
+-		actions_serialized = []
+-		i = 0
+-		while i < len(self.public_state.actions):
+-			pl, act = self.public_state.actions[i]
+-			at = getattr(act, "action_type", None)
+-			av = getattr(at, "value", at)
+-			actions_serialized.append((int(pl), int(av) if isinstance(av, bool) is False and av is not None else 0))
+-			i = i + 1
+-		sig = (
+-			tuple(self.public_state.board_cards),
+-			int(self.public_state.current_round),
+-			(tuple(self.public_state.current_bets[0:2])),
+-			self.public_state.pot_size,
+-			int(self.public_state.current_player),
+-			int(self.public_state.dealer),
+-			bool(self.public_state.is_terminal),
+-			bool(self.public_state.is_showdown),
+-			tuple(bool(x) for x in self.public_state.players_in_hand[0:2]),
+-			tuple(actions_serialized),
+-		)
+-		return sig
+-
++    def _public_signature(self):
++        actions_serialized = []
++        alist = getattr(self.public_state, "actions", None)
++        if isinstance(alist, list):
++            i = 0
++            while i < len(alist):
++                pl, act = alist[i]
++                at = getattr(act, "action_type", None)
++                av = getattr(at, "value", at)
++                actions_serialized.append((int(pl), int(av) if isinstance(av, bool) is False and av is not None else 0))
++                i = i + 1
++        sig = (
++            tuple(getattr(self.public_state, "board_cards", [])),
++            int(getattr(self.public_state, "current_round", getattr(self.public_state, "round_idx", 0))),
++            (tuple(getattr(self.public_state, "current_bets", (0, 0))[0:2])),
++            getattr(self.public_state, "pot_size", 0),
++            int(getattr(self.public_state, "current_player", -1)),
++            int(getattr(self.public_state, "dealer", 0)),
++            bool(getattr(self.public_state, "is_terminal", False)),
++            bool(getattr(self.public_state, "is_showdown", False)),
++            tuple(bool(x) for x in getattr(self.public_state, "players_in_hand", [True, True])[0:2]),
++            tuple(actions_serialized),
++        )
++        return sig
+ 
+ 	def __hash__(self):
+ 		if not hasattr(self, "_frozen_sig"):

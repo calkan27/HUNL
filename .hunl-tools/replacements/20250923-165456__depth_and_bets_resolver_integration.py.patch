@@ -1,0 +1,32 @@
+--- a/resolver_integration.py
++++ b/resolver_integration.py
+@@ -40,16 +40,19 @@
+ 		return ValueServer(models=loaded.get("models", {}), device=config.get("device", None))
+ 	return ValueServer(models={})
+ 
+-def _depth_and_bets(stage: str, user_depth: int, config: Dict[str, Any]) -> Tuple[int, List[float], bool]:
+-	if stage == "turn":
+-		depth_limit = 99
+-	else:
+-		depth_limit = int(user_depth)
+-	if "bet_fractions" in config:
+-		bet_fractions = list(config["bet_fractions"])
+-	else:
+-		bet_fractions = [0.5, 1.0, 2.0] if stage == "turn" else [0.5, 1.0]
+-	return depth_limit, bet_fractions, True
++def _depth_and_bets(stage: str, user_depth: int, config: Dict[str, Any]) -> Tuple[int, List[float], bool, str]:
++        if stage == "turn":
++                depth_limit = 99
++        else:
++                depth_limit = int(user_depth)
++        if "bet_fractions" in config:
++                bet_fractions = list(config["bet_fractions"])
++        else:
++                mode = str(config.get("bet_size_mode", "")).strip().lower()
++                bet_fractions = _bet_fracs_from_mode(mode, stage)
++        include_all_in = True
++        constraint_mode = str(config.get("constraint_mode", "sp")).strip().lower()
++        return depth_limit, bet_fractions, include_all_in, constraint_mode
+ 
+ def _build_root(public_state, depth_limit: int, bet_fractions: List[float], include_all_in: bool):
+ 	builder = LookaheadTreeBuilder(depth_limit=depth_limit, bet_fractions=bet_fractions, include_all_in=include_all_in)

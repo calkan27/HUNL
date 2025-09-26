@@ -1,0 +1,36 @@
+--- a/poker_utils.py
++++ b/poker_utils.py
+@@ -52,11 +52,28 @@
+ 	return str(c).strip().upper()[:2]
+ 
+ def _normalize_cards(card_iterable):
+-	out = []
+-	for c in card_iterable:
+-		out.append(_to_str_card(c))
+-	return out
+-
++    out = []
++    if isinstance(card_iterable, (list, tuple, set)):
++        items = list(card_iterable)
++    else:
++        items = [card_iterable]
++    i = 0
++    while i < len(items):
++        s = _to_str_card(items[i])
++        if isinstance(s, str):
++            if len(s) >= 2:
++                r = s[0]
++                t = s[1]
++                if (r in RANKS) and (t in SUITS):
++                    out.append(r + t)
++                else:
++                    out.append(s[:2].upper())
++            else:
++                out.append(s.upper())
++        else:
++            out.append(str(s).upper()[:2])
++        i += 1
++    return out
+ 
+ def _straight_high_from_ranks(rvals):
+ 	u = sorted(set(rvals))

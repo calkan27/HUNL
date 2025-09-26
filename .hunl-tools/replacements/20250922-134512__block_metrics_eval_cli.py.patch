@@ -1,0 +1,95 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -105,53 +105,45 @@
+ 
+ 
+ def _block_metrics(results: List[Tuple[float, float]], block_size: int = 100) -> Dict[str, Dict[str, float]]:
+-
+-	n = len(results)
+-	if n == 0:
+-		return {
+-			"blocks": 0,
+-			"naive": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
+-			"aivat": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
+-		}
+-	bb = 2.0
+-
+-	def _blocks(series: List[float]) -> List[float]:
+-		blocks = []
+-		for i in range(0, len(series), block_size):
+-			chunk = series[i : i + block_size]
+-			if len(chunk) == block_size:
+-				mean = sum(chunk) / float(block_size)
+-				blocks.append(mean)
+-		return blocks
+-
+-	na = [x[0] for x in results]
+-	av = [x[1] for x in results]
+-	na_b = _blocks(na)
+-	av_b = _blocks(av)
+-
+-
+-	def _ci(blocks: List[float]) -> Tuple[float, List[float]]:
+-		if not blocks:
+-			return 0.0, [0.0, 0.0]
+-		m = sum(blocks) / float(len(blocks))
+-		var = 0.0
+-		for v in blocks:
+-			d = v - m
+-			var += d * d
+-		var = var / float(len(blocks) - 1 if len(blocks) > 1 else 1)
+-		se = math.sqrt(var / float(len(blocks)))
+-		mbb100 = (m / bb) * 100.0
+-		half = 1.96 * ((se / bb) * 100.0)
+-		return mbb100, [mbb100 - half, mbb100 + half]
+-
+-	na_m, na_ci = _ci(na_b)
+-	av_m, av_ci = _ci(av_b)
+-	return {
+-		"blocks": int(len(na_b)),
+-		"naive": {"mbb100": float(na_m), "ci95": [float(na_ci[0]), float(na_ci[1])]},
+-		"aivat": {"mbb100": float(av_m), "ci95": [float(av_ci[0]), float(av_ci[1])]},
+-	}
+-
++        n = len(results)
++        if n == 0:
++                return {
++                        "blocks": 0,
++                        "naive": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
++                        "aivat": {"mbb100": 0.0, "ci95": [0.0, 0.0]},
++                }
++        bb = 2.0
++        def _blocks(series: List[float]) -> List[float]:
++                blocks = []
++                for i in range(0, len(series), block_size):
++                        chunk = series[i : i + block_size]
++                        if len(chunk) == block_size:
++                                blocks.append(sum(chunk) / float(block_size))
++                return blocks
++        na = [x[0] for x in results]
++        av = [x[1] for x in results]
++        na_b = _blocks(na)
++        av_b = _blocks(av)
++        def _ci(blocks: List[float]) -> Tuple[float, List[float]]:
++                if not blocks:
++                        return 0.0, [0.0, 0.0]
++                m = sum(blocks) / float(len(blocks))
++                var = 0.0
++                for v in blocks:
++                        d = v - m
++                        var += d * d
++                var = var / float(len(blocks) - 1 if len(blocks) > 1 else 1)
++                se = (var / float(len(blocks))) ** 0.5
++                mbb100 = (m / bb) * 100.0
++                half = 1.96 * ((se / bb) * 100.0)
++                return mbb100, [mbb100 - half, mbb100 + half]
++        na_m, na_ci = _ci(na_b)
++        av_m, av_ci = _ci(av_b)
++        return {
++                "blocks": int(len(na_b)),
++                "naive": {"mbb100": float(na_m), "ci95": [float(na_ci[0]), float(na_ci[1])]},
++                "aivat": {"mbb100": float(av_m), "ci95": [float(av_ci[0]), float(av_ci[1])]},
++        }
+ 
+ def main(argv: Optional[List[str]] = None) -> None:
+ 

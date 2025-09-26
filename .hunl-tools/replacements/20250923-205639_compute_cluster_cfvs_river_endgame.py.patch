@@ -1,0 +1,65 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -90,9 +90,7 @@
+     def compute_cluster_cfvs(self, clusters, node, player, wins_fn, best_hand_fn, hand_rank_fn):
+             board = list(node.public_state.board_cards)
+             board_set = set(board)
+-            pot_size = float(node.public_state.pot_size)
+-            p0_bet = float(node.public_state.current_bets[0])
+-            p1_bet = float(node.public_state.current_bets[1])
++            resolved_pot = self._resolved_pot(node)
+             total_initial = sum(node.public_state.initial_stacks) if getattr(node.public_state, "initial_stacks", None) else 1.0
+             if total_initial <= 0:
+                     total_initial = 1.0
+@@ -118,7 +116,14 @@
+             opp_range = opp_range_raw
+             if not hasattr(self, "_river_cache"):
+                     self._river_cache = {}
+-            sig = self._node_signature(node, my_range, opp_range)
++            def _node_sig():
++                    board_t = tuple(node.public_state.board_cards)
++                    pot = float(node.public_state.pot_size)
++                    cb = (float(node.public_state.current_bets[0]), float(node.public_state.current_bets[1]))
++                    r1 = tuple(sorted((int(k), float(v)) for k, v in dict(my_range).items()))
++                    r2 = tuple(sorted((int(k), float(v)) for k, v in dict(opp_range).items()))
++                    return (board_t, pot, cb, r1, r2)
++            sig = _node_sig()
+             if sig in self._river_cache and isinstance(self._river_cache[sig], dict) and my in self._river_cache[sig]:
+                     return dict(self._river_cache[sig][my])
+             ev_p_by_cluster = {}
+@@ -146,10 +151,9 @@
+                                             for o_h in opp_hands:
+                                                     d1, d2 = o_h.split()
+                                                     opp_cards = [d1, d2]
+-                                                    up, uo = self._expected_utility_pairwise(
+-                                                            my_cards, opp_cards, board, wins_fn,
+-                                                            pot_size, p0_bet if my == 0 else p1_bet, p1_bet if my == 0 else p0_bet
+-                                                    )
++                                                    res = wins_fn(my_cards, opp_cards, board)
++                                                    up = self._pairwise_util_p(res, resolved_pot)
++                                                    uo = -up
+                                                     ev_total_p += my_w * opp_w * up
+                                                     if oid not in ev_o_by_cluster:
+                                                             ev_o_by_cluster[int(oid)] = 0.0
+@@ -201,7 +205,7 @@
+                                     for i in range(B):
+                                             my_bucket_mix[i] = my_bucket_mix[i] / tm
+                             ev_p, _ = self._expected_utility_buckets_both(
+-                                    my_bucket_mix, opp_bucket_mix, B, pot_size
++                                    my_bucket_mix, opp_bucket_mix, B, resolved_pot
+                             )
+                             ev_p_by_cluster[int(cid)] = ev_p
+                     for oid in opp_range.keys():
+@@ -218,10 +222,10 @@
+                                     for i in range(B):
+                                             opp_bucket_mix_local[i] = opp_bucket_mix_local[i] / tm
+                             _, ev_o = self._expected_utility_buckets_both(
+-                                    opp_bucket_mix_local, opp_bucket_mix, B, pot_size
++                                    opp_bucket_mix_local, opp_bucket_mix, B, resolved_pot
+                             )
+                             ev_o_by_cluster[int(oid)] = ev_o
+-            scale = (1.0 / float(pot_size)) if pot_size > 0.0 else 1.0
++            scale = (1.0 / float(resolved_pot)) if resolved_pot > 0.0 else 1.0
+             my_vals = {int(cid): float(ev_p_by_cluster.get(int(cid), 0.0) * scale) for cid in my_range.keys()}
+             opp_vals = {int(oid): float(ev_o_by_cluster.get(int(oid), 0.0) * scale) for oid in opp_range.keys()}
+             self._river_cache[sig] = {my: dict(my_vals), opp: dict(opp_vals)}

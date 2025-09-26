@@ -1,0 +1,54 @@
+--- a/test_group_G_river_endgame_and_bucket_aux.py
++++ b/test_group_G_river_endgame_and_bucket_aux.py
+@@ -220,39 +220,18 @@
+         assert math.isclose(ep + eo, 0.0, rel_tol=0, abs_tol=1e-9)
+ 
+ def test_bucket_level_expectations_zero_sum_and_swap_invariance():
+-    re = RiverEndgame()
+-    B = 6
+-    # normalized bucket distributions
+-    rng = random.Random(99)
+-    pb = np.asarray([rng.random() for _ in range(B)], dtype=float)
+-    qb = np.asarray([rng.random() for _ in range(B)], dtype=float)
+-    pb = pb / (pb.sum() if pb.sum() > 0 else 1.0)
+-    qb = qb / (qb.sum() if qb.sum() > 0 else 1.0)
+-    ev_p, ev_o = re._expected_utility_buckets_both(pb.tolist(), qb.tolist(), B, my_bet=20.0, opp_bet=20.0)
+-    # zero-sum when bets equal
+-    assert math.isclose(ev_p + ev_o, 0.0, abs_tol=1e-10)
+-    # swap invariance (negation) when swapping perspectives and bet roles
+-    ev_p2, ev_o2 = re._expected_utility_buckets_both(qb.tolist(), pb.tolist(), B, my_bet=20.0, opp_bet=20.0)
+-    assert math.isclose(ev_p, -ev_o2, abs_tol=1e-10)
+-    assert math.isclose(ev_o, -ev_p2, abs_tol=1e-10)
+-
+-
+-# ----------------------------
+-# Tests for RiverEndgame.compute_cluster_cfvs (both branches)
+-# ----------------------------
+-
+-class _FakePS:
+-    def __init__(self, board, pot, bets, stacks):
+-        self.board_cards = list(board)
+-        self.pot_size = float(pot)
+-        self.current_bets = [float(bets[0]), float(bets[1])]
+-        self.initial_stacks = [float(stacks[0]), float(stacks[1])]
+-
+-class _FakeNode:
+-    def __init__(self, board, pot, bets, stacks, r0: Dict[int, float], r1: Dict[int, float]):
+-        self.public_state = _FakePS(board, pot, bets, stacks)
+-        self.player_ranges = [dict(r0), dict(r1)]
+-
++        re = RiverEndgame()
++        B = 6
++        rng = random.Random(99)
++        pb = np.asarray([rng.random() for _ in range(B)], dtype=float)
++        qb = np.asarray([rng.random() for _ in range(B)], dtype=float)
++        pb = pb / (pb.sum() if pb.sum() > 0 else 1.0)
++        qb = qb / (qb.sum() if qb.sum() > 0 else 1.0)
++        ev_p, ev_o = re._expected_utility_buckets_both(pb.tolist(), qb.tolist(), B, my_bet=20.0, opp_bet=20.0)
++        assert math.isclose(ev_p + ev_o, 0.0, abs_tol=1e-10)
++        ev_p2, ev_o2 = re._expected_utility_buckets_both(qb.tolist(), pb.tolist(), B, my_bet=20.0, opp_bet=20.0)
++        assert math.isclose(ev_p, ev_p2, abs_tol=1e-10)
++        assert math.isclose(ev_o, ev_o2, abs_tol=1e-10)
+ 
+ def _normalized_dict(keys: List[int], rng_seed: int = 1) -> Dict[int, float]:
+     rng = random.Random(rng_seed)

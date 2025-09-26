@@ -1,0 +1,33 @@
+--- a/cfv_network.py
++++ b/cfv_network.py
+@@ -35,14 +35,20 @@
+ 		player2_values = self.output_player2_values(hidden_activation)
+ 		return player1_values, player2_values
+ 
+-	def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
+-		s1 = torch.sum(player1_range * player1_values, dim=1, keepdim=True)
+-		s2 = torch.sum(player2_range * player2_values, dim=1, keepdim=True)
+-		total = s1 + s2
+-		rsum = torch.sum(player1_range, dim=1, keepdim=True) + torch.sum(player2_range, dim=1, keepdim=True)
+-		zero = torch.zeros_like(total)
+-		offset = torch.where(rsum != 0, total / rsum, zero)
+-		player1_zero_sum_values = player1_values - offset
+-		player2_zero_sum_values = player2_values - offset
+-		return player1_zero_sum_values, player2_zero_sum_values
++    def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
++        s1 = torch.sum(player1_range * player1_values, dim=1, keepdim=True)
++        s2 = torch.sum(player2_range * player2_values, dim=1, keepdim=True)
++        rs1 = torch.sum(player1_range, dim=1, keepdim=True)
++        rs2 = torch.sum(player2_range, dim=1, keepdim=True)
++        rsum = rs1 + rs2
++        zero = torch.zeros_like(rsum)
++        eps = torch.finfo(player1_values.dtype).eps
++        offset = torch.where(rsum > 0, (s1 + s2) / (rsum + eps), zero)
++        v1 = player1_values - offset
++        v2 = player2_values - offset
++        residual = torch.sum(player1_range * v1, dim=1, keepdim=True) + torch.sum(player2_range * v2, dim=1, keepdim=True)
++        corr = torch.where(rsum > 0, residual / (rsum + eps), zero)
++        player1_zero_sum_values = v1 - corr
++        player2_zero_sum_values = v2 - corr
++        return player1_zero_sum_values, player2_zero_sum_values
+ 

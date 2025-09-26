@@ -1,0 +1,20 @@
+--- a/public_state_streets.py
++++ b/public_state_streets.py
+@@ -3,11 +3,12 @@
+ 
+ 
+ class PublicStateStreetsMixin:
+-	def _reset_street_bookkeeping(self) -> None:
+-		self.last_raiser = None
+-		self.last_raise_increment = self.big_blind
+-		self.last_raise_was_allin_below_min = None
+-		self.consecutive_checks = 0
++    def _reset_street_bookkeeping(self) -> None:
++        self.last_raiser = None
++        self.last_raise_increment = self.big_blind
++        self.last_raise_was_allin_below_min = None
++        self.consecutive_checks = 0
++        self._last_action_was_call_on_bet = False
+ 
+ 	def _min_raise_size(self) -> int:
+ 		inc = self.last_raise_increment

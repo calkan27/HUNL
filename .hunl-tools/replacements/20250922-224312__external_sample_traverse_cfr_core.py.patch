@@ -1,0 +1,135 @@
+--- a/cfr_core.py
++++ b/cfr_core.py
+@@ -64,64 +64,74 @@
+ 			return float(arr[0])
+ 		return 0.0
+ 
+-	def _external_sample_traverse(self, tree: Dict[str, Any], idx: int, pov_player: int, r_us: List[float], r_opp: List[float], opp_cfv_upper_vec: List[float], leaf_value_fn, iw_c: float) -> float:
+-		kind = tree["kinds"][idx]
+-		if kind in ("terminal", "leaf"):
+-			ps = tree["nodes"][idx].public_state
+-			return self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
+-		if kind == "chance":
+-			children = self._chance_children(tree, idx)
+-			if not children:
+-				ps = tree["nodes"][idx].public_state
+-				return self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
+-			p = 1.0 / float(len(children))
+-			ci = children[np.random.randint(0, len(children))]
+-			return self._external_sample_traverse(tree, ci, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c * (1.0 / p if self.use_iw else 1.0))
+-		menu = tree["menus"][idx]
+-		Aall = max(1, max((int(getattr(a, "value", 0)) for a in menu), default=0) + 1)
+-		if kind == "our":
+-			key = self._infoset_key(tree, idx, pov_player)
+-			mask = self._menu_mask(menu, Aall)
+-			policy = self._policy_from_regret(key, Aall, mask)
+-			children = self._chance_children(tree, idx)
+-			action_to_child: Dict[int, int] = {}
+-			for ci in children:
+-				edge = tree["edges"][ci]
+-				if edge is None:
+-					continue
+-				aid = int(getattr(edge, "value", 0))
+-				action_to_child[aid] = ci
+-			q_vals = [0.0] * Aall
+-			for aid in range(Aall):
+-				if not mask[aid]:
+-					continue
+-				ci = action_to_child.get(aid, None)
+-				if ci is None:
+-					continue
+-				q_vals[aid] = self._external_sample_traverse(tree, ci, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c)
+-			ev = 0.0
+-			for aid in range(Aall):
+-				if mask[aid]:
+-					ev += policy[aid] * q_vals[aid]
+-			for aid in range(Aall):
+-				if mask[aid]:
+-					self.regret[key][aid] += (q_vals[aid] - ev)
+-					self.strat_sum[key][aid] += policy[aid]
+-			return ev
+-		if kind == "opp":
+-			children = self._chance_children(tree, idx)
+-			if not children:
+-				ps = tree["nodes"][idx].public_state
+-				val = self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp)
+-				term = self._terminate_value(opp_cfv_upper_vec)
+-				return min(val, term)
+-			p = 1.0 / float(len(children))
+-			ci = children[np.random.randint(0, len(children))]
+-			val = self._external_sample_traverse(tree, ci, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c * (1.0 / p if self.use_iw else 1.0))
+-			term = self._terminate_value(opp_cfv_upper_vec)
+-			return min(val, term)
+-		ps = tree["nodes"][idx].public_state
+-		return self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
++    def _external_sample_traverse(self, tree, idx, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c, root_idx, apply_root_gadget):
++        kind = tree["kinds"][idx]
++        if kind in ("terminal", "leaf"):
++            ps = tree["nodes"][idx].public_state
++            return self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
++
++        if kind == "chance":
++            children = self._chance_children(tree, idx)
++            if not children:
++                ps = tree["nodes"][idx].public_state
++                return self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
++            p = 1.0 / float(len(children))
++            ci = children[np.random.randint(0, len(children))]
++            return self._external_sample_traverse(tree, ci, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c * (1.0 / p if self.use_iw else 1.0), root_idx, apply_root_gadget)
++
++        menu = tree["menus"][idx]
++        Aall = max(1, max((int(getattr(a, "value", 0)) for a in menu), default=0) + 1)
++
++        if kind == "our":
++            key = self._infoset_key(tree, idx, pov_player)
++            mask = self._menu_mask(menu, Aall)
++            policy = self._policy_from_regret(key, Aall, mask)
++            children = self._chance_children(tree, idx)
++            action_to_child = {}
++            for ci in children:
++                edge = tree["edges"][ci]
++                if edge is None:
++                    continue
++                aid = int(getattr(edge, "value", 0))
++                action_to_child[aid] = ci
++            q_vals = [0.0] * Aall
++            for aid in range(Aall):
++                if not mask[aid]:
++                    continue
++                ci = action_to_child.get(aid, None)
++                if ci is None:
++                    continue
++                q_vals[aid] = self._external_sample_traverse(tree, ci, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c, root_idx, apply_root_gadget)
++            ev = 0.0
++            for aid in range(Aall):
++                if mask[aid]:
++                    ev += policy[aid] * q_vals[aid]
++            for aid in range(Aall):
++                if mask[aid]:
++                    self.regret[key][aid] += (q_vals[aid] - ev)
++                    self.strat_sum[key][aid] += policy[aid]
++            return ev
++
++        if kind == "opp":
++            children = self._chance_children(tree, idx)
++            if not children:
++                ps = tree["nodes"][idx].public_state
++                val_follow = self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
++            else:
++                vals = []
++                p = 1.0 / float(len(children))
++                for ci in children:
++                    v = self._external_sample_traverse(tree, ci, pov_player, r_us, r_opp, opp_cfv_upper_vec, leaf_value_fn, iw_c * (1.0 / p if self.use_iw else 1.0), root_idx, apply_root_gadget)
++                    vals.append(v)
++                val_follow = min(vals) if vals else 0.0
++
++            if apply_root_gadget and idx == root_idx:
++                term = self._terminate_value(opp_cfv_upper_vec)
++                return min(val_follow, term)
++            return val_follow
++
++        ps = tree["nodes"][idx].public_state
++        return self._evaluate_leaf(leaf_value_fn, ps, pov_player, r_us, r_opp) * (iw_c if self.use_iw else 1.0)
+ 
+ 	def solve_subgame(self, root_node: Dict[str, Any], r_us: List[float], r_opp: List[float], opp_cfv_constraints: List[float], T: int, leaf_value_fn) -> Tuple[Dict[Any, float], Dict[int, float], Dict[int, float]]:
+ 		self.regret.clear()

@@ -1,0 +1,36 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -150,20 +150,19 @@
+         return {"blocks": int(len(na_b)), "naive": na_stats, "aivat": av_stats}
+ 
+ def _chance_policy_uniform(node: GameNode) -> Dict[str, float]:
+-	ps = node.public_state
+-	avail = list(getattr(ps, "deck", []))
+-	if not avail:
+-		used = set(list(getattr(ps, "board_cards", [])) + list(getattr(ps, "hole_cards", [[], []])[0]) + list(getattr(ps, "hole_cards", [[], []])[1]))
+-		try:
+-			from poker_utils import DECK
+-			avail = [c for c in DECK if c not in used]
+-		except Exception:
+-			avail = []
+-	if not avail:
+-		return {}
+-	u = 1.0 / float(len(avail))
+-	return {c: u for c in avail}
+-
++        ps = node.public_state
++        avail = list(getattr(ps, "deck", []))
++        if not avail:
++                try:
++                        from poker_utils import DECK
++                        used = set(list(getattr(ps, "board_cards", [])) + sum(list(getattr(ps, "hole_cards", [[], []])), []))
++                        avail = [c for c in DECK if c not in used]
++                except Exception:
++                        avail = []
++        if not avail:
++                return {}
++        u = 1.0 / float(len(avail))
++        return {c: u for c in avail}
+ 
+ def _no_negative_pot_delta(prev_ps: PublicState, next_ps: PublicState) -> bool:
+ 		eps = 1e-9

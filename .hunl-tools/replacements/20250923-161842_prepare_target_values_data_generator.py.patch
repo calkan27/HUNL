@@ -1,0 +1,80 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -253,37 +253,43 @@
+ 
+ 		return [pot_norm] + list(bvec) + list(r1) + list(r2)
+ 
+-	def prepare_target_values(self, counterfactual_values: Dict[int, Dict[int, List[float]]], pot_size: float) -> List[List[float]]:
+-			K = int(self.num_clusters)
+-			scale = 1.0 / float(pot_size if float(pot_size) > 0.0 else 1.0)
+-			t1 = [0.0] * K
+-			t2 = [0.0] * K
+-			cf0 = dict(counterfactual_values.get(0, {}))
+-			cf1 = dict(counterfactual_values.get(1, {}))
+-			A = len(ActionType)
+-			i = 0
+-			while i < K:
+-					v0 = cf0.get(i, 0.0)
+-					if isinstance(v0, (list, tuple)):
+-							if len(v0) == 1:
+-									x0 = float(v0[0])
+-							elif len(v0) == A and all(abs(float(v0[j]) - float(v0[0])) <= 1e-9 for j in range(A)):
+-									x0 = float(v0[0])
+-							else:
+-									raise ValueError("NonScalarCFVTarget_v1")
+-					else:
+-							x0 = float(v0)
+-					v1 = cf1.get(i, 0.0)
+-					if isinstance(v1, (list, tuple)):
+-							if len(v1) == 1:
+-									x1 = float(v1[0])
+-							elif len(v1) == A and all(abs(float(v1[j]) - float(v1[0])) <= 1e-9 for j in range(A)):
+-									x1 = float(v1[0])
+-							else:
+-									raise ValueError("NonScalarCFVTarget_v2")
+-					else:
+-							x1 = float(v1)
+-					t1[i] = x0 * scale
+-					t2[i] = x1 * scale
+-					i += 1
+-			return t1, t2
++    def prepare_target_values(self, counterfactual_values: Dict[int, Dict[int, List[float]]], pot_size: float = None) -> List[List[float]]:
++        K = int(self.num_clusters)
++        scale = None
++        if pot_size is not None and float(pot_size) > 0.0:
++            scale = 1.0 / float(pot_size)
++        t1 = [0.0] * K
++        t2 = [0.0] * K
++        cf0 = dict(counterfactual_values.get(0, {}))
++        cf1 = dict(counterfactual_values.get(1, {}))
++        A = len(ActionType)
++        i = 0
++        while i < K:
++            v0 = cf0.get(i, 0.0)
++            if isinstance(v0, (list, tuple)):
++                if len(v0) == 1:
++                    x0 = float(v0[0])
++                elif len(v0) == A and all(abs(float(v0[j]) - float(v0[0])) <= 1e-9 for j in range(A)):
++                    x0 = float(v0[0])
++                else:
++                    raise ValueError("NonScalarCFVTarget_v1")
++            else:
++                x0 = float(v0)
++            v1 = cf1.get(i, 0.0)
++            if isinstance(v1, (list, tuple)):
++                if len(v1) == 1:
++                    x1 = float(v1[0])
++                elif len(v1) == A and all(abs(float(v1[j]) - float(v1[0])) <= 1e-9 for j in range(A)):
++                    x1 = float(v1[0])
++                else:
++                    raise ValueError("NonScalarCFVTarget_v2")
++            else:
++                x1 = float(v1)
++            if scale is not None:
++                x0 *= scale
++                x1 *= scale
++            t1[i] = x0
++            t2[i] = x1
++            i += 1
++        return t1, t2
++

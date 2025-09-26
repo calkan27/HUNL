@@ -1,0 +1,133 @@
+--- a/poker_utils.py
++++ b/poker_utils.py
+@@ -44,78 +44,58 @@
+ 		i += 1
+ 	return out
+ 
+-def _to_str_card(c) -> str:
+-	# Normalizes inputs like "jh", ("J","H"), ["10","h"], " J h "
+-	if isinstance(c, str):
+-		raw = c
+-	elif isinstance(c, (list, tuple)):
+-		raw = _concat(c)
+-	else:
+-		raw = f"{c}"
+-
+-	# strip whitespace chars and uppercase
+-	ws = {9, 10, 11, 12, 13, 32}
+-	buf = []
+-	i = 0
+-	while i < len(raw):
+-		ch = raw[i]
+-		oc = ord(ch) if isinstance(ch, str) and (len(ch) == 1) else None
+-		if (oc is not None) and (oc in ws):
+-			pass
+-		else:
+-			buf.append(ch)
+-		i += 1
+-	s_no_space = _concat(buf)
+-
+-	out = []
+-	i = 0
+-	while i < len(s_no_space):
+-		ch = s_no_space[i]
+-		oc = ord(ch) if (isinstance(ch, str) and (len(ch) == 1)) else None
+-		if (oc is not None) and (97 <= oc <= 122):
+-			out.append(chr(oc - 32))
+-		else:
+-			out.append(ch)
+-		i += 1
+-	s = _concat(out)
+-
+-	# quick exact forms
+-	if len(s) >= 2:
+-		r0 = s[0]
+-		t0 = s[1]
+-		if (r0 in RANKS) and (t0 in SUITS):
+-			return r0 + t0
+-		if (r0 in SUITS) and (t0 in RANKS):
+-			return t0 + r0
+-
+-	# "10h" -> "TH"
+-	if len(s) >= 3:
+-		if (s[0] == "1") and (s[1] == "0") and (s[2] in SUITS):
+-			return "T" + s[2]
+-
+-	# scan to pick first rank + first suit in any order
+-	r_pick = None
+-	t_pick = None
+-	i = 0
+-	n = len(s)
+-	while i < n:
+-		ch = s[i]
+-		if r_pick is None:
+-			if (ch == "1") and (i + 1 < n) and (s[i + 1] == "0"):
+-				r_pick = "T"
+-				i += 1
+-			elif ch in RANKS:
+-				r_pick = ch
+-		if (t_pick is None) and (ch in SUITS):
+-			t_pick = ch
+-		if (r_pick is not None) and (t_pick is not None):
+-			break
+-		i += 1
+-
+-	if (r_pick is not None) and (t_pick is not None):
+-		return r_pick + t_pick
+-
+-	return s[:2]
++def _to_str_card(c):
++        # Normalize a single card into "RS" with R in RANKS and S in SUITS.
++        # Handles inputs like "jh", ("J","H"), ["10","h"], " J h ", "hJ", etc.
++        def _mk_str(x):
++                if isinstance(x, str):
++                        return x
++                elif isinstance(x, (list, tuple)):
++                        return "".join([str(t) for t in x])
++                else:
++                        return str(x)
++
++        raw = _mk_str(c)
++        if not isinstance(raw, str):
++                raw = str(raw)
++
++        # Uppercase and remove all whitespace
++        s = "".join(raw.split()).upper()
++
++        # Fast paths for already-canonical or swapped order
++        if len(s) >= 2:
++                r0 = s[0]
++                t0 = s[1]
++                if (r0 in RANKS) and (t0 in SUITS):
++                        return r0 + t0
++                if (r0 in SUITS) and (t0 in RANKS):
++                        return t0 + r0
++
++        # Map any explicit "10" to "T" when present (common forms: "10H", "H10")
++        s = s.replace("10", "T")
++
++        # Find first rank and first suit anywhere in the string
++        r_pick = None
++        t_pick = None
++
++        # Prefer an early rank; accept the first suit after that if possible
++        i = 0
++        n = len(s)
++        while i < n:
++                ch = s[i]
++                if (r_pick is None) and (ch in RANKS):
++                        r_pick = ch
++                if (t_pick is None) and (ch in SUITS):
++                        t_pick = ch
++                if (r_pick is not None) and (t_pick is not None):
++                        break
++                i += 1
++
++        if (r_pick is not None) and (t_pick is not None):
++                return r_pick + t_pick
++
++        # Fallback: take first two chars uppercased (keeps previous behavior)
++        return s[:2]
+ 
+ def _normalize_cards(card_iterable) -> List[str]:
+ 	out: List[str] = []

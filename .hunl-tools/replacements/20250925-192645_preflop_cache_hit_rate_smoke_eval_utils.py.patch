@@ -1,0 +1,115 @@
+--- a/smoke_eval_utils.py
++++ b/smoke_eval_utils.py
+@@ -32,43 +32,82 @@
+ 	return total / float(trials) if trials > 0 else 0.0
+ 
+ 
+-def preflop_cache_hit_rate(solver: CFRSolver, node: GameNode, trials: int = 6) -> Tuple[float, Dict[str, int]]:
++def preflop_cache_hit_rate(
++        solver: CFRSolver,
++        node: GameNode,
++        trials: int = 6,
++) -> Tuple[float, Dict[str, int]]:
++        stats0_src = getattr(
++                solver,
++                "_preflop_cache_stats",
++                {"hits": 0, "misses": 0},
++        )
++        stats0 = dict(stats0_src)
+ 
+-	stats0 = dict(getattr(solver, "_preflop_cache_stats", {"hits": 0, "misses": 0}))
+-	h0 = int(stats0.get("hits", 0))
+-	m0 = int(stats0.get("misses", 0))
++        h0 = int(stats0.get("hits", 0))
++        m0 = int(stats0.get("misses", 0))
+ 
+-	for _ in range(max(0, int(trials))):
+-		ps_reset = PublicState(
+-			initial_stacks=list(node.public_state.initial_stacks),
+-			board_cards=[],
+-			dealer=node.public_state.dealer,
+-		)
+-		ps_reset.current_round = 0
+-		ps_reset.current_player = ps_reset.dealer
++        tN = max(0, int(trials))
++        i = 0
++        while i < tN:
++                ps_reset = PublicState(
++                        initial_stacks=list(node.public_state.initial_stacks),
++                        board_cards=[],
++                        dealer=node.public_state.dealer,
++                )
++                ps_reset.current_round = 0
++                ps_reset.current_player = ps_reset.dealer
+ 
+-		n = GameNode(ps_reset)
+-		K = int(getattr(solver, "num_clusters", 0))
+-		u = 1.0 / float(K) if K > 0 else 0.0
+-		n.player_ranges = [{i2: u for i2 in range(K)}, {i2: u for i2 in range(K)}]
+-		solver.run_cfr(n)
++                n = GameNode(ps_reset)
+ 
+-	stats1 = dict(getattr(solver, "_preflop_cache_stats", {"hits": 0, "misses": 0}))
+-	h1 = int(stats1.get("hits", 0))
+-	m1 = int(stats1.get("misses", 0))
++                K = int(getattr(solver, "num_clusters", 0))
+ 
+-	dh = max(0, h1 - h0)
+-	dm = max(0, m1 - m0)
+-	total = dh + dm
+-	hit_rate = (float(dh) / float(total)) if total > 0 else 0.0
++                if K > 0:
++                        u = 1.0 / float(K)
++                else:
++                        u = 0.0
+ 
+-	return hit_rate, {
+-		"hits": h1,
+-		"misses": m1,
+-		"puts": int(stats1.get("puts", 0)),
+-		"evictions": int(stats1.get("evictions", 0)),
+-	}
++                r0: Dict[int, float] = {}
++                r1: Dict[int, float] = {}
+ 
++                j = 0
++                while j < K:
++                        r0[j] = u
++                        r1[j] = u
++                        j += 1
++
++                n.player_ranges = [r0, r1]
++
++                _ = solver.run_cfr(n)
++
++                i += 1
++
++        stats1_src = getattr(
++                solver,
++                "_preflop_cache_stats",
++                {"hits": 0, "misses": 0},
++        )
++        stats1 = dict(stats1_src)
++
++        h1 = int(stats1.get("hits", 0))
++        m1 = int(stats1.get("misses", 0))
++
++        dh = max(0, h1 - h0)
++        dm = max(0, m1 - m0)
++        total = dh + dm
++
++        if total > 0:
++                hit_rate = float(dh) / float(total)
++        else:
++                hit_rate = 0.0
++
++        out_stats: Dict[str, int] = {}
++        out_stats["hits"] = h1
++        out_stats["misses"] = m1
++        out_stats["puts"] = int(stats1.get("puts", 0))
++        out_stats["evictions"] = int(stats1.get("evictions", 0))
++
++        return hit_rate, out_stats
+ 
+ def _make_initial_preflop(stack: int, seed: int) -> PublicState:
+ 

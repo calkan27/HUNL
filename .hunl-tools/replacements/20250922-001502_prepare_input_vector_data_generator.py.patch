@@ -1,0 +1,42 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -264,14 +264,31 @@
+ 			for i in range(K):
+ 				r2[i] = r2[i] / s2
+ 		return [r1, r2]
+-	def prepare_input_vector(self, player_ranges_bucketed, public_cards, pot_size, actions=None):
+-		total_initial = float(sum([self.player_stack, self.player_stack])) if self.player_stack is not None else 1.0
+-		if total_initial <= 0.0:
+-			total_initial = 1.0
+-		pot_norm = float(pot_size) / total_initial
+-		bvec = board_one_hot(public_cards)
+-		r1, r2 = player_ranges_bucketed
+-		return [pot_norm] + list(bvec) + list(r1) + list(r2)
++    def prepare_input_vector(self, player_ranges_bucketed, public_cards, pot_size, actions=None):
++        total_initial = float(sum([self.player_stack, self.player_stack])) if self.player_stack is not None else 1.0
++        if total_initial <= 0.0:
++            total_initial = 1.0
++        pot_norm = float(pot_size) / total_initial
++        if not (pot_norm > 0.0 and pot_norm <= 1.0):
++            raise ValueError(f"PotNormalizationOutOfRange pot_norm={pot_norm}")
++        bvec = board_one_hot(public_cards)
++        ones = 0
++        i = 0
++        while i < len(bvec):
++            if bvec[i] not in (0, 1):
++                raise ValueError("BoardOneHotInvalid")
++            ones += bvec[i]
++            i += 1
++        if ones != len(public_cards):
++            raise ValueError("BoardOneHotCardCountMismatch")
++        r1, r2 = player_ranges_bucketed
++        s1 = sum(r1) or 0.0
++        s2 = sum(r2) or 0.0
++        if abs(s1 - 1.0) > 1e-9 or abs(s2 - 1.0) > 1e-9:
++            raise ValueError("RangeMassNotConserved")
++        return [pot_norm] + list(bvec) + list(r1) + list(r2)
++
++
+ 	def compute_counterfactual_values(self, node):
+ 		cf0 = self.cfr_solver.predict_counterfactual_values(node, player=0)
+ 		cf1 = self.cfr_solver.predict_counterfactual_values(node, player=1)

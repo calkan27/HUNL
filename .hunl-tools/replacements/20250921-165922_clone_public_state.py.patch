@@ -1,0 +1,57 @@
+--- a/public_state.py
++++ b/public_state.py
+@@ -110,30 +110,30 @@
+ 
+ 
+ 
+-	def clone(self):
+-		new_state = PublicState.__new__(PublicState)
+-
+-		new_state.pot_size = int(self.pot_size)
+-		new_state.current_bets = list(self.current_bets)
+-		new_state.current_round = int(self.current_round)
+-		new_state.is_terminal = bool(self.is_terminal)
+-		new_state.is_showdown = bool(self.is_showdown)
+-		new_state.last_action = copy.deepcopy(self.last_action)
+-		new_state.deck = list(self.deck)
+-		new_state.stacks = list(self.stacks)
+-		new_state.initial_stacks = list(self.initial_stacks)
+-		new_state.small_blind = int(self.small_blind)
+-		new_state.big_blind = int(self.big_blind)
+-		new_state.dealer = int(self.dealer)
+-		new_state.current_player = int(self.current_player) if self.current_player is not None else None
+-		new_state.actions = copy.deepcopy(self.actions)
+-		new_state.players_in_hand = list(self.players_in_hand)
+-		new_state.board_cards = list(self.board_cards)
+-		new_state.hole_cards = [list(self.hole_cards[0]), list(self.hole_cards[1])]
+-		new_state.last_raiser = self.last_raiser if self.last_raiser is None else int(self.last_raiser)
+-		new_state.last_raise_increment = int(self.last_raise_increment)
+-		return new_state
+-
++    def clone(self):
++        new_state = PublicState.__new__(PublicState)
++        new_state.pot_size = int(self.pot_size)
++        new_state.current_bets = list(self.current_bets)
++        new_state.current_round = int(self.current_round)
++        new_state.is_terminal = bool(self.is_terminal)
++        new_state.is_showdown = bool(self.is_showdown)
++        new_state.last_action = copy.deepcopy(self.last_action)
++        new_state.deck = list(self.deck)
++        new_state.stacks = list(self.stacks)
++        new_state.initial_stacks = list(self.initial_stacks)
++        new_state.small_blind = int(self.small_blind)
++        new_state.big_blind = int(self.big_blind)
++        new_state.dealer = int(self.dealer)
++        new_state.current_player = int(self.current_player) if self.current_player is not None else None
++        new_state.actions = copy.deepcopy(self.actions)
++        new_state.players_in_hand = list(self.players_in_hand)
++        new_state.board_cards = list(self.board_cards)
++        new_state.hole_cards = [list(self.hole_cards[0]), list(self.hole_cards[1])]
++        new_state.last_raiser = self.last_raiser if self.last_raiser is None else int(self.last_raiser)
++        new_state.last_raise_increment = int(self.last_raise_increment)
++        new_state.last_raise_was_allin_below_min = self.last_raise_was_allin_below_min if self.last_raise_was_allin_below_min is None else int(self.last_raise_was_allin_below_min)
++        new_state.total_contrib = list(self.total_contrib)
++        return new_state
+ 
+ 	def copy(self):
+ 		return self.clone()

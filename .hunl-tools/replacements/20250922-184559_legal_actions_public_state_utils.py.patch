@@ -1,0 +1,140 @@
+--- a/public_state_utils.py
++++ b/public_state_utils.py
+@@ -96,69 +96,71 @@
+ 			"spr": spr,
+ 			"parity": int(parity),
+ 		}
+-	def legal_actions(self):
+-		out = []
+-		p = self.current_player
+-		o = (p + 1) % 2
+-		my_bet = self.current_bets[p]
+-		opp_bet = self.current_bets[o]
+-		to_call = opp_bet - my_bet
+-		if to_call < 0:
+-			to_call = 0
+-		min_raise_inc = self._min_raise_size()
+-		allow_raises = (self.last_raise_was_allin_below_min is None)
+-		if to_call > 0:
+-			out.append(ActionType.FOLD)
+-		out.append(ActionType.CALL)
+-		if not (self.players_in_hand[0] and self.players_in_hand[1]):
+-			seen = set()
+-			filt = []
+-			i = 0
+-			while i < len(out):
+-				a = out[i]
+-				if a not in seen:
+-					seen.add(a)
+-					filt.append(a)
+-				i = i + 1
+-			return filt
+-		if to_call == 0:
+-			if self.stacks[p] > 0 and allow_raises:
+-				hp = max(min_raise_inc, int(self.pot_size * 0.5))
+-				if hp > 0 and self.stacks[p] >= hp:
+-					out.append(ActionType.HALF_POT_BET)
+-				pt = max(min_raise_inc, int(self.pot_size))
+-				if pt > 0 and self.stacks[p] >= pt:
+-					out.append(ActionType.POT_SIZED_BET)
+-				tp = max(min_raise_inc, int(self.pot_size * 2.0))
+-				if tp > 0 and self.stacks[p] >= tp:
+-					out.append(ActionType.TWO_POT_BET)
+-				out.append(ActionType.ALL_IN)
+-		else:
+-			if self.stacks[p] > 0:
+-				if self.stacks[p] <= to_call:
+-					out.append(ActionType.ALL_IN)
+-				else:
+-					if allow_raises:
+-						rem = self.stacks[p] - to_call
+-						if rem > 0:
+-							pac = self.pot_size + to_call
+-							hp = max(min_raise_inc, int(pac * 0.5))
+-							if hp > 0 and rem >= hp:
+-								out.append(ActionType.HALF_POT_BET)
+-							pt = max(min_raise_inc, int(pac))
+-							if pt > 0 and rem >= pt:
+-								out.append(ActionType.POT_SIZED_BET)
+-							tp = max(min_raise_inc, int(pac * 2.0))
+-							if tp > 0 and rem >= tp:
+-								out.append(ActionType.TWO_POT_BET)
+-							out.append(ActionType.ALL_IN)
+-		seen = set()
+-		filt = []
+-		i = 0
+-		while i < len(out):
+-			a = out[i]
+-			if a not in seen:
+-				seen.add(a)
+-				filt.append(a)
+-			i = i + 1
+-		return filt
++    def legal_actions(self):
++        from action_type import ActionType
++        out = []
++        p = self.current_player
++        o = (p + 1) % 2
++        my_bet = self.current_bets[p]
++        opp_bet = self.current_bets[o]
++        to_call = opp_bet - my_bet
++        if to_call < 0:
++            to_call = 0
++        min_raise_inc = self._min_raise_size()
++        allow_raises = (self.last_raise_was_allin_below_min is None)
++        if to_call > 0:
++            out.append(ActionType.FOLD)
++        out.append(ActionType.CALL)
++        if not (self.players_in_hand[0] and self.players_in_hand[1]):
++            seen = set()
++            filt = []
++            i = 0
++            while i < len(out):
++                a = out[i]
++                if a not in seen:
++                    seen.add(a)
++                    filt.append(a)
++                i = i + 1
++            return filt
++        if to_call == 0:
++            if self.stacks[p] > 0 and allow_raises:
++                hp = max(min_raise_inc, int(self.pot_size * 0.5))
++                if hp > 0 and self.stacks[p] >= hp:
++                    out.append(ActionType.HALF_POT_BET)
++                pt = max(min_raise_inc, int(self.pot_size))
++                if pt > 0 and self.stacks[p] >= pt:
++                    out.append(ActionType.POT_SIZED_BET)
++                tp = max(min_raise_inc, int(self.pot_size * 2.0))
++                if tp > 0 and self.stacks[p] >= tp:
++                    out.append(ActionType.TWO_POT_BET)
++                out.append(ActionType.ALL_IN)
++        else:
++            if self.stacks[p] > 0:
++                if self.stacks[p] <= to_call:
++                    out.append(ActionType.ALL_IN)
++                else:
++                    if allow_raises:
++                        rem = self.stacks[p] - to_call
++                        if rem > 0:
++                            pac = self.pot_size + to_call
++                            hp = max(min_raise_inc, int(pac * 0.5))
++                            if hp > 0 and rem >= hp:
++                                out.append(ActionType.HALF_POT_BET)
++                            pt = max(min_raise_inc, int(pac))
++                            if pt > 0 and rem >= pt:
++                                out.append(ActionType.POT_SIZED_BET)
++                            tp = max(min_raise_inc, int(pac * 2.0))
++                            if tp > 0 and rem >= tp:
++                                out.append(ActionType.TWO_POT_BET)
++                            out.append(ActionType.ALL_IN)
++        seen = set()
++        filt = []
++        i = 0
++        while i < len(out):
++            a = out[i]
++            if a not in seen:
++                seen.add(a)
++                filt.append(a)
++            i = i + 1
++        return filt
++

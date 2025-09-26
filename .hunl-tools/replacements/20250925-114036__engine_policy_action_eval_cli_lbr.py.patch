@@ -1,0 +1,75 @@
+--- a/eval_cli_lbr.py
++++ b/eval_cli_lbr.py
+@@ -50,39 +50,39 @@
+ 
+ def _engine_policy_action(solver_template: CFRSolver, node: GameNode, iters: int = 2) -> ActionType:
+ 
+-	cfg = solver_template._config if hasattr(solver_template, "_config") else None
+-	tmp = CFRSolver(config=cfg) if cfg is not None else CFRSolver(
+-		depth_limit=solver_template.depth_limit,
+-		num_clusters=solver_template.num_clusters
+-	)
+-	tmp.clusters = solver_template.clusters
+-	tmp.models = solver_template.models
+-	tmp.num_clusters = solver_template.num_clusters
+-	tmp.total_iterations = int(iters)
+-
+-	shadow = GameNode(node.public_state)
+-	shadow.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+-	tmp.cfr_values.clear()
+-	tmp._calculate_counterfactual_values(shadow, int(shadow.public_state.current_player))
+-
+-	if shadow.public_state.current_player == node.public_state.current_player:
+-		allowed = tmp._allowed_actions_agent(node.public_state)
+-		mixed = tmp._mixed_action_distribution(shadow, int(shadow.public_state.current_player), allowed)
+-	else:
+-		allowed = tmp._allowed_actions_opponent(node.public_state)
+-		mixed = tmp._mixed_action_distribution(shadow, int(shadow.public_state.current_player), allowed)
+-
+-	if not mixed or not allowed:
+-		return ActionType.CALL
+-
+-	r = random.random()
+-	c = 0.0
+-	for a, p in zip(allowed, mixed):
+-		c += float(p)
+-		if r <= c:
+-			return a
+-	return allowed[-1]
+-
++        cfg = solver_template._config if hasattr(solver_template, "_config") else None
++        tmp = CFRSolver(config=cfg) if cfg is not None else CFRSolver(
++                depth_limit=solver_template.depth_limit,
++                num_clusters=solver_template.num_clusters
++        )
++        tmp.clusters = solver_template.clusters
++        tmp.models = solver_template.models
++        tmp.num_clusters = solver_template.num_clusters
++        tmp.total_iterations = int(iters)
++
++        shadow = GameNode(node.public_state)
++        shadow.player_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++        if hasattr(tmp, "_calculate_counterfactual_values"):
++                tmp.cfr_values.clear()
++                tmp._calculate_counterfactual_values(shadow, int(getattr(shadow.public_state, "current_player", 0)))
++
++        if int(getattr(shadow.public_state, "current_player", 0)) == int(getattr(node.public_state, "current_player", 0)):
++                allowed = tmp._allowed_actions_agent(node.public_state)
++                mixed = tmp._mixed_action_distribution(shadow, int(getattr(shadow.public_state, "current_player", 0)), allowed)
++        else:
++                allowed = tmp._allowed_actions_opponent(node.public_state)
++                mixed = tmp._mixed_action_distribution(shadow, int(getattr(shadow.public_state, "current_player", 0)), allowed)
++
++        if not mixed or not allowed:
++                return ActionType.CALL
++
++        r = random.random()
++        c = 0.0
++        for a, p in zip(allowed, mixed):
++                c += float(p)
++                if r <= c:
++                        return a
++        return allowed[-1]
+ 
+ def lbr_greedy_action(ps: PublicState, solver: CFRSolver, lbr_player: int, iters_after: int, freq_log: Dict[str, Dict[str, int]]) -> ActionType:
+ 

@@ -1,0 +1,28 @@
+From HEAD Mon Sep 17 00:00:00 2001
+From: Hypothesis 6.133.2 <no-reply@hypothesis.works>
+Date: Thu, 25 Sep 2025 16:32:25
+Subject: [PATCH] Hypothesis: add explicit examples
+
+---
+--- ./test_group_h_cli_eval_combined.py
++++ ./test_group_h_cli_eval_combined.py
+@@ -227,6 +227,11 @@
+     block_size=st.integers(min_value=1, max_value=25)
+ )
+ @settings(deadline=None)
++@example(
++    # The test always failed when commented parts were varied together.
++    results=[],  # or any other generated value
++    block_size=1,  # or any other generated value
++).via("discovered failure")
+ def test_eval_cli_block_metrics_shapes_and_monotone_ci(results, block_size):
+     out = eval_cli._block_metrics(results, block_size=block_size)
+     assert "blocks" in out and "naive" in out and "aivat" in out
+@@ -742,6 +747,7 @@
+ 
+ @given(steps=st.integers(min_value=1, max_value=20))
+ @settings(deadline=None, max_examples=40)
++@example(steps=1).via("discovered failure")
+ def test_chk_pot_monotonicity_property_with_stub_ps(steps):
+     class _PS:
+         def __init__(self, pot=0.0):

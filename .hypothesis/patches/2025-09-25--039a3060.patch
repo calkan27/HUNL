@@ -1,0 +1,30 @@
+From HEAD Mon Sep 17 00:00:00 2001
+From: Hypothesis 6.133.2 <no-reply@hypothesis.works>
+Date: Thu, 25 Sep 2025 15:06:41
+Subject: [PATCH] Hypothesis: add explicit examples
+
+---
+--- ./test_group_G_river_endgame_and_bucket_aux.py
++++ ./test_group_G_river_endgame_and_bucket_aux.py
+@@ -291,6 +291,13 @@
+     pot=st.floats(min_value=20.0, max_value=400.0),
+     bet=st.floats(min_value=2.0, max_value=200.0),
+ )
++@example(
++    # The test always failed when commented parts were varied together.
++    K=2,  # or any other generated value
++    B=2,  # or any other generated value
++    pot=20.0,  # or any other generated value
++    bet=2.0,  # or any other generated value
++).via("discovered failure")
+ def test_compute_cluster_cfvs_bucketed_zero_sum_when_ranges_equal(K, B, pot, bet):
+         rng = random.Random(99)
+         board = _mk_board(5, rng)
+@@ -441,6 +448,7 @@
+     b1=st.floats(min_value=1.0, max_value=100.0),
+     seed=st.integers(min_value=1, max_value=9999),
+ )
++@example(K=2, B=2, pot=20.0, b0=1.0, b1=1.0, seed=3).via("discovered failure")
+ def test_bucketed_vs_unbucketed_signals_agree_on_strict_dominance(K, B, pot, b0, b1, seed):
+     """
+     If our distribution is strictly stochastically higher than opponent's (more mass on stronger hands),

@@ -1,0 +1,85 @@
+--- a/lookahead_tree.py
++++ b/lookahead_tree.py
+@@ -143,44 +143,41 @@
+ 		}
+ 		return tree
+ 
+-	def propagate(self, tree: Dict[str, Any], r_us: List[float], r_opp: List[float], pov_player: int) -> Dict[str, Any]:
+-		K = len(r_us)
+-		N = len(tree["nodes"])
+-		reach_us = np.zeros((N, K), dtype=float)
+-		reach_opp = np.zeros((N, K), dtype=float)
+-		root_idx = 0
+-		reach_us[root_idx, :] = np.asarray(r_us, dtype=float) if K > 0 else np.zeros((0,), dtype=float)
+-		reach_opp[root_idx, :] = np.asarray(r_opp, dtype=float) if K > 0 else np.zeros((0,), dtype=float)
+-		children_by_parent: Dict[int, List[int]] = {}
+-		for i in range(N):
+-			p = tree["parents"][i]
+-			children_by_parent.setdefault(p, []).append(i)
+-		for p in range(N):
+-			if p < 0:
+-				continue
+-			kind = tree["kinds"][p]
+-			idx = children_by_parent.get(p, [])
+-			if not idx:
+-				continue
+-			if kind in ("our", "opp"):
+-				d = max(1, len(idx))
+-				for ci in idx:
+-					if kind == "our":
+-						reach_us[ci, :] += reach_us[p, :] * (1.0 / float(d))
+-						reach_opp[ci, :] += reach_opp[p, :]
+-					else:
+-						reach_us[ci, :] += reach_us[p, :]
+-						reach_opp[ci, :] += reach_opp[p, :] * (1.0 / float(d))
+-			elif kind == "chance":
+-				for ci in idx:
+-					reach_us[ci, :] += reach_us[p, :]
+-					reach_opp[ci, :] += reach_opp[p, :]
+-		values = [None] * N
+-		if self.leaf_callback is not None:
+-			for i in range(N):
+-				k = tree["kinds"][i]
+-				if k in ("leaf", "terminal"):
+-					ps = tree["nodes"][i].public_state
+-					v = self.leaf_callback(ps, int(pov_player), list(reach_us[i, :]), list(reach_opp[i, :]))
+-					values[i] = np.asarray(v, dtype=float)
+-		return {"reach_us": reach_us, "reach_opp": reach_opp, "values": values}
++    def propagate(self, tree: Dict[str, Any], r_us: List[float], r_opp: List[float], pov_player: int) -> Dict[str, Any]:
++        K = len(r_us)
++        N = len(tree["nodes"])
++        reach_us = np.zeros((N, K), dtype=float)
++        reach_opp = np.zeros((N, K), dtype=float)
++        root_idx = 0
++        reach_us[root_idx, :] = np.asarray(r_us, dtype=float) if K > 0 else np.zeros((0,), dtype=float)
++        reach_opp[root_idx, :] = np.asarray(r_opp, dtype=float) if K > 0 else np.zeros((0,), dtype=float)
++        children_by_parent: Dict[int, List[int]] = {}
++        for i in range(N):
++            p = tree["parents"][i]
++            children_by_parent.setdefault(p, []).append(i)
++        for p in range(N):
++            if p < 0:
++                continue
++            idx = children_by_parent.get(p, [])
++            if not idx:
++                continue
++            kind = tree["kinds"][p]
++            if kind in ("our", "opp"):
++                d = max(1, len(idx))
++                for ci in idx:
++                    reach_us[ci, :] += reach_us[p, :] * (1.0 / float(d))
++                    reach_opp[ci, :] += reach_opp[p, :] * (1.0 / float(d))
++            elif kind == "chance":
++                for ci in idx:
++                    reach_us[ci, :] += reach_us[p, :]
++                    reach_opp[ci, :] += reach_opp[p, :]
++        values = [None] * N
++        if self.leaf_callback is not None:
++            for i in range(N):
++                k = tree["kinds"][i]
++                if k in ("leaf", "terminal"):
++                    ps = tree["nodes"][i].public_state
++                    v = self.leaf_callback(ps, int(pov_player), list(reach_us[i, :]), list(reach_opp[i, :]))
++                    values[i] = np.asarray(v, dtype=float)
++        return {"reach_us": reach_us, "reach_opp": reach_opp, "values": values}
++

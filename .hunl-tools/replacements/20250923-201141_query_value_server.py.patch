@@ -1,0 +1,36 @@
+--- a/value_server.py
++++ b/value_server.py
+@@ -142,19 +142,20 @@
+                         out2 = out2 * scale
+                     handles[i].set((out1, out2))
+ 
+-	def query(
+-		self,
+-		stage: str,
+-		inputs: torch.Tensor,
+-		scale_to_pot: bool = False,
+-		as_numpy: bool = True,
+-	) -> Tuple[Any, Any]:
+-		if inputs.dim() == 1:
+-			inputs = inputs.unsqueeze(0)
+-		self.start()
+-		h = ResultHandle()
+-		self._q.put((str(stage), inputs.detach().clone(), bool(scale_to_pot), h))
+-		return h.result(as_numpy=as_numpy)
++    def query(
++        self,
++        stage: str,
++        inputs: torch.Tensor,
++        scale_to_pot: bool = False,
++        as_numpy: bool = True,
++        total_initial: Optional[float] = None,
++    ) -> Tuple[Any, Any]:
++        if inputs.dim() == 1:
++            inputs = inputs.unsqueeze(0)
++        self.start()
++        h = ResultHandle()
++        self._q.put((str(stage), inputs.detach().clone(), bool(scale_to_pot), total_initial, h))
++        return h.result(as_numpy=as_numpy)
+ 
+ 	def query_many(
+ 		self,

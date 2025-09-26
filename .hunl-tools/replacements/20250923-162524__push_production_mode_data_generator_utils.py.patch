@@ -1,0 +1,81 @@
+--- a/data_generator_utils.py
++++ b/data_generator_utils.py
+@@ -196,28 +196,56 @@
+ 	def map_handstorcho_clusters(self, hand_probs: Dict[str, float], clusters: Dict[int, set]) -> Dict[int, float]:
+ 		return self.map_hands_to_clusters(hand_probs, clusters)
+ 
+-	def _push_production_mode(self):
+-		snap = {
+-			"speed_profile": getattr(self, "speed_profile", None),
+-			"solver_depth_limit": getattr(getattr(self, "cfr_solver", None), "depth_limit", None),
+-			"solver_total_iterations": getattr(getattr(self, "cfr_solver", None), "total_iterations", None),
+-			"hc_profile": getattr(getattr(self, "hand_clusterer", None), "profile", None),
+-			"label_pot_fraction": getattr(getattr(self, "cfr_solver", None), "_label_pot_fraction", None),
+-		}
+-		if hasattr(self, "speed_profile"):
+-			self.speed_profile = "bot"
+-		if hasattr(self, "hand_clusterer"):
+-			try:
+-				self.hand_clusterer.profile = "bot"
+-			except Exception:
+-				pass
+-		if hasattr(self, "cfr_solver"):
+-			try:
+-				self.cfr_solver.hand_clusterer = getattr(self, "hand_clusterer", getattr(self.cfr_solver, "hand_clusterer", None))
+-				self.cfr_solver._label_pot_fraction = True
+-			except Exception:
+-				pass
+-		return snap
++    def _push_production_mode(self):
++        snap = {
++            "speed_profile": getattr(self, "speed_profile", None),
++            "solver_depth_limit": getattr(getattr(self, "cfr_solver", None), "depth_limit", None),
++            "solver_total_iterations": getattr(getattr(self, "cfr_solver", None), "total_iterations", None),
++            "hc_profile": getattr(getattr(self, "hand_clusterer", None), "profile", None),
++            "label_pot_fraction": getattr(getattr(self, "cfr_solver", None), "_label_pot_fraction", None),
++        }
++        if hasattr(self, "speed_profile"):
++            self.speed_profile = "bot"
++        if hasattr(self, "hand_clusterer"):
++            try:
++                self.hand_clusterer.profile = "bot"
++            except Exception:
++                pass
++        if hasattr(self, "cfr_solver"):
++            try:
++                self.cfr_solver.hand_clusterer = getattr(self, "hand_clusterer", getattr(self.cfr_solver, "hand_clusterer", None))
++                self.cfr_solver._label_pot_fraction = True
++            except Exception:
++                pass
++        return snap
++
++    def _pop_production_mode(self, snap):
++        if not isinstance(snap, dict):
++            return False
++        if "speed_profile" in snap and hasattr(self, "speed_profile"):
++            self.speed_profile = snap["speed_profile"]
++        if hasattr(self, "hand_clusterer") and "hc_profile" in snap:
++            try:
++                self.hand_clusterer.profile = snap["hc_profile"]
++            except Exception:
++                pass
++        if hasattr(self, "cfr_solver"):
++            if "solver_depth_limit" in snap:
++                try:
++                    self.cfr_solver.depth_limit = snap["solver_depth_limit"]
++                except Exception:
++                    pass
++            if "solver_total_iterations" in snap:
++                try:
++                    self.cfr_solver.total_iterations = snap["solver_total_iterations"]
++                except Exception:
++                    pass
++            if "label_pot_fraction" in snap:
++                try:
++                    self.cfr_solver._label_pot_fraction = snap["label_pot_fraction"]
++                except Exception:
++                    pass
++        return True
+ 
+ 	def _pop_production_mode(self, snap):
+ 		if not isinstance(snap, dict):

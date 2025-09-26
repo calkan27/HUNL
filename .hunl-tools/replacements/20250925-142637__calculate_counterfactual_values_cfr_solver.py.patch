@@ -1,0 +1,160 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -283,78 +283,85 @@
+         self.iteration = 0
+         return act
+ 
+-	def _calculate_counterfactual_values(self, node, player, depth=0, cache=None):
+-		if cache is None:
+-			cache = {}
+-		node_key = (id(node), player, depth)
+-		if node_key in cache:
+-			return cache[node_key]
+-		if self._is_terminal(node):
+-			cf_values = {}
+-			utility = self._calculate_terminal_utility(node, player)
+-			for cluster_id in node.player_ranges[player]:
+-				cf_values[cluster_id] = [utility] * len(ActionType)
+-			cache[node_key] = cf_values
+-			return cf_values
+-		stage = self.get_stage(node)
+-		if depth >= self.depth_limit and stage in ('preflop', 'flop'):
+-			preds = self.predict_counterfactual_values(node, player)
+-			sc = 1.0 if bool(getattr(self, "_label_pot_fraction", False)) else float(node.public_state.pot_size)
+-			scaled = {}
+-			for cid, vec in preds.items():
+-				if isinstance(vec, (list, tuple)):
+-					scaled[int(cid)] = [float(x) * sc for x in vec]
+-				else:
+-					scaled[int(cid)] = [float(vec) * sc] * len(ActionType)
+-			cache[node_key] = scaled
+-			return scaled
+-		counterfactual_values = defaultdict(lambda: [0.0] * len(ActionType))
+-		current_player = node.current_player
+-		opponent = (player + 1) % 2
+-		if current_player == player:
+-			allowed_actions = self._allowed_actions_agent(node.public_state)
+-			for cluster_id, cluster_prob in node.player_ranges[player].items():
+-				if cluster_prob == 0.0:
+-					continue
+-				values = self.cfr_values[node]
+-				base_strategy = values.compute_strategy(cluster_id)
+-				strategy = self._mask_strategy(base_strategy, allowed_actions)
+-				for a_type in allowed_actions:
+-					a_idx = a_type.value
+-					if a_idx in values.pruned_actions[cluster_id]:
+-						continue
+-					action = Action(a_type)
+-					new_public_state = node.public_state.update_state(node, action)
+-					child_node = GameNode(new_public_state)
+-					child_node.player_ranges = copy.deepcopy(node.player_ranges)
+-					if int(new_public_state.current_round) > int(node.public_state.current_round):
+-						try:
+-							self.lift_ranges_after_chance(child_node)
+-						except Exception:
+-							pass
+-					self.update_player_range(child_node, player, cluster_id, a_idx)
+-					utility = self._calculate_counterfactual_utility(child_node, player, depth + 1)
+-					counterfactual_values[cluster_id][a_idx] += strategy[a_idx] * utility
+-		else:
+-			allowed_actions = self._allowed_actions_opponent(node.public_state)
+-			per_action_util = {}
+-			for a_type in allowed_actions:
+-				act = Action(a_type)
+-				ps2 = node.public_state.update_state(node, act)
+-				ch = GameNode(ps2)
+-				ch.player_ranges = copy.deepcopy(node.player_ranges)
+-				if int(ps2.current_round) > int(node.public_state.current_round):
+-					try:
+-						self.lift_ranges_after_chance(ch)
+-					except Exception:
+-						pass
+-				per_action_util[a_type.value] = self._calculate_counterfactual_utility(ch, player, depth + 1)
+-			for cid in node.player_ranges[player].keys():
+-				for a_type in allowed_actions:
+-					a_idx = a_type.value
+-					counterfactual_values[cid][a_idx] = float(per_action_util.get(a_idx, 0.0))
+-		cache[node_key] = counterfactual_values
+-		return counterfactual_values
++    def _calculate_counterfactual_values(self, node, player, depth=0, cache=None):
++        if cache is None:
++            cache = {}
++        node_key = (id(node), player, depth)
++        if node_key in cache:
++            return cache[node_key]
++        if self._is_terminal(node):
++            cf_values = {}
++            utility = self._calculate_terminal_utility(node, player)
++            for cluster_id in node.player_ranges[player]:
++                cf_values[cluster_id] = [utility] * len(ActionType)
++            cache[node_key] = cf_values
++            return cf_values
++        stage = self.get_stage(node)
++        if depth >= self.depth_limit and stage in ('preflop', 'flop'):
++            preds = self.predict_counterfactual_values(node, player)
++            sc = 1.0 if bool(getattr(self, "_label_pot_fraction", False)) else float(node.public_state.pot_size)
++            scaled = {}
++            for cid, vec in preds.items():
++                if isinstance(vec, (list, tuple)):
++                    scaled[int(cid)] = [float(x) * sc for x in vec]
++                else:
++                    scaled[int(cid)] = [float(vec) * sc] * len(ActionType)
++            cache[node_key] = scaled
++            return scaled
++        counterfactual_values = defaultdict(lambda: [0.0] * len(ActionType))
++        current_player = node.current_player
++        opponent = (player + 1) % 2
++        if current_player == player:
++            allowed_actions = self._allowed_actions_agent(node.public_state)
++            for cluster_id, cluster_prob in node.player_ranges[player].items():
++                if cluster_prob == 0.0:
++                    continue
++                values = self.cfr_values[node]
++                base_strategy = values.compute_strategy(cluster_id)
++                strategy = self._mask_strategy(base_strategy, allowed_actions)
++                for a_type in allowed_actions:
++                    a_idx = a_type.value
++                    if a_idx in values.pruned_actions[cluster_id]:
++                        continue
++                    action = Action(a_type)
++                    try:
++                        new_public_state = node.public_state.update_state(node, action)
++                    except Exception:
++                        continue
++                    child_node = GameNode(new_public_state)
++                    child_node.player_ranges = copy.deepcopy(node.player_ranges)
++                    if int(new_public_state.current_round) > int(node.public_state.current_round):
++                        try:
++                            self.lift_ranges_after_chance(child_node)
++                        except Exception:
++                            pass
++                    self.update_player_range(child_node, player, cluster_id, a_idx)
++                    utility = self._calculate_counterfactual_utility(child_node, player, depth + 1)
++                    counterfactual_values[cluster_id][a_idx] += strategy[a_idx] * utility
++        else:
++            allowed_actions = self._allowed_actions_opponent(node.public_state)
++            per_action_util = {}
++            for a_type in allowed_actions:
++                act = Action(a_type)
++                try:
++                    ps2 = node.public_state.update_state(node, act)
++                except Exception:
++                    continue
++                ch = GameNode(ps2)
++                ch.player_ranges = copy.deepcopy(node.player_ranges)
++                if int(ps2.current_round) > int(node.public_state.current_round):
++                    try:
++                        self.lift_ranges_after_chance(ch)
++                    except Exception:
++                        pass
++                per_action_util[a_type.value] = self._calculate_counterfactual_utility(ch, player, depth + 1)
++            for cid in node.player_ranges[player].keys():
++                for a_type in allowed_actions:
++                    a_idx = a_type.value
++                    if a_idx in per_action_util:
++                        counterfactual_values[cid][a_idx] = float(per_action_util.get(a_idx, 0.0))
++        cache[node_key] = counterfactual_values
++        return counterfactual_values
+ 
+ 	def _calculate_counterfactual_utility(self, node, player, depth):
+ 		if self._is_terminal(node):

@@ -1,0 +1,178 @@
+--- a/cfr_solver_utils.py
++++ b/cfr_solver_utils.py
+@@ -318,102 +318,79 @@
+ 		self.total_iterations = it
+ 		return it
+ 
+-	def _push_no_card_abstraction_for_node(self, node: GameNode):
+-		ps = node.public_state
+-		board_set = set(list(getattr(ps, "board_cards", [])))
+-
+-		prev = {
+-			"clusters": getattr(self, "clusters", None),
+-			"num_clusters": int(getattr(self, "num_clusters", 0)),
+-			"ranges": [dict(node.player_ranges[0]), dict(node.player_ranges[1])],
+-		}
+-
+-		base_clusters = dict(getattr(self, "clusters", {}) or {})
+-		hands = set()
+-
+-		for _, hs in base_clusters.items():
+-			for h in hs:
+-				if isinstance(h, str):
+-					a, b = h.split()
+-				else:
+-					a, b = list(h)
+-
+-				if a == b:
+-					continue
+-				if (a in board_set) or (b in board_set):
+-					continue
+-
+-				hands.add(f"{a} {b}")
+-
+-		if not hands:
+-			all_h = []
+-			for a, b in itertools.combinations([c for c in DECK if c not in board_set], 2):
+-				all_h.append(f"{a} {b}")
+-			hands = set(all_h)
+-
+-		order = sorted(list(hands))
+-		new_clusters = {i: {order[i]} for i in range(len(order))}
+-
+-		old_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+-		new_ranges = [{}, {}]
+-
+-		def _spread(old_r):
+-			out = {}
+-			for cid, p in dict(old_r).items():
+-				hset = base_clusters.get(int(cid), set())
+-				comp = []
+-
+-				for h in hset:
+-					if isinstance(h, str):
+-						a, b = h.split()
+-					else:
+-						a, b = list(h)
+-
+-					if a == b:
+-						continue
+-					if (a in board_set) or (b in board_set):
+-						continue
+-
+-					comp.append(f"{a} {b}")
+-
+-				if not comp:
+-					continue
+-
+-				w = float(p) / float(len(comp))
+-				for h in comp:
+-					out[h] = out.get(h, 0.0) + w
+-			return out
+-
+-		sp0 = _spread(old_ranges[0])
+-		sp1 = _spread(old_ranges[1])
+-
+-		if not sp0:
+-			u = 1.0 / float(len(order)) if order else 0.0
+-			for i, h in enumerate(order):
+-				new_ranges[0][i] = u
+-		else:
+-			s = sum(sp0.values()) or 0.0
+-			if s > 0.0:
+-				for i, h in enumerate(order):
+-					new_ranges[0][i] = float(sp0.get(h, 0.0)) / s
+-
+-		if not sp1:
+-			u = 1.0 / float(len(order)) if order else 0.0
+-			for i, h in enumerate(order):
+-				new_ranges[1][i] = u
+-		else:
+-			s = sum(sp1.values()) or 0.0
+-			if s > 0.0:
+-				for i, h in enumerate(order):
+-					new_ranges[1][i] = float(sp1.get(h, 0.0)) / s
+-
+-		self.clusters = new_clusters
+-		self.num_clusters = len(order)
+-
+-		node.player_ranges[0] = dict(new_ranges[0])
+-		node.player_ranges[1] = dict(new_ranges[1])
+-
+-		return prev
++    def _push_no_card_abstraction_for_node(self, node: GameNode):
++        ps = node.public_state
++        board_set = set(list(getattr(ps, "board_cards", [])))
++
++        prev = {
++            "clusters": getattr(self, "clusters", None),
++            "num_clusters": int(getattr(self, "num_clusters", 0)),
++            "ranges": [dict(node.player_ranges[0]), dict(node.player_ranges[1])],
++        }
++
++        base_clusters = dict(getattr(self, "clusters", {}) or {})
++        hands = self._collect_usable_hands(base_clusters, board_set)
++
++        if not hands:
++            all_h = []
++            for a, b in itertools.combinations([c for c in DECK if c not in board_set], 2):
++                all_h.append(f"{a} {b}")
++            hands = set(all_h)
++
++        order = sorted(list(hands))
++        new_clusters = {}
++        i = 0
++        while i < len(order):
++            new_clusters[i] = {order[i]}
++            i += 1
++
++        old_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++        new_ranges = [{}, {}]
++
++        sp0 = self._spread_range_over_compatible(old_ranges[0], base_clusters, board_set)
++        sp1 = self._spread_range_over_compatible(old_ranges[1], base_clusters, board_set)
++
++        if not sp0:
++            u0 = 1.0 / float(len(order)) if len(order) > 0 else 0.0
++            i = 0
++            while i < len(order):
++                new_ranges[0][i] = u0
++                i += 1
++        else:
++            s0 = 0.0
++            for v in sp0.values():
++                s0 += float(v)
++            if s0 > 0.0:
++                i = 0
++                while i < len(order):
++                    h = order[i]
++                    new_ranges[0][i] = float(sp0.get(h, 0.0)) / s0
++                    i += 1
++
++        if not sp1:
++            u1 = 1.0 / float(len(order)) if len(order) > 0 else 0.0
++            i = 0
++            while i < len(order):
++                new_ranges[1][i] = u1
++                i += 1
++        else:
++            s1 = 0.0
++            for v in sp1.values():
++                s1 += float(v)
++            if s1 > 0.0:
++                i = 0
++                while i < len(order):
++                    h = order[i]
++                    new_ranges[1][i] = float(sp1.get(h, 0.0)) / s1
++                    i += 1
++
++        self.clusters = new_clusters
++        self.num_clusters = len(order)
++
++        node.player_ranges[0] = dict(new_ranges[0])
++        node.player_ranges[1] = dict(new_ranges[1])
++
++        return prev
+ 
+ 	def _pop_no_card_abstraction(self, snap, node: GameNode):
+ 		if not isinstance(snap, dict):

@@ -1,0 +1,65 @@
+--- a/hand_clusterer.py
++++ b/hand_clusterer.py
+@@ -181,36 +181,32 @@
+ 				trials += 1
+ 		return (win_total / float(trials)) if trials > 0 else 0.5
+ 
+-	def _calculate_potential_equity_improvement(self, hand, board, opponent_range):
+-		if len(board) >= 5:
+-			return 0.0
+-		
+-		items = list(opponent_range.items())
+-		items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
+-		sampled_opponent_range = dict(items)
+-		
+-		current_equity = self._calculate_equity(hand, board, sampled_opponent_range)
+-		total_improvement = 0.0
+-		trials = 0
+-		used_cards_base = set((hand.split() if isinstance(hand, str) else list(hand)) + board)
+-		available_cards_base = [c for c in DECK if c not in used_cards_base]
+-		num_cards_to_come = 5 - len(board)
+-		
+-		for _ in range(self._mc_samples_potential):
+-			if num_cards_to_come <= 0:
+-				new_board = board[:]
+-			else:
+-				if len(available_cards_base) >= num_cards_to_come:
+-					picks = random.sample(available_cards_base, num_cards_to_come)
+-				else:
+-					picks = []
+-				new_board = board + list(picks)
+-			future_equity = self._calculate_equity(hand, new_board, sampled_opponent_range)
+-			improvement = future_equity - current_equity
+-			total_improvement += improvement
+-			trials += 1
+-			
+-		return total_improvement / float(trials) if trials > 0 else 0.0
++    def _calculate_potential_equity_improvement(self, hand, board, opponent_range):
++        if len(board) >= 5:
++            return 0.0
++        items = list(opponent_range.items())
++        items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
++        sampled_opponent_range = dict(items)
++        current_equity = self._calculate_equity(hand, board, sampled_opponent_range)
++        total_improvement = 0.0
++        trials = 0
++        used_cards_base = set((hand.split() if isinstance(hand, str) else list(hand)) + board)
++        available_cards_base = [c for c in DECK if c not in used_cards_base]
++        num_cards_to_come = 5 - len(board)
++        for _ in range(self._mc_samples_potential):
++            if num_cards_to_come <= 0:
++                new_board = board[:]
++            else:
++                if len(available_cards_base) >= num_cards_to_come:
++                    picks = random.sample(available_cards_base, num_cards_to_come)
++                else:
++                    picks = []
++                new_board = board + list(picks)
++            future_equity = self._calculate_equity(hand, new_board, sampled_opponent_range)
++            improvement = future_equity - current_equity
++            total_improvement += improvement
++            trials += 1
++        return total_improvement / float(trials) if trials > 0 else 0.0
+ 
+ 	def _calculate_counterfactual_value(self, hand, board, opponent_range, pot_size):
+ 		hand_cards = hand.split() if isinstance(hand, str) else list(hand)

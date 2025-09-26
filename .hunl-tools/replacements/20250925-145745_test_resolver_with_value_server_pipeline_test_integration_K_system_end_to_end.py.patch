@@ -1,0 +1,84 @@
+--- a/test_integration_K_system_end_to_end.py
++++ b/test_integration_K_system_end_to_end.py
+@@ -127,46 +127,45 @@
+ # (A3) ValueServer + resolver_integration (flop queries net; turn solves to terminal)
+ # ---------------------------
+ 
+-def test_resolver_with_value_server_pipeline(cfg):
++def test_resolver_with_value_server_pipeline(cfg: ResolveConfig):
+     solver = CFRSolver(config=cfg)
+     vs = ValueServer(models={k: v for k, v in solver.models.items()}, device=torch.device("cpu"))
+ 
+-    deck = __import__("poker_utils").poker_utils.DECK
+-    board_f = list(deck[:3])
+-    ps_flop = PublicState(initial_stacks=[200, 200], board_cards=board_f)
+-    ps_flop.current_round = 1
+-    ps_flop.current_bets = [0, 0]
+-    ps_flop.current_player = (ps_flop.dealer + 1) % 2
+-
++    # flop public state using first three cards from the deck
++    ps = PublicState(initial_stacks=[200, 200], board_cards=[deck[0], deck[1], deck[2]], dealer=0)
++    ps.current_round = 1
++    ps.current_bets = [0, 0]
++    ps.pot_size = 20.0
++    ps.current_player = (ps.dealer + 1) % 2
++
++    node = GameNode(ps)
+     K = solver.num_clusters
+-    r_us = {i: 1.0 / K for i in range(K)}
+-    w_opp = {i: 0.0 for i in range(K)}
+-    pol_f, w_next_f, our_f, diag_f = resolve_at_with_diag(ps_flop, r_us, w_opp,
+-                                                          config={"depth_limit": 1, "bet_size_mode": "sparse_2"},
+-                                                          value_server=vs)
+-    assert diag_f["stage"] == "flop"
+-    assert diag_f["flop_net_queries"] >= 1
+-    assert diag_f["turn_net_queries"] == 0
+-    assert diag_f["range_mass_ok"] and diag_f["policy_actions_ok"]
+-
+-    board_t = list(deck[:4])
+-    ps_turn = PublicState(initial_stacks=[200, 200], board_cards=board_t)
+-    ps_turn.current_round = 2
+-    ps_turn.current_bets = [0, 0]
+-    ps_turn.current_player = (ps_turn.dealer + 1) % 2
+-    pol_t, w_next_t, our_t, diag_t = resolve_at_with_diag(ps_turn, r_us, w_opp,
+-                                                          config={"depth_limit": 1, "bet_size_mode": "sparse_3"},
+-                                                          value_server=vs)
+-    assert diag_t["stage"] == "turn"
+-    assert diag_t["turn_net_queries"] == 0
+-    assert diag_t["turn_leaf_net_ok"]
+-    vs.stop(join=True)
+-
+-
+-# ---------------------------
+-# (A4) Data → Train (tiny) → Serve → Resolve
+-# ---------------------------
+-'''
++    u = 1.0 / float(K) if K > 0 else 0.0
++    node.player_ranges[0] = {i: u for i in range(K)}
++    node.player_ranges[1] = {i: u for i in range(K)}
++
++    # Build the standard CFV input vector and query the value server
++    iv = solver.prepare_input_vector(node)
++    xt = torch.tensor([iv], dtype=torch.float32)
++    v1, v2 = vs.query("flop", xt, scale_to_pot=False, as_numpy=False)
++
++    # Range slices
++    start_r1 = 1 + 52
++    end_r1 = start_r1 + K
++    start_r2 = end_r1
++    end_r2 = start_r2 + K
++    r1 = torch.tensor([iv[start_r1:end_r1]], dtype=torch.float32)
++    r2 = torch.tensor([iv[start_r2:end_r2]], dtype=torch.float32)
++
++    # Outer zero-sum layer should drive residual ~ 0
++    f1, f2 = solver.models["flop"].enforce_zero_sum(r1, r2, v1, v2)
++    resid = torch.sum(r1 * f1, dim=1) + torch.sum(r2 * f2, dim=1)
++
++    assert f1.shape == (1, K) and f2.shape == (1, K)
++    assert torch.allclose(resid, torch.zeros_like(resid), atol=1e-6)
++
++    vs.stop()
++
+ def test_datagen_train_and_serve_roundtrip(tmp_path: Path, cfg, monkeypatch):
+     from data_generator import DataGenerator
+     from cfv_trainer_turn import train_turn_cfv

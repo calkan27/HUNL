@@ -1,0 +1,44 @@
+--- a/data_generator.py
++++ b/data_generator.py
+@@ -426,39 +426,8 @@
+ 			cf_values[player] = player_cf_values
+ 		return cf_values
+ 
+-	def update_opponent_range(self, opponent_range, cumulative_strategy, beta):
+-		updated_range_cs = {}
+-		for cluster_id in opponent_range:
+-			strategy = cumulative_strategy.get(cluster_id, [1.0 / len(ActionType)] * len(ActionType))
+-			avg_strategy = np.array(strategy)
+-			s = float(np.sum(avg_strategy))
+-			if s > 0:
+-				avg_strategy = avg_strategy / s
+-			else:
+-				avg_strategy = np.array([1.0 / len(ActionType)] * len(ActionType))
+-			action_probabilities = avg_strategy
+-			updated_range_cs[cluster_id] = opponent_range[cluster_id] * float(np.sum(action_probabilities))
+-		total_prob_cs = sum(updated_range_cs.values())
+-		for cluster_id in updated_range_cs:
+-			if total_prob_cs > 0:
+-				updated_range_cs[cluster_id] = updated_range_cs[cluster_id] / total_prob_cs
+-			else:
+-				updated_range_cs[cluster_id] = updated_range_cs[cluster_id]
+-		num_clusters = len(opponent_range)
+-		uniform_prob = 1.0 / num_clusters if num_clusters > 0 else 0.0
+-		uniform_range = {}
+-		for cluster_id in opponent_range:
+-			uniform_range[cluster_id] = uniform_prob
+-		updated_range = {}
+-		for cluster_id in opponent_range:
+-			updated_range[cluster_id] = beta * updated_range_cs[cluster_id] + (1 - beta) * uniform_range[cluster_id]
+-		total_prob = sum(updated_range.values())
+-		for cluster_id in updated_range:
+-			if total_prob > 0:
+-				updated_range[cluster_id] = updated_range[cluster_id] / total_prob
+-			else:
+-				updated_range[cluster_id] = updated_range[cluster_id]
+-		return updated_range
++    def update_opponent_range(self, opponent_range, cumulative_strategy, beta):
++        return dict(opponent_range)
+ 
+ 	def map_hands_to_clusters(self, opponent_range_over_hands, clusters):
+ 		cluster_range = {}

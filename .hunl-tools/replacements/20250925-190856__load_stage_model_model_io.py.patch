@@ -1,0 +1,86 @@
+--- a/model_io.py
++++ b/model_io.py
+@@ -151,46 +151,43 @@
+ 	return out
+ 
+ 
+-def _load_stage_model(
+-	stage_rec,
+-	device
+-):
+-	insz = int(stage_rec.get("input_size", 0))
+-	K = int(stage_rec.get("num_clusters", 0))
+-	state_dict = stage_rec.get("state_dict", {})
+-
+-	net = CounterfactualValueNetwork(
+-		insz,
+-		num_clusters=K,
+-	)
+-
+-	if _state_dict_compatible(net, state_dict):
+-		net.load_state_dict(state_dict, strict=True)
+-	else:
+-		has_bias = False
+-		for k in state_dict.keys():
+-			if str(k).endswith("bias"):
+-				has_bias = True
+-				break
+-
+-		net = CompatLinearCFV(
+-			insz,
+-			K,
+-			has_bias,
+-		)
+-
+-		if _state_dict_compatible(net, state_dict):
+-			net.load_state_dict(state_dict, strict=True)
+-		else:
+-			filt = _filter_state_dict_matching(net, state_dict)
+-			net.load_state_dict(filt, strict=False)
+-
+-	if device is not None:
+-		net = net.to(device)
+-
+-	net.eval()
+-	return net
+-
++def _load_stage_model(stage_rec, device):
++        insz = int(stage_rec.get("input_size", 0))
++        K = int(stage_rec.get("num_clusters", 0))
++        state_dict = dict(stage_rec.get("state_dict", {}))
++
++        net = CounterfactualValueNetwork(insz, num_clusters=K)
++
++        if _strict_compatible(net, state_dict):
++                net.load_state_dict(state_dict, strict=True)
++        else:
++                has_bias = False
++
++                for k in state_dict.keys():
++                        if str(k).endswith("bias"):
++                                has_bias = True
++                                break
++                        else:
++                                pass
++
++                net = CompatLinearCFV(insz, K, has_bias)
++
++                if _strict_compatible(net, state_dict):
++                        net.load_state_dict(state_dict, strict=True)
++                else:
++                        if _overlap_shapes_ok(net, state_dict):
++                                net.load_state_dict(state_dict, strict=False)
++                        else:
++                                filt = _filtered_by_shape(net, state_dict)
++                                net.load_state_dict(filt, strict=False)
++
++        if device is not None:
++                net = net.to(device)
++        else:
++                pass
++
++        net.eval()
++        return net
+ 
+ def _compute_input_slices(
+ 	num_clusters,

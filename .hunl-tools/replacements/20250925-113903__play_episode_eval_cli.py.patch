@@ -1,0 +1,138 @@
+--- a/eval_cli.py
++++ b/eval_cli.py
+@@ -20,73 +20,70 @@
+ 
+ 
+ def _play_episode(
+-		solver0: CFRSolver,
+-		solver1: CFRSolver,
+-		rng_seed: int,
+-		value_solver_for_aivat: CFRSolver,
+-		policy_iters_agent: int = 2,
+-		policy_iters_opp: int = 1,
+-		dealer: int = 0,
++        solver0: CFRSolver,
++        solver1: CFRSolver,
++        rng_seed: int,
++        value_solver_for_aivat: CFRSolver,
++        policy_iters_agent: int = 2,
++        policy_iters_opp: int = 1,
+ ) -> Tuple[float, Dict]:
+ 
+-		ps = PublicState(initial_stacks=[200, 200], board_cards=[], dealer=int(dealer))
+-		ps.current_round = 0
+-		ps.current_player = ps.dealer
+-		node = GameNode(ps)
+-
+-		K = solver0.num_clusters
+-		u = 1.0 / float(K) if K > 0 else 0.0
+-		node.player_ranges[0] = {i: u for i in range(K)}
+-		node.player_ranges[1] = {i: u for i in range(K)}
+-
+-		pol_agent = _policy_from_resolve(solver0, iters=policy_iters_agent)
+-		pol_opp = _policy_from_resolve(solver1, iters=policy_iters_opp)
+-
+-		events = []
+-		step_guard = 0
+-		while not node.public_state.is_terminal and step_guard < 200:
+-				step_guard += 1
+-				prev_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
+-				prev_board = list(node.public_state.board_cards)
+-				prev_round = int(node.public_state.current_round)
+-				cur = node.public_state.current_player
+-				if cur == 0:
+-						dist = pol_agent(node, player=0)
+-						chosen = _sample_from_policy(dist)
+-						events.append({"type": "agent", "action": chosen, "policy": {k: float(v) for k, v in dist.items()}})
+-						new_ps = node.public_state.update_state(node, Action(chosen))
+-						node = GameNode(new_ps)
+-						node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
+-				else:
+-						dist = pol_opp(node, player=1)
+-						chosen = _sample_from_policy(dist)
+-						events.append({"type": "opponent", "action": chosen, "policy": {k: float(v) for k, v in dist.items()}})
+-						new_ps = node.public_state.update_state(node, Action(chosen))
+-						node = GameNode(new_ps)
+-						node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
+-				new_board = list(node.public_state.board_cards)
+-				if int(node.public_state.current_round) > prev_round and len(new_board) > len(prev_board):
+-						seen = set(prev_board)
+-						for c in new_board:
+-								if c not in seen:
+-										events.append({"type": "chance", "action": c})
+-										seen.add(c)
+-
+-		if not node.public_state.is_terminal:
+-				return 0.0, {"initial_node": None, "events": []}
+-
+-		naive = solver0._calculate_terminal_utility(node, player=0)
+-
+-		episode = {
+-				"initial_node": GameNode(PublicState(initial_stacks=[200, 200], board_cards=[], dealer=int(dealer))),
+-				"events": events,
+-		}
+-
+-		value_fn = _value_fn_from_solver(value_solver_for_aivat)
+-		policy_fn = lambda nd, player: (pol_agent(nd, player) if player == 0 else pol_opp(nd, player))
+-		aiv = AIVATEvaluator(value_fn=value_fn, policy_fn=policy_fn, chance_policy_fn=_chance_policy_uniform, agent_player=0)
+-		res = aiv.evaluate(episode)
+-		return float(naive), {"aivat": float(res["aivat"])}
++        ps = _make_initial_preflop(stack=200, seed=int(rng_seed))
++        node = GameNode(ps)
++
++        K = solver0.num_clusters
++        u = 1.0 / float(K) if K > 0 else 0.0
++        node.player_ranges[0] = {i: u for i in range(K)}
++        node.player_ranges[1] = {i: u for i in range(K)}
++
++        pol_agent = _policy_from_resolve(solver0, iters=policy_iters_agent)
++        pol_opp = _policy_from_resolve(solver1, iters=policy_iters_opp)
++
++        events = []
++        step_guard = 0
++        while not node.public_state.is_terminal and step_guard < 200:
++                step_guard += 1
++                prev_ranges = [dict(node.player_ranges[0]), dict(node.player_ranges[1])]
++                prev_board = list(getattr(node.public_state, "board_cards", []))
++                prev_round = int(getattr(node.public_state, "current_round", 0))
++                cur = int(getattr(node.public_state, "current_player", 0))
++                if cur == 0:
++                        dist = pol_agent(node, player=0)
++                        chosen = _sample_from_policy(dist)
++                        events.append({"type": "agent", "action": chosen, "policy": {k: float(v) for k, v in dist.items()}})
++                        new_ps = node.public_state.update_state(node, Action(chosen))
++                        node = GameNode(new_ps)
++                        node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
++                else:
++                        dist = pol_opp(node, player=1)
++                        chosen = _sample_from_policy(dist)
++                        events.append({"type": "opponent", "action": chosen, "policy": {k: float(v) for k, v in dist.items()}})
++                        new_ps = node.public_state.update_state(node, Action(chosen))
++                        node = GameNode(new_ps)
++                        node.player_ranges = [dict(prev_ranges[0]), dict(prev_ranges[1])]
++                new_board = list(getattr(node.public_state, "board_cards", []))
++                if int(getattr(node.public_state, "current_round", 0)) > prev_round and len(new_board) > len(prev_board):
++                        seen = set(prev_board)
++                        for c in new_board:
++                                if c not in seen:
++                                        events.append({"type": "chance", "action": c})
++                                        seen.add(c)
++
++        if not node.public_state.is_terminal:
++                return 0.0, {"initial_node": None, "events": []}
++
++        naive = solver0._calculate_terminal_utility(node, player=0)
++
++        episode = {
++                "initial_node": GameNode(_make_initial_preflop(stack=200, seed=int(rng_seed))),
++                "events": events,
++        }
++
++        value_fn = _value_fn_from_solver(value_solver_for_aivat)
++        policy_fn = lambda nd, player: (pol_agent(nd, player) if player == 0 else pol_opp(nd, player))
++        aiv = AIVATEvaluator(value_fn=value_fn, policy_fn=policy_fn, chance_policy_fn=_chance_policy_uniform, agent_player=0)
++        res = aiv.evaluate(episode)
++        return float(naive), {"aivat": float(res["aivat"])}
+ 
+ def _run_matches(mode: str, episodes: int, seed: int, cfg: ResolveConfig) -> List[Tuple[float, float]]:
+ 

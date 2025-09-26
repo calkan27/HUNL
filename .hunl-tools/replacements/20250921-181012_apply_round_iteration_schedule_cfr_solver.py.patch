@@ -1,0 +1,26 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -1277,14 +1277,15 @@
+ 			return 0
+ 		except Exception:
+ 			return 0
+-	def apply_round_iteration_schedule(self, current_round):
+-
+-		self._ensure_sparse_schedule()
+-
+-		try:
+-			self.total_iterations = int(self._round_iters.get(int(current_round), int(self.total_iterations)))
+-		except Exception:
+-			pass
++    def apply_round_iteration_schedule(self, current_round):
++
++        self._ensure_sparse_schedule()
++        try:
++            self.total_iterations = int(self._round_iters.get(int(current_round),
++                                                             int(self.total_iterations)))
++        except Exception:
++            pass
++
+ 	def apply_round_iteration_schedule(self, current_round):
+ 
+ 		self._ensure_sparse_schedule()

@@ -1,0 +1,33 @@
+--- a/cfv_network.py
++++ b/cfv_network.py
+@@ -48,13 +48,23 @@
+ 		p2 = self.output_player2_values(h)
+ 		return p1, p2
+ 
+-	def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
+-		s1 = torch.sum(player1_range * player1_values, dim=1, keepdim=True)
+-		s2 = torch.sum(player2_range * player2_values, dim=1, keepdim=True)
+-		delta = 0.5 * (s1 + s2)
+-		f1 = player1_values - delta
+-		f2 = player2_values - delta
+-		return f1, f2
++    def enforce_zero_sum(self, player1_range, player2_range, player1_values, player2_values):
++        eps = 1e-12
++        r1 = player1_range
++        r2 = player2_range
++        if r1 is None or r2 is None:
++            r1 = player1_range
++            r2 = player2_range
++        s1 = torch.clamp(torch.sum(r1, dim=1, keepdim=True), min=eps)
++        s2 = torch.clamp(torch.sum(r2, dim=1, keepdim=True), min=eps)
++        r1n = r1 / s1
++        r2n = r2 / s2
++        sv1 = torch.sum(r1n * player1_values, dim=1, keepdim=True)
++        sv2 = torch.sum(r2n * player2_values, dim=1, keepdim=True)
++        delta = 0.5 * (sv1 + sv2)
++        f1 = player1_values - delta
++        f2 = player2_values - delta
++        return f1, f2
+ 
+ 	def predict_with_zero_sum(self, input_tensor, player1_range, player2_range):
+ 		p1, p2 = self(input_tensor)

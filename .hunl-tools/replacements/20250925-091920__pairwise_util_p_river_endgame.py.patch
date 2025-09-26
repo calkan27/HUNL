@@ -1,0 +1,33 @@
+--- a/river_endgame.py
++++ b/river_endgame.py
+@@ -52,15 +52,21 @@
+             strengths.append(self._strength_key(r))
+         return strengths
+ 
+-	def _pairwise_util_p(self, res, resolved_pot):
+-		if res > 0:
+-			return float(resolved_pot)
+-		elif res < 0:
+-			return -float(resolved_pot)
+-		else:
+-			return 0.5 * float(resolved_pot)
+-
+-
++    def _pairwise_util_p(self, res, pot_size=None, my_bet=None, opp_bet=None, resolved_pot=None):
++        p = resolved_pot
++        if p is None:
++            if pot_size is not None:
++                p = float(pot_size)
++            elif my_bet is not None or opp_bet is not None:
++                p = float(my_bet or 0.0) + float(opp_bet or 0.0)
++            else:
++                p = 1.0
++        if res > 0:
++            return float(p)
++        elif res < 0:
++            return -float(p)
++        else:
++            return 0.5 * float(p)
+ 
+ 	def _expected_utility_buckets_both(self, my_bucket_probs, opp_bucket_probs, B, resolved_pot):
+ 		ev_p = 0.0

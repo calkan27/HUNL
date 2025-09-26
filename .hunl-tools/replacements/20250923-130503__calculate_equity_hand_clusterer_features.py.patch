@@ -1,0 +1,61 @@
+--- a/hand_clusterer_features.py
++++ b/hand_clusterer_features.py
+@@ -25,31 +25,33 @@
+         self._cache[cache_key] = features
+         return features
+ 
+-	def _calculate_equity(self, hand: str, board: List[str], opponent_range: Dict[Any, float]) -> float:
+-
+-		hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-		items = list(opponent_range.items())
+-		items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
+-
+-		total_weight = sum(v for _, v in items) or 1.0
+-		equity = 0.0
+-
+-		for opp_id, weight in items:
+-			if isinstance(opp_id, (int, np.integer)):
+-				opp_hands = self.cfr_solver.clusters.get(int(opp_id), [])
+-				if not opp_hands:
+-					continue
+-				opp_hand_weight = weight / len(opp_hands)
+-				for opp_hand_str in list(opp_hands):
+-					opp_hand_cards = opp_hand_str.split()
+-					win_percentage = self._evaluate_win_percentage(hand_cards, opp_hand_cards, board)
+-					equity += opp_hand_weight * win_percentage
+-			else:
+-				opp_hand_cards = str(opp_id).split()
+-				win_percentage = self._evaluate_win_percentage(hand_cards, opp_hand_cards, board)
+-				equity += weight * win_percentage
+-
+-		return equity / total_weight
++    def _calculate_equity(self, hand: str, board: List[str], opponent_range: Dict[Any, float]) -> float:
++        hand_cards = hand.split() if isinstance(hand, str) else list(hand)
++        used = set(hand_cards + board)
++        avail = [c for c in DECK if c not in used]
++        opp_hands = []
++        i = 0
++        while i + 1 < len(avail):
++            a = avail[i]
++            j = i + 1
++            while j < len(avail):
++                b = avail[j]
++                if a != b:
++                    opp_hands.append([a, b])
++                j += 1
++            i += 1
++        if not opp_hands:
++            return 0.5
++        sample_n = min(len(opp_hands), max(1, int(getattr(self, "_mc_samples_win", 200))))
++        rng = random.Random(self._stable_seed(hand, board))
++        if len(opp_hands) > sample_n:
++            opp_hands = rng.sample(opp_hands, sample_n)
++        total = 0.0
++        count = 0
++        for oh in opp_hands:
++            total += self._evaluate_win_percentage(hand_cards, oh, board)
++            count += 1
++        return total / float(count) if count > 0 else 0.5
+ 
+ 	def _calculate_potential_equity_improvement(self, hand: str, board: List[str], opponent_range: Dict[Any, float]) -> float:
+ 

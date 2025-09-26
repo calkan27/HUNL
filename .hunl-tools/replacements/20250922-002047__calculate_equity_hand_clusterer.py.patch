@@ -1,0 +1,53 @@
+--- a/hand_clusterer.py
++++ b/hand_clusterer.py
+@@ -134,29 +134,27 @@
+ 		return pairs
+ 
+ 
+-	def _calculate_equity(self, hand, board, opponent_range):
+-		hand_cards = hand.split() if isinstance(hand, str) else list(hand)
+-		items = list(opponent_range.items())
+-		items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
+-		total_weight = sum(v for _, v in items) or 1.0
+-
+-		equity = 0.0
+-		for opp_id, weight in items:
+-			if isinstance(opp_id, (int, np.integer)):
+-				opp_hands = self.cfr_solver.clusters.get(opp_id, [])
+-				if not opp_hands:
+-					continue
+-				opp_hand_weight = weight / len(opp_hands)
+-				for opp_hand_str in list(opp_hands):
+-					opp_hand_cards = opp_hand_str.split()
+-					win_percentage = self._evaluate_win_percentage(hand_cards, opp_hand_cards, board)
+-					equity += opp_hand_weight * win_percentage
+-			else:
+-				opp_hand_cards = str(opp_id).split()
+-				win_percentage = self._evaluate_win_percentage(hand_cards, opp_hand_cards, board)
+-				equity += weight * win_percentage
+-
+-		return equity / total_weight
++    def _calculate_equity(self, hand, board, opponent_range):
++        hand_cards = hand.split() if isinstance(hand, str) else list(hand)
++        items = list(opponent_range.items())
++        items = self._maybe_sample_items(items, seed=self._stable_seed(hand, board))
++        total_weight = sum(v for _, v in items) or 1.0
++        equity = 0.0
++        for opp_id, weight in items:
++            if isinstance(opp_id, (int, np.integer)):
++                opp_hands = self.cfr_solver.clusters.get(opp_id, [])
++                if not opp_hands:
++                    continue
++                opp_hand_weight = weight / len(opp_hands)
++                for opp_hand_str in list(opp_hands):
++                    opp_hand_cards = opp_hand_str.split()
++                    win_percentage = self._evaluate_win_percentage(hand_cards, opp_hand_cards, board)
++                    equity += opp_hand_weight * win_percentage
++            else:
++                opp_hand_cards = str(opp_id).split()
++                win_percentage = self._evaluate_win_percentage(hand_cards, opp_hand_cards, board)
++                equity += weight * win_percentage
++        return equity / total_weight
+ 
+ 	def _evaluate_win_percentage(self, hand_cards, opp_hand_cards, board):
+ 		used_cards = set(hand_cards + opp_hand_cards + board)

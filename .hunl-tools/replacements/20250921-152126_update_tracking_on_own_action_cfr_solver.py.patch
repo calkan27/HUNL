@@ -1,0 +1,115 @@
+--- a/cfr_solver.py
++++ b/cfr_solver.py
+@@ -1023,56 +1023,62 @@
+ 						cf[ocid][a.value] += worst
+ 			return cf
+ 		return _recurse(node)
+-	def update_tracking_on_own_action(self, node, agent_player=0, counterfactual_values=None):
+-		if not hasattr(self, "own_range_tracking"):
+-			self.own_range_tracking = {}
+-		if not hasattr(self, "opponent_cfv_upper_tracking"):
+-			self.opponent_cfv_upper_tracking = {}
+-
+-		key = self._state_key(node) if hasattr(self, "_state_key") else None
+-		if key is None:
+-			return
+-
+-		values = self.cfr_values[node] if hasattr(self, "cfr_values") and node in self.cfr_values else None
+-		priors = dict(node.player_ranges[agent_player]) if hasattr(node, "player_ranges") else {}
+-		allowed = self._allowed_actions_agent(node.public_state) if hasattr(self, "_allowed_actions_agent") else []
+-		a_idx = None
+-		last = getattr(node.public_state, "last_action", None)
+-		if last is not None and hasattr(last, "action_type"):
+-			a_idx = int(last.action_type.value)
+-
+-		post = {}
+-		norm = 0.0
+-		for cid, prior in priors.items():
+-			w = float(prior)
+-			if values is not None and a_idx is not None:
+-				base = values.get_average_strategy(int(cid))
+-				m = self._mask_strategy(base, allowed)
+-				if 0 <= a_idx < len(m):
+-					w *= float(m[a_idx])
+-				else:
+-					w = 0.0
+-			post[int(cid)] = w
+-			norm += w
+-		if norm > 0.0:
+-			for cid in list(post.keys()):
+-				post[cid] = post[cid] / norm
+-		elif len(priors) > 0:
+-			u = 1.0 / float(len(priors))
+-			for cid in list(post.keys()):
+-				post[cid] = u
+-		self.own_range_tracking[key] = post
+-
+-		opp = (agent_player + 1) % 2
+-		upper_src = counterfactual_values.get(opp, {}) if isinstance(counterfactual_values, dict) else {}
+-		upper = {}
+-		for cid, vec in upper_src.items():
+-			if isinstance(vec, (list, tuple)) and len(vec) > 0:
+-				mx = float(max(vec))
+-			else:
+-				mx = float(vec) if isinstance(vec, (int, float)) else 0.0
+-			upper[int(cid)] = mx
+-		self.opponent_cfv_upper_tracking[key] = upper
++    def update_tracking_on_own_action(self, node, agent_player=0, counterfactual_values=None):
++        if not hasattr(self, "own_range_tracking"):
++            self.own_range_tracking = {}
++        if not hasattr(self, "opponent_cfv_upper_tracking"):
++            self.opponent_cfv_upper_tracking = {}
++
++        key = self._state_key(node) if hasattr(self, "_state_key") else None
++        if key is None:
++            return
++
++        values = self.cfr_values[node] if hasattr(self, "cfr_values") and node in self.cfr_values else None
++        priors = dict(node.player_ranges[agent_player]) if hasattr(node, "player_ranges") else {}
++        allowed = self._allowed_actions_agent(node.public_state) if hasattr(self, "_allowed_actions_agent") else []
++        a_idx = None
++        last = getattr(node.public_state, "last_action", None)
++        if last is not None and hasattr(last, "action_type"):
++            a_idx = int(last.action_type.value)
++
++        post = {}
++        norm = 0.0
++        for cid, prior in priors.items():
++            w = float(prior)
++            if values is not None and a_idx is not None:
++                base = values.get_average_strategy(int(cid))
++                m = self._mask_strategy(base, allowed)
++                if 0 <= a_idx < len(m):
++                    w *= float(m[a_idx])
++                else:
++                    w = 0.0
++            post[int(cid)] = w
++            norm += w
++        if norm > 0.0:
++            for cid in list(post.keys()):
++                post[cid] = post[cid] / norm
++        elif len(priors) > 0:
++            u = 1.0 / float(len(priors))
++            for cid in list(post.keys()):
++                post[cid] = u
++        self.own_range_tracking[key] = post
++
++        opp = (agent_player + 1) % 2
++        avg_src = counterfactual_values.get(opp, {}) if isinstance(counterfactual_values, dict) else {}
++        avg = {}
++        for cid, vec in avg_src.items():
++            if isinstance(vec, (list, tuple)) and len(vec) > 0:
++                s = 0.0
++                n = 0
++                for x in vec:
++                    s += float(x)
++                    n += 1
++                mu = (s / float(n)) if n > 0 else 0.0
++            else:
++                mu = float(vec) if isinstance(vec, (int, float)) else 0.0
++            avg[int(cid)] = mu
++        self.opponent_cfv_upper_tracking[key] = avg
++
+ 	def _update_regret(self, node, player, cfv_by_action):
+ 		values = self.cfr_values[node]
+ 		stage = self.get_stage(node)
