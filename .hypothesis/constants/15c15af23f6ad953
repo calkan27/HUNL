@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/cfr_solver_utils.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1.0, 131, 500, 980, 1000, 2000, 4294967295, '_config', '_omit_prefix_iters', '_range_gadgets', '_round_actions', '_round_iters', '_state_key', 'action_type', 'board_cards', 'cfr_values', 'clusters', 'current_player', 'flop', 'half_pot', 'inf', 'last_action', 'none', 'num_clusters', 'own_range_tracking', 'paper_faithful', 'player_ranges', 'preflop', 'ranges', 'river', 'turn', 'two_pot']

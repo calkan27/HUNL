@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/cfr_solver.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1.0, 500, 980, 1000, 2027, 10000, '-inf', '1', 'FAST_TESTS', '_config', '_label_pot_fraction', '_omit_prefix_iters', '_round_actions', '_soundness', '_state_key', '_zs_residual_samples', 'avg_strategy_entropy', 'bot', 'cfv_calls', 'constraint_mode', 'cpu', 'cuda', 'debug_fast_tests', 'depth_limit', 'evictions', 'fast_test_seed', 'flop', 'half_pot', 'hand_clusterer', 'hits', 'is_terminal', 'iterations', 'k1', 'k2', 'misses', 'omit_prefix', 'opp_cfv', 'own_range', 'own_range_tracking', 'pot_size', 'preflop', 'profile', 'puts', 'regret_l2', 'river', 'river_num_buckets', 'round_actions', 'round_iters', 'sp', 'terminal_utility', 'test', 'turn', 'two_pot', 'zero_sum_residual']

@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/cfr_solver_diagnostics.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1e-12, 0.5, '_last_diagnostics', '_preflop_cache_stats', '_soundness', '_state_key', '_zs_residual_samples', 'evictions', 'hits', 'k1', 'k2', 'misses', 'preflop_cache', 'puts']

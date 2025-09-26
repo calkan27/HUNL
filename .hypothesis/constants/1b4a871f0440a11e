@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/eval_cli_lbr.py
-# hypothesis_version: 6.133.2
-
-[-1000000000.0, -300.0, 0.0, 1e-12, 1e-06, 1.0, 1.96, 2.0, 1000.0, 1000000000.0, 200, 400, 1729, 10000, 'ALL_IN', 'CALL', 'FOLD', 'LBRIllegalStreetJump', 'POT', '_config', 'accept', 'accept_union', 'ci95', 'current_player', 'current_round', 'episodes', 'flop', 'freq', 'is_terminal', 'last_refund_amount', 'legal_actions', 'mbb_per_game', 'other', 'sanity', 'seed', 'seeds', 'terminal_utility', 'union_ci95', 'zero_sum_residual']

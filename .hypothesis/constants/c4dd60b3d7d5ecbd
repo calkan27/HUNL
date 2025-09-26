@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/cfv_network.py
-# hypothesis_version: 6.133.2
-
-[1e-06, 0.25, 0.5, 1.0, 500, 1000, 'RangeNotNormalized', 'cpu', 'cuda', 'flop', 'leaky_relu', 'preflop', 'turn']

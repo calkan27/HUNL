@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/agent.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1.0, 1000, '_round_iters', 'applied', 'board_cards', 'cpu', 'cuda', 'current_bets', 'current_player', 'current_round', 'dealer', 'depth_limit', 'hand_clusterer', 'is_showdown', 'is_terminal', 'loaded_models', 'models', 'num_clusters', 'players_in_hand', 'pot_size', 'prefer_gpu', 'total_iterations']

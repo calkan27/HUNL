@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/eval_cli.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1e-09, 0.5, 1.0, 1.96, 2.0, 10.0, 100.0, 100, 200, 1000, 1729, '--depth-limit', '--episodes', '--iterations', '--mode', '--num-clusters', '--river-buckets', '--seed', 'action', 'agent', 'agent-vs-agent', 'agent-vs-policy', 'aivat', 'bb100', 'blocks', 'chance', 'chips100', 'ci95_bb100', 'ci95_chips100', 'ci95_mbb_g', 'depth_limit', 'events', 'initial_node', 'last_refund_amount', 'mbb_g', 'naive', 'num_clusters', 'opponent', 'policy', 'river_num_buckets', 'total_iterations', 'type']

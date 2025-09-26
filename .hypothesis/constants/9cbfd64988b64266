@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/smoke_eval_utils.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1.0, '_preflop_cache_stats', 'evictions', 'flop', 'hits', 'misses', 'num_clusters', 'preflop', 'puts', 'river', 'turn']

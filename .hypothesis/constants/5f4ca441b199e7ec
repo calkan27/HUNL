@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/resolver_integration.py
-# hypothesis_version: 6.133.2
-
-[-1e+30, 0.0, 1e-09, 0.5, 1.0, 2.0, 200, 1000, 'K', 'avg_strategy_entropy', 'bet_fractions', 'bet_size_mode', 'board_cards', 'br', 'bundle_path', 'cfv_calls', 'constraint_mode', 'count', 'current_round', 'depth_limit', 'device', 'flop', 'flop_net_queries', 'full', 'get_counters', 'get_last_diagnostics', 'get_zero_sum_stats', 'include_all_in', 'inf', 'initial_stacks', 'is_terminal', 'iterations', 'max', 'mean', 'models', 'overall', 'policy_actions_ok', 'pot_size', 'preflop', 'preflop_cache', 'r_opp_init', 'range_mass_ok', 'regret_l2', 'river', 'rm_plus', 'solver_for_diag', 'sp', 'sparse_2', 'sparse_3', 'stage', 'terminal_utility', 'turn', 'turn_leaf_net_ok', 'turn_net_queries', 'value_server', 'warm_start', 'zero_sum_by_stage', 'zero_sum_residual']

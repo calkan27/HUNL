@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/eval_cli_utils.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1e-12, 1e-06, 1.0, 200, 2027, '_config', 'avg_strategy_entropy', 'cfv_calls', 'constraint_mode', 'depth_limit', 'flop', 'flop_calls', 'iterations', 'k1', 'k2', 'legal_actions', 'preflop_cache', 'regret_l2', 'samples', 'turn', 'turn_leaf_calls', 'zero_sum_residual']

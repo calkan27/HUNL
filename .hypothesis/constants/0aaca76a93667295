@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/lookahead_tree.py
-# hypothesis_version: 6.133.2
-
-[1e-09, 0.5, 1.0, 2.0, 'chance', 'depth_actions', 'edges', 'kinds', 'leaf', 'legal_actions', 'menus', 'nodes', 'opp', 'our', 'parents', 'reach_opp', 'reach_us', 'stage_start', 'terminal', 'values']
