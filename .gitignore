@@ -1,8 +1,28 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
 .venv/
 venv/
+.env
+
+# pytest / hypothesis
+.pytest_cache/
+.hypothesis/
+
+# builds
+build/
+dist/
+
+# artifacts (prefer Releases or LFS)
 *.npz
 *.pt
-.DS_Store
+*.pth
+*.ckpt
+*.bin
+*.onnx
 
+# logs
+logs/
+*.log

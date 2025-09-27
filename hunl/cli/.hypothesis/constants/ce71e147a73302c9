@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_stream_dataset.py
-# hypothesis_version: 6.133.2
-
-['cfv.v1', 'generated_at', 'input_vector', 'name', 'num_boards', 'num_clusters', 'params', 'pot_sampler', 'pot_sampler_spec', 'pot_spec', 'range_generator', 'range_generator_spec', 'range_spec', 'schema', 'seed', 'set_seed', 'stage', 'target_v1', 'target_v2']

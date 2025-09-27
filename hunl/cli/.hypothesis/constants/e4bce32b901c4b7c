@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_models.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1.0, '_diag_cfv_calls', '_zs_residual_samples', 'cluster_mapping', 'cpu', 'cuda', 'device', 'eval', 'flop', 'flop.pt', 'hand_clusterer', 'initial_stacks', 'input_meta', 'load_mapping', 'meta', 'models', 'num_clusters', 'path', 'preflop', 'preflop.pt', 'river', 'set_num_clusters', 'to', 'turn', 'turn.pt']

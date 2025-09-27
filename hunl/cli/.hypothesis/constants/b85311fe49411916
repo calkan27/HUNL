@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_trainer_flop.py
-# hypothesis_version: 6.133.2
-
-[0.0, 0.0001, 0.001, 0.5, 1.0, 400.0, 150, 200, 1000, 'best_state', 'cpu', 'cuda', 'epoch', 'history', 'input_vector', 'lr', 'mean', 'num_clusters', 'state_dict', 'target_v1', 'target_v2', 'train_huber', 'turn', 'val_huber', 'val_mae', 'val_residual_max']

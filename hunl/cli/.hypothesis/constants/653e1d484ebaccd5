@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_trainer.py
-# hypothesis_version: 6.133.2
-
-[0.0, 1e-06, 0.0001, 0.001, 0.5, 200, 350, 1000, '_eval_loss_cfv', 'best_state', 'best_val_loss', 'cfv_trainer', 'cpu', 'cuda', 'history', 'input_vector', 'lr', 'mean', 'num_clusters', 'target_v1', 'target_v2', 'train', 'train_huber', 'train_mae', 'train_residual_max', 'val', 'val_huber', 'val_mae', 'val_residual_max']

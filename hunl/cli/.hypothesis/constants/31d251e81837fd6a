@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/engine/game_node.py
-# hypothesis_version: 6.133.2
-
-['_frozen_sig', 'action_type', 'actions', 'board_cards', 'current_bets', 'current_player', 'current_round', 'dealer', 'is_showdown', 'is_terminal', 'players_in_hand', 'pot_size', 'round_idx', 'value']

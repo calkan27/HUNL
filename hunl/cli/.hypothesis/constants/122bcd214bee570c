@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/data/data_manifest.py
-# hypothesis_version: 6.133.2
-
-[1.0, '_config', '_round_actions', 'action_set', 'bet_fractions', 'cfr_solver', 'cfv.manifest.v1', 'created_at', 'half_pot', 'include_all_in', 'name', 'num_clusters', 'outer_zero_sum', 'params', 'pot_sampler', 'pot_sampler_spec', 'range_generator', 'range_generator_spec', 'round_flags', 'schema', 'seed', 'stage', 'two_pot', 'w']

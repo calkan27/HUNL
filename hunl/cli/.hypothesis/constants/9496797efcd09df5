@@ -1,4 +1,0 @@
-# file: /Users/cenkalkan/Downloads/HUNL/hunl/resolve_config.py
-# hypothesis_version: 6.133.2
-
-[0.0, 0.12, 1000000000.0, 200, 1000, 10000, 1000000, '+-', '-', '.', '0', '1', 'DEBUG_FAST_TESTS', 'FAST_TESTS', 'FAST_TEST_SEED', 'ResolveConfig', 'bot', 'br', 'f', 'false', 'full', 'inf', 'n', 'no', 'num_clusters', 'off', 'on', 'paper_faithful', 'sp', 'sparse_2', 'sparse_3', 't', 'test', 'true', 'y', 'yes']
