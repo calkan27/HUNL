@@ -1,3 +1,24 @@
+"""
+I implement AIVAT, a low-variance, unbiased estimator for match outcomes using
+counterfactual value baselines. I walk an event log of chance and action steps, compute
+control variates from value functions, and return an adjusted estimate for the agent’s
+reward.
+
+Key class: AIVATEvaluator. Key methods: evaluate — run through events; _cv_term —
+compute per-step control variate; _advance — update GameNode given a chance card or an
+ActionType; _terminal_payoff — fold/showdown reward; _q_after — value of taking an
+action from a PublicState under a policy.
+
+Inputs: functions value_fn(node, player), policy_fn(node, player),
+chance_policy_fn(node), and an initial episode ({initial_node, events}). Outputs: dict
+with aivat (float) and number of terms.
+
+Dependencies: engine primitives; solver value function for CFVs. Invariants: I only read
+public information; I use the agent’s player id to pick the correct range expectation.
+Performance: designed for offline evaluation; per-step computation is lightweight when
+policies and value functions are cached.
+"""
+
 import math
 from hunl.engine.action_type import ActionType
 from hunl.engine.action import Action

@@ -1,3 +1,26 @@
+"""
+I orchestrate continual re-solving for HUNL with sparse lookahead and learned
+counterfactual value (CFV) networks. I prepare clusters, normalize ranges, iterate CFR
+at the root, and sample an action. I track diagnostics (regret norms, entropy, zero-sum
+residuals, cache hits) and manage preflop caching.
+
+Key class: CFRSolver. Key methods: run_cfr — full resolve+act loop;
+predict_counterfactual_values — query flop/turn nets or river endgame to get per-cluster
+CFVs; flop_label_targets_using_turn_net/turn_label_targets_solve_to_terminal — produce
+training labels; _prepare_clusters_for_state/_normalize_ranges_for_state — range and
+cluster setup; _iterate_cfr_at_root/_finalize_and_sample_action — CFR loop and sampling.
+
+Inputs: GameNode with player_ranges, config (depth_limit, iterations, action flags), and
+models. Outputs: chosen Action plus updated node/public state; diagnostics via
+get_last_diagnostics.
+
+Dependencies: engine (PublicState, ActionType, Action), nets
+(CounterfactualValueNetwork), ranges (HandClusterer), endgame (RiverEndgame).
+Invariants: I keep mass-conserved ranges, legal menus, zero-sum adjusted CFVs, and
+consistent actor order. Performance: I collapse heavy paths under FAST_TESTS and reuse
+preflop cache entries; I avoid rebuilding tensors in tight loops.
+"""
+
 from hunl.constants import SEED_DEFAULT, SEED_RIVER
 import os
 import copy
@@ -15,7 +38,7 @@ from hunl.engine.game_node import GameNode
 from hunl.engine.poker_utils import DECK, best_hand, hand_rank, board_one_hot
 from hunl.ranges.hand_clusterer import HandClusterer
 from hunl.nets.cfv_network import CounterfactualValueNetwork
-from hunl.cfr_values import CFRValues
+from hunl.solving.cfr_values import CFRValues
 from hunl.endgame.river_endgame import RiverEndgame
 
 from hunl.solving.cfr_solver_models import CFRSolverModelsMixin

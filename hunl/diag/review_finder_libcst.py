@@ -1,31 +1,23 @@
 #!/usr/bin/env python3
 """
-review_finder_libcst.py
+I analyze Python sources with LibCST to flag patterns that need human review under
+strict style rules: try/except blocks, raise statements, nested functions (with
+recursion detection), and expression-form if/else (ternary) constructs. I collect
+findings with positions, summarize per file, and can write a JSON report.
 
-Scans a project and reports places that likely require HUMAN REVIEW to meet these rules:
-  1) No try/except, raise, warnings.warn — replace with if/else + print + return (manual logic needed).
-  2) No nested functions (unless the nested function is recursive).
-  3) All if/else statements multi-lined with a colon (flag ternary `a if cond else b`).
-  4) All for loops multi-lined with a colon (handled automatically elsewhere; no review).
-     (We do not flag single-line `for`/`if` headers—those are safe to auto-fix.)
+Key classes/functions: ReviewCollector — LibCST visitor that records constructs and
+positions; analyze_file — run a full metadata-aware pass; gather_python_files — walk the
+tree with filters; main — command-line entry.
 
-We report:
-  - try/except blocks (with details; always needs review)
-  - raises (needs review unless trivial end-of-function case)
-  - nested function defs (and their free variables; non-recursive flagged)
-  - ternary IfExp occurrences (expression-form if/else)
+Inputs: a project path and optional output file. Outputs: console summary plus optional
+JSON with per-file lists of findings and totals.
 
-Outputs:
-  - Pretty console summary
-  - Machine-readable JSON (--out path), default: ./human_review_report.json
-
-Usage:
-  python3 ~/Downloads/review_finder_libcst.py
-  python3 ~/Downloads/review_finder_libcst.py --project /path/to/proj --out report.json
-
-Requirements:
-  pip install libcst
+Dependencies: libcst and its metadata providers; Python stdlib. Invariants: I treat
+nested functions as safe only if self-recursive; I mark broad or bare exception handlers
+as higher risk. Performance: metadata-aware traversal is fast enough for whole-repo
+audits and integrates into pre-commit or CI.
 """
+
 
 from __future__ import annotations
 import argparse

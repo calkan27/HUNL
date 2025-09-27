@@ -1,3 +1,26 @@
+"""
+Online generator that streams CFV training samples produced by a DataGenerator, suitable
+for long-running or memory-limited training. It orchestrates seeding, per-shard
+metadata, and a stable sampling loop that repeatedly asks the generator for
+one-board/one-sample batches, yielding JSON-like dicts for each example.
+
+Key class: CFVStreamDataset. Key methods: iter (emit examples up to a target count),
+_init_specs (derive seed and meta from the data generator), _record_from_rec (normalize
+record schema), and helpers that temporarily adjust generator sampling cadence.
+
+Inputs: a DataGenerator instance, stage (flop/turn), target sample count, RNG seed,
+optional schema version and extra shard metadata. Outputs: an iterator yielding dicts
+with input_vector, target_v1, target_v2, plus provenance fields (pot_spec, range_spec,
+generated_at).
+
+Invariants: generator is reseeded deterministically, pot and range specification
+snapshots accompany records, and original generator parameters are restored after
+streaming. Performance: emits in small batches by temporarily setting num_boards=1 and
+num_samples_per_board=1, avoiding large in-memory buffers while still benefiting from
+internal caches.
+"""
+
+
 from hunl.constants import SEED_DEFAULT
 import time
 from hunl.utils.seeded_rng import SeededRNG

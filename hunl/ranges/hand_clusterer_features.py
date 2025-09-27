@@ -1,3 +1,26 @@
+"""
+Feature extraction and small Monte Carlo utilities for clustering private hands given a
+public board and an opponent range. This mixin constructs equity-like descriptors and
+histograms that drive k-means-style bucketing, while honoring card availability and
+board collisions.
+
+Key methods: _deck_without (filter used cards), _all_pairs_from_deck and _sample_pairs
+(candidate/MC sampling), _weight_for_opp_hand (range weight lookup), _hist_len (fixed
+histogram size), _seed_for (deterministic per-hand seed), calculate_hand_features (main
+descriptor pipeline), _evaluate_win_percentage (MC equity over future cards), and small
+helpers.
+
+Inputs: hand string, board card list, opponent range over hands, solver hooks for
+win/hand ranking; configuration fields for MC sample counts. Outputs: numpy arrays
+(fixed-length features or histograms) suitable for clustering and drift checks.
+
+Invariants: excludes duplicate/suited-invalid pairs and board collisions; reproducible
+RNG seeded by hand+board; normalization of histograms when total weight is positive.
+Performance: test/production modes adjust MC sample counts; sampling avoids heavy
+allocations by reusing local buffers.
+"""
+
+
 import random
 from typing import Any, Dict, List
 

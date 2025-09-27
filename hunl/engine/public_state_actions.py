@@ -1,3 +1,25 @@
+"""
+I implement state transitions for player actions under No-Limit rules. I mutate a cloned
+PublicState and enforce invariants for fold, call/check, half-pot, pot, two-pot, and
+all-in. I handle to-call computation, minimum raise increments, refunds on insufficient
+calls, last-raiser bookkeeping, all-in below minimum raise marking, and street closure.
+
+Key methods: update_state — main entry; _apply_fold — end game immediately; _apply_call
+— equalize and possibly advance;
+_apply_half_pot_bet/_apply_pot_sized_bet/_apply_two_pot_bet — size and apply raises;
+_apply_all_in — push full stack after call if any.
+
+Inputs: a PublicState, an Action(ActionType). Outputs: a new PublicState reflecting the
+result or the original state for illegal actions. Invariants: pot size never drops
+except by an explicit matched refund; current_bets and stacks remain non-negative; actor
+order flips only when street stays the same; street advances when bets equalize.
+
+Dependencies: ActionType. Edge cases: I gate illegal moves by returning the original
+state unless the caller explicitly tries to fold when illegal; I raise ValueError only
+for forbidden folds to protect external tests that depend on this signal. Performance:
+arithmetic is integer-first and branch-light to keep tree rollouts fast.
+"""
+
 from hunl.engine.action_type import ActionType
 
 

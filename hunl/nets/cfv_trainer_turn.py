@@ -1,3 +1,26 @@
+"""
+Turn-stage CFV trainer supporting both in-memory datasets and streaming datasets. It
+provides a standard fit loop, streaming evaluation, and checkpointing, all on the
+normalized fractions-of-pot target scale with per-sample zero-sum enforcement.
+
+Key functions: train_turn_cfv and train_turn_cfv_streaming (fit loops), eval_stream and
+_epoch_eval_list (evaluation for iterators and lists), batching helpers
+(batcher_from_iter, _cfv_batcher), and slicing utilities (_slice_ranges). Metrics:
+Huber, MAE, and maximum zero-sum residual; best weights are tracked and optionally
+restored.
+
+Inputs: model, sample lists or iterators yielding dicts {input_vector, target_v1,
+target_v2}, epoch/batch budgets, learning-rate schedule, weight decay, device, seed, and
+optional checkpoint directory. Outputs: dict with best_state and metric history;
+optional files with epoch/best checkpoints carrying K and validation metrics.
+
+Invariants: predictions are outer-adjusted before loss; inputs are sliced consistently;
+device transfers are explicit and minimal; history records are numeric and
+JSON-serializable. Performance: streaming mode reduces memory pressure and pairs well
+with on-the-fly generation.
+"""
+
+
 from hunl.constants import EPS_ZS
 import random
 import torch

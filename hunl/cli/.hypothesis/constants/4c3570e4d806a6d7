@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/nets/value_server.py
+# hypothesis_version: 6.133.2
+
+[0.0, 0.001, 1.0, 400.0, 1000.0, 1024, 'ValueServerWorker', 'count', 'cpu', 'cuda', 'flop', 'input_size', 'max', 'num_clusters', 'overall', 'preflop', 'qsize', 'queue.Queue', 'river', 'sum', 'turn']

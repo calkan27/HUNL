@@ -1,3 +1,33 @@
+"""
+Command-line interface for interactive continual re-solving. It can play self-contained
+hands against a baseline policy, run self-play, or act as an ACPC-style client that
+exchanges JSON messages. Each decision step logs a compact JSON record with timing,
+chosen action, policy distribution, and selected diagnostics; an optional per-hand
+summary is printed at the end.
+
+Key functions: run_continual_cli (entry point), _resolve_step and
+_resolve_once/_resolve_once_with_diag (one decision re-solve and policy extraction),
+_choose_action (sampling from a mixed policy), _available_cards_for_diag and
+_build_diag_solver (side-car diagnostics-only solver),
+_parse_json_line_safe/_parse_query_ps (robust ACPC client helpers), _log/_log_decision
+(structured logging), and small utilities for uniform ranges and a heuristic fallback.
+
+Inputs: CLI flags for mode (self/baseline/acpc-client), stack/blinds/dealer, depth and
+iteration budgets, bet fractions, soundness-reporting constants, RNG seed, and optional
+log path. Outputs: streaming JSON lines and a final per-hand record with pot, steps,
+dealer, result, and diagnostics.
+
+Internal dependencies: engine types (PublicState, GameNode, Action/ActionType, DECK),
+CFRSolver and resolver integration helpers for single-step re-solves. Invariants: legal
+menus only; normalized policy probabilities; non-negative pot deltas modulo explicit
+refunds; terminal snapshots carry consistent stacks/bets.
+
+Performance: reuses a diagnostics solver across steps, applies sparse action schedules,
+leverages preflop caching, and keeps per-step time bounded for CLI interactivity.
+"""
+
+
+
 from hunl.constants import SEED_DEFAULT
 import argparse
 import json

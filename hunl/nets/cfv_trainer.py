@@ -1,3 +1,27 @@
+"""
+Reference training loop for counterfactual value networks with per-sample zero-sum
+adjustment. It supports fixed in-memory datasets for flop/turn stages, early stopping,
+learning-rate scheduling, and evaluation metrics reported on the fractions-of-pot scale.
+
+Key functions: train_cfv_network (main fit loop), _cfv_batcher (mini-batching),
+_ranges_from_inputs (slice range windows), _eval_loss_cfv (evaluation with zero-sum
+post-processing). Hook point: _get_eval_loss_hook allows swapping the evaluation routine
+by module injection for diagnostics.
+
+Inputs: a model exposing forward and enforce_zero_sum, lists of dict samples with
+input_vector/target_v1/target_v2, epoch and batch-size budgets, lr schedule, weight
+decay, device, seed, and early-stop parameters. Outputs: a dict containing best_state
+(CPU state_dict), best_val_loss, and metric histories (Huber, MAE, max zero-sum
+residual).
+
+Invariants: targets and predictions are interpreted as pot fractions; per-batch ranges
+are sliced from inputs; zero-sum adjustment is applied before loss; residual statistics
+are computed from ⟨r1,f1⟩+⟨r2,f2⟩. Performance: pure-PyTorch data path, device-stable
+tensors, and minimal allocations per step; learning-rate drop after a user-defined
+epoch.
+"""
+
+
 from hunl.constants import EPS_ZS
 import math
 import random

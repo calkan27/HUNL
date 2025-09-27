@@ -1,3 +1,30 @@
+"""
+Generate supervised training examples for counterfactual value (CFV) networks by
+sampling public states, clustering legal hands, running a depth-limited re-solver, and
+packing input/target tensors. A DataGenerator is configurable for fast test profiles and
+production runs and can emit in-memory samples or persist NPZ shards with rich metadata.
+
+Key class: DataGenerator. Key methods: generate_training_data (return list of records),
+generate_turn_dataset/generate_flop_dataset (persisted shards),
+generate_flop_dataset_using_turn (teacher–student flow using a turn net),
+compute_counterfactual_values (query solver for both players), prepare_input_vector
+(pot_norm | 52-d board one-hot | two K-d ranges), prepare_target_values (scalar CFVs per
+cluster, normalized by pot), generate_unique_boards and helpers for seed/profile and
+invariants.
+
+Inputs: number of boards, samples per board, player stack, num_clusters, and optional
+ResolveConfig driving solver limits, clustering profile, and zero-sum enforcement.
+Outputs: lists of dicts with input_vector and target_v1/target_v2 or NPZ shards with
+meta (schema, stage, action set, outer zero-sum flag).
+
+Invariants: bucket mass conservation, valid board one-hot encoding, pot normalization in
+(0,1], and scalar targets per cluster. Performance: reuses clusters in test mode, caps
+per-update iterations, optionally forces sparse action sets, caches flop features, and
+uses device-aware tensors.
+"""
+
+
+
 from hunl.constants import EPS_SUM, SEED_DEFAULT
 import copy
 import random

@@ -1,3 +1,26 @@
+"""
+I provide normalization, mapping, and guardrails for the data pipeline. I convert
+between hand probabilities and cluster vectors, filter clusters by public boards, and
+verify sampler invariants (pot normalization, board one-hot validity, range mass). I
+also control temporary production/test modes for the solver.
+
+Key class: DataGeneratorUtilsMixin. Key methods: normalize_cluster_probabilities —
+within-list normalization; bucket_player_ranges — dict→dense ranges;
+_filter_clusters_for_board — drop colliding hands;
+_push_leaf_solve_mode/_pop_leaf_solve_mode — adjust solver budgets for leaf labeling;
+_assert_sampler_invariants — enforce guards;
+map_hands_to_clusters/map_hands_to_clusters_compat — string mapping with stable hashing
+fallback; _push_production_mode/_pop_production_mode — bulk mode toggles.
+
+Inputs: clusters, ranges, board cards, pot sizes, and owning generator fields. Outputs:
+normalized vectors, filtered mappings, and booleans or exceptions for invariant checks.
+
+Dependencies: numpy/torch for seeding and arrays; engine for board encodings. Edge
+cases: empty ranges or clusters return safe defaults; I clip pot normalization to a sane
+domain to avoid degenerate targets. Performance: I avoid repeated hashing and reuse
+filtered sets when possible.
+"""
+
 from hunl.constants import EPS_SUM
 import random
 import hashlib

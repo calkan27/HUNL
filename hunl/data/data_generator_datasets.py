@@ -1,3 +1,27 @@
+"""
+I implement dataset production paths for turn and flop CFV models. I generate
+input/target pairs by running controlled re-solves, enforce invariants, and persist
+chunked NPZ shards with rich metadata describing action sets and zero-sum settings. I
+provide an optional teacher-student flow where a trained turn model supervises flop
+targets.
+
+Key class: DataGeneratorDatasetsMixin. Key methods: generate_turn_dataset — turn labels
+via solve-to-terminal; generate_flop_dataset — flop labels using turn inference path;
+generate_flop_dataset_using_turn — direct teacher supervision; _prepare_iv_and_targets —
+shared prepare path; _persist_npz_chunk — writer;
+_default_meta/_production_guard_begin/_production_guard_end — action-set and solver mode
+control.
+
+Inputs: counts (situations, chunk size), output directory, seeds, and optional turn
+model. Outputs: NPZ shards with inputs and two K-dim targets, plus meta fields (schema,
+action_set, outer_zero_sum).
+
+Dependencies: numpy, torch, solver (CFRSolver), engine (PublicState/GameNode/DECK).
+Invariants: range mass conserved, board one-hot matches visible public cards, pot
+normalization in (0,1]. Performance: production mode freezes clustering flags and
+disables slow raises to increase throughput.
+"""
+
 from hunl.constants import SEED_RIVER
 import os
 import time

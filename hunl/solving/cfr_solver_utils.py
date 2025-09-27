@@ -1,3 +1,23 @@
+"""
+I collect utilities that glue engine and solver logic: stage detection, hand
+enumeration, range lifting after chance, action-tracking gadgets, and a stable seed
+function for reproducible clustering and sampling. I also manage follow-up updates to
+own and opponent trackers after actions.
+
+Key methods (inside CFRSolverUtilsMixin): generate_all_possible_hands — canonical
+two-card strings; get_stage — map PublicState round to stage tags;
+lift_ranges_after_chance — reweight ranges against the new board;
+update_tracking_on_own_action/apply_opponent_action_update — carry forward trackers
+through actions; _push_full_hand_expansion/_pop_full_hand_expansion — switch to per-hand
+clusters for label generation.
+
+Inputs: GameNode/PublicState, current clusters and ranges. Outputs: updated ranges,
+trackers, or temporary cluster expansions. Invariants: I conserve probability mass and
+never assign weight to impossible hands (board collisions). Performance: I avoid heavy
+recomputation by reusing computed compatibilities and by keeping expansions local to
+labeling paths.
+"""
+
 import itertools
 from typing import Dict, Any
 

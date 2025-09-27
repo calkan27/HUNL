@@ -1,3 +1,25 @@
+"""
+I compute per-cluster river EVs using either exact pairwise enumeration or a
+strength-bucketing approximation. I filter impossible hands against the board,
+optionally sample per-cluster candidate sets, and aggregate payoffs into vectors aligned
+with action indices so upstream code can reuse them without translation.
+
+Key class: RiverEndgame. Key methods: compute_cluster_cfvs — main entry; _ev_no_bucket —
+exact pairwise EV accumulation with optional pot scaling; river_endgame_bucket_probs_for
+— histogram over strength buckets; river_endgame_pay — payoff matrix kernel;
+river_endgame_norm_vec — vector normalization. Important helpers:
+_filtered_hands_for_cluster, _cluster_distribution, _bucketize.
+
+Inputs: clusters, GameNode (to read board and pot), player id, and three helpers:
+wins_fn, best_hand_fn, hand_rank_fn. Outputs: dict {cluster_id: [ev, ev, ev, ev]}
+compatible with ActionType indices.
+
+Dependencies: stdlib; upstream provides poker evaluation helpers. Invariants: EV
+symmetry between players; bucketed and exact paths return consistent signs; ranges are
+normalized before mixing. Performance: sampling and bucketing control complexity for
+large clusters.
+"""
+
 from hunl.constants import SEED_RIVER
 import random
 

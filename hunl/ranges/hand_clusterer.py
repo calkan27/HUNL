@@ -1,3 +1,24 @@
+"""
+I assign private hands to clusters that are stable given the public board and an
+opponent’s range, and I expose utilities to map between hand-space and cluster-space. I
+implement a feature-driven k-means flow with drift detection so I can reuse previous
+partitions if the situation barely changed.
+
+Key class: HandClusterer (mixes HandClustererFeaturesMixin, HandClustererUtilsMixin).
+Key methods: cluster_hands — compute or reuse clusters; fit — stage-aware entry (special
+case preflop); assign/hand_to_bucket_on_board — map a hand to a cluster;
+hands_to_bucket_range/bucket_range_to_hand_weights — convert between spaces;
+persist/load_mapping — freeze mappings.
+
+Inputs: sets of legal two-card hands, board cards, opponent range over hands, and pot
+size. Outputs: dict {cluster_id→set(hands)} and mapping utilities. Invariants: no
+duplicates or board collisions; bucketed ranges conserve probability mass.
+
+Dependencies: numpy; engine for DECK. Performance: in test profile I shard by hashes or
+frozen seeds to avoid expensive k-means; in production I limit iterations and sample
+opponent hands/features to keep latency bounded.
+"""
+
 from hunl.constants import SEED_DEFAULT
 import os
 import time

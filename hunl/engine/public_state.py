@@ -1,3 +1,29 @@
+"""
+I represent the public game state for Heads-Up No-Limit Texas Hold’em and compose street
+logic, action semantics, and terminal resolution through mixins. I track stacks, bets,
+pot, dealer, current player, street index, board and hole cards, actions, and
+bookkeeping for raises, refunds, and terminal flags.
+
+Key class: PublicState (mixes PublicStateActionsMixin, PublicStateStreetsMixin,
+PublicStateUtilsMixin). Key methods: clone — deep copy for hypothetical lookahead;
+legal_actions — enumerate {FOLD, CALL/CHECK, HALF_POT_BET, POT_SIZED_BET, TWO_POT_BET,
+ALL_IN}; terminal_utility — chips won/lost per player at fold/showdown;
+to_canonical/public_summary — features for models.
+
+Inputs: initial stacks, blinds, dealer, optional pre-dealt board; calls to
+update_state(Action) to advance. Outputs: new PublicState snapshots, consistent
+pot/stacks/bets, terminal flags and utilities. Invariants: pot monotonicity modulo
+explicit refund, stack non-negativity, distinct cards, street transitions gated by
+equalized bets or all-in lock.
+
+Dependencies: hunl.engine.action_type, action, poker_utils. Side effects: none; I return
+new objects for updates.
+
+Edge cases: short all-in below minimum raise may set last_raise_was_allin_below_min to
+preserve legality; I fast-forward to showdown when all-in and equalized. Performance:
+designed for frequent cloning in tree search; internal checks are O(1) per update.
+"""
+
 from hunl.constants import EPS_MASS
 import random
 import copy

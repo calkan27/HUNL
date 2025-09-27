@@ -1,3 +1,25 @@
+"""
+I run an end-to-end smoke evaluation on a clean flop state to validate model wiring,
+zero-sum residuals, cache behavior, time-per-resolve, and pot monotonicity. I can also
+render a short summary that includes hit/miss stats for preflop caching and mean wall
+times across streets.
+
+Key functions: main — comprehensive smoke summary; main_basic — minimal checks for
+zero-sum residual, mass conservation, and pot deltas; make_clean_state_on_flop —
+deterministic flop PublicState; make_uniform_clusters — small fixed mapping;
+uniform_ranges — helper; _zero_sum_residual_mag — compute residual magnitude;
+nonnegative_pot_deltas_ok — single-step pot check.
+
+Inputs: optional seeds and K; solver instances and GameNode contexts. Outputs: printed
+lines and implicit return of earlier model functions to original state if patched for
+instrumentation.
+
+Dependencies: CFRSolver, engine (PublicState/GameNode/ActionType/Action/DECK), torch and
+numpy through solver models. Invariants: ranges sum to one; chance cards come from
+unused deck; residuals are measured after enforce_zero_sum. Performance: I set tiny
+iteration counts and reuse nets to keep turnaround short.
+"""
+
 from hunl.constants import EPS_MASS, EPS_ZS
 import random
 import time

@@ -1,3 +1,36 @@
+"""
+Evaluate heads-up agents and policies with both naive chip outcomes and AIVAT-style
+variance-reduced estimates. This module provides a small harness to run repeated
+matches, collect per-hand rewards, aggregate block statistics (mbb/100 with CI), and
+print a concise report. It reuses the same solver/value interface that powers the
+continual re-solving pipeline so evaluation reflects production behavior.
+
+Key functions: main (argument parsing and report), _run_matches (loop over episodes),
+_play_episode (single hand simulation with continual re-solving), _blocks_from_series
+and _ci_from_blocks (block means and confidence intervals), _chance_policy_uniform
+(uniform draw over unseen cards), is_nonnegative_pot_delta (pot monotonicity guard),
+_summarize and _block_metrics (aggregate metrics).
+
+Inputs: CLI flags for mode (agent-vs-agent or agent-vs-policy), episode count, seeds,
+stack and iteration budgets, and optional river bucket count. Outputs: stdout summary of
+naive vs AIVAT estimates, standard deviations, reduction, and CI; per-episode traces for
+AIVAT if needed.
+
+Internal dependencies: engine primitives (PublicState, GameNode, Action/ActionType,
+DECK), CFRSolver for re-solves, ResolveConfig for profile/limits, and AIVATEvaluator for
+control variates. External dependencies: Python stdlib and typing.
+
+Invariants and guards: player ranges remain normalized, pot deltas never negative aside
+from explicit refunds, action menus come from legal sets, and zero-sum residuals from
+the solver are surfaced in diagnostics. Performance: a single solver instance can be
+shared across roles; preflop cache reuse and small per-episode iteration budgets bound
+latency for large episode counts.
+"""
+
+
+
+
+
 from hunl.constants import EPS_SUM, SEED_DEFAULT
 import argparse
 import random
@@ -11,7 +44,7 @@ from hunl.engine.action import Action
 from hunl.solving.cfr_solver import CFRSolver
 from hunl.resolve_config import ResolveConfig
 from hunl.solving.aivat import AIVATEvaluator
-from hunl.eval_cli_utils import (
+from hunl.cli.eval_cli_utils import (
  _value_fn_from_solver,
  _policy_from_resolve,
  _sample_from_policy,

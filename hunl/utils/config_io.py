@@ -1,3 +1,28 @@
+"""
+I provide small helpers to persist/restore configuration dicts (JSON/YAML) and to
+compose a runtime ResolveConfig by merging three config files (abstraction, value-nets,
+solver) with safe coercions and environment-aware defaults. I also surface runtime
+overrides for the solver (per-round iterations, action flags) and seed initialization.
+
+Key functions: save_config/load_config — read/write JSON or YAML when available;
+compose_resolve_config_from_yaml — load three config files, set global seed, build/patch
+ResolveConfig, and return runtime overrides; helpers
+_safe_int/_safe_float/_safe_bool/_safe_str — defensive coercions; internal _apply_*
+functions map dict fields to ResolveConfig attributes; _small_sparse_bet_fractions —
+base action-set defaults.
+
+Inputs: file paths for YAML/JSON, optional overrides dict; solver/abstraction/value-net
+config dicts with typed or stringly fields. Outputs: on-disk files or a dict {seed,
+config, runtime_overrides} where config is a ResolveConfig instance.
+
+Internal dependencies: ResolveConfig, set_global_seed, hunl.constants.SEED_DEFAULT.
+External dependencies: json; yaml (optional); os.
+
+Invariants: directories are created as needed; YAML is used only when safe
+loaders/dumpers exist; numeric/string/boolean coercions are robust to bad input; output
+configs are JSON-serializable. Performance: trivial I/O; coercions are O(size of dicts).
+"""
+
 from hunl.constants import SEED_DEFAULT
 import json
 import os

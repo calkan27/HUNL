@@ -1,3 +1,25 @@
+"""
+Auxiliary head for river bucket mixtures. Given per-cluster bucket distributions (e.g.,
+strength-binned histograms) the module predicts per-cluster scalar CFVs and offers a
+zero-sum post-processing identical in spirit to the main CFV nets. This is intended for
+endgame experiments or plug-in river components.
+
+Key class: RiverBucketAux. Key methods: forward (two-layer PReLU MLP producing a K-d
+vector), predict (no-grad inference), enforce_zero_sum (range-weighted outer
+adjustment), predict_with_zero_sum (convenience pairwise call), zero_sum_residual
+(diagnostic magnitude).
+
+Inputs: tensors shaped [N, K, B] or flattened to [N, K·B] representing bucket mixtures
+per cluster; player range tensors r1/r2 for outer adjustment. Outputs: two K-d vectors
+(one per player) or adjusted pairs enforcing per-sample zero-sum.
+
+Invariants: bucketed inputs are reshaped deterministically; outer adjustment clamps
+denominators to avoid division by zero; all outputs preserve batch dimension and device;
+magnitude diagnostics use absolute range-weighted sums. Performance: small fully
+connected stack with PReLU activations; no external dependencies beyond torch.
+"""
+
+
 import torch
 import torch.nn as nn
 

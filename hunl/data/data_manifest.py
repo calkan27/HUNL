@@ -1,3 +1,23 @@
+"""
+I build and persist metadata records that describe dataset generation runs. I encode
+action sets (bet fractions and per-round flags), outer zero-sum configuration, cluster
+counts, stage, and seeds. I normalize inputs and defend against missing fields to keep
+manifests stable across profiles.
+
+Key functions: make_manifest — compose schema fields, action_set, and extras;
+save_manifest — write JSON; internal helpers (_get_outer_zero_sum_flag,
+_get_bet_fractions, _get_round_flags) that pull information from the owning
+generator/solver; _normalize_bet_fractions — sanitize structures.
+
+Inputs: a data generator instance, stage label, seed, and optional extras dict; output
+path for saving. Outputs: dict manifest and JSON file.
+
+Dependencies: stdlib json/os/time. Invariants: numeric keys are serialized as strings
+when appropriate; default action set includes CALL/FOLD and sized bets; include_all_in
+is always present for clarity. Performance: I avoid touching large tensors and only
+traverse small config dicts.
+"""
+
 import os
 import json
 import time

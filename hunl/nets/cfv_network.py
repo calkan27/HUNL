@@ -1,3 +1,23 @@
+"""
+I implement the counterfactual value (CFV) network used at the depth limit. I take a
+feature vector consisting of normalized pot, a 52-dim public board one-hot, and two
+K-dim bucketed ranges, and I output two K-dim CFV vectors (pot fractions) for both
+players. I include a differentiable zero-sum post-processing step that shifts both
+outputs so the range-weighted sums cancel.
+
+Key classes/functions: CounterfactualValueNetwork — seven fully connected layers with
+PReLU; enforce_zero_sum — per-sample outer adjustment; predict_with_zero_sum —
+convenience helper; make_cfv_network/build_three_stage_cfv — small builders.
+
+Inputs: Float tensors shaped [N, 1+52+2K] and aligned range slices for each player.
+Outputs: two tensors [N, K] of pot-fraction CFVs with zero-sum enforced downstream.
+
+Dependencies: torch and torch.nn. Invariants: I never rely on action history; I expect
+bucketed ranges to sum to one. Performance: I initialize with Kaiming and keep
+activations shallow enough to be fast on a single GPU; I avoid device transfers in hot
+paths.
+"""
+
 from hunl.constants import EPS_SUM
 import torch
 import torch.nn as nn

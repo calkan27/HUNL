@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/cli/eval_cli_utils.py
+# hypothesis_version: 6.133.2
+
+[0.0, 1.0, 200, '_config', 'avg_strategy_entropy', 'bad_K', 'cfr_values', 'cfv_calls', 'constraint_mode', 'depth_limit', 'diag: invalid K', 'flop', 'flop_calls', 'iterations', 'k1', 'k2', 'legal_actions', 'preflop_cache', 'regret_l2', 'samples', 'turn', 'turn_leaf_calls', 'zero_sum_residual']

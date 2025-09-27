@@ -1,3 +1,14 @@
+"""
+I define Rank as an IntEnum with symbols and an accessor that returns canonical
+single-character representations for logging and parsing helpers. I keep numeric
+ordering consistent with poker strength (Two low, Ace high).
+
+Key class: Rank with values Two..Ace; method symbol to map to 2..9,T,J,Q,K,A.
+
+Inputs: enum usage. Outputs: stable integer ordering and symbol strings. Invariants:
+mapping is total and fixed. Dependencies: stdlib enum. Performance: trivial.
+"""
+
 from enum import IntEnum
 
 

@@ -1,3 +1,20 @@
+"""
+I add convenience methods to PublicState for utilities that do not mutate street
+mechanics: terminal_utility at fold/showdown, board feature vectors, canonical
+summaries, pot normalization, and legal action generation based on current bets and
+stacks.
+
+Key methods: terminal_utility — chip outcomes after fold/showdown with side-pot handling
+by contribution; board_one_hot/pot_normalized; to_canonical/public_summary — fixed-width
+features; legal_actions — legality under to-call, minimum raise increments, remaining
+stacks, and round flags.
+
+Inputs: the PublicState fields maintained by actions/streets mixins. Outputs: lists of
+ActionType and small feature dicts/lists. Invariants: range/pot features align with
+model layouts; legality respects last raise increment and all-in constraints.
+Performance: pure Python loops with O(1) arithmetic per decision.
+"""
+
 from typing import Dict, Any, List, Tuple
 from hunl.engine.poker_utils import board_one_hot as _board_one_hot
 from hunl.engine.poker_utils import hand_rank, best_hand

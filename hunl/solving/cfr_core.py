@@ -1,3 +1,26 @@
+"""
+I provide a lightweight CFR engine tailored for sparse, depth-limited public trees with
+a follow/terminate gadget. I compute local strategies at a public state, respect
+opponent CFV constraints, and return a root policy plus per-cluster CFV vectors used
+upstream.
+
+Key class: PublicChanceCFR. Key methods: solve_subgame — run external-sampling CFR over
+a tree; _policy_from_regret — regret-matching(+); traverse* — our, opponent, chance, and
+terminal/leaf cases; _opponent_cfv_upper_bound_value — scalarize upper bounds;
+_evaluate_leaf — call a supplied leaf value function.
+
+Inputs: a compact tree view, our/opp ranges as simplexes, optional opponent CFV upper
+bounds, iteration count, and a leaf value function that returns per-cluster values
+(pot-fraction or chips). Outputs: a dict policy at the root (ActionType→prob), optional
+node values, and an opponent CFV vector.
+
+Dependencies: numpy for lightweight arrays; ActionType. Invariants: I mask actions not
+available in the local menu; regret/strategy arrays align with ActionType.value indices.
+Edge cases: with empty menus I fall back to CALL as a stub; importance weighting can be
+toggled but defaults keep variance manageable. Performance: iteration cost scales with
+reachable nodes under the sparse action set.
+"""
+
 from typing import Dict, List, Tuple, Optional, Any
 import numpy as np
 from hunl.engine.action_type import ActionType

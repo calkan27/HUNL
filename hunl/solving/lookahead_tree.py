@@ -1,3 +1,24 @@
+"""
+I build a public-tree approximation for a single re-solve, honoring street depth limits
+and a restricted action set. I enumerate legal actions from the engine and expand chance
+nodes by dealing unseen cards. I also propagate reach probabilities and host leaf
+callbacks for value queries.
+
+Key class: LookaheadTreeBuilder. Key methods: build — construct
+nodes/parents/edges/kinds/menus; propagate — compute per-node reach for our/opp ranges
+and collect leaf values; _action_menu — derive legal sparse actions from engine legality
+and configured bet fractions; _deal_next_card — enumerate next street cards.
+
+Inputs: a PublicState and parameters: depth_limit, bet_fractions, include_all_in,
+optional cap on actions per branch. Outputs: a lightweight tree dict (arrays of nodes,
+types, edges) plus reach/value tensors from propagate.
+
+Dependencies: numpy; engine classes for legality and card sets. Invariants: chance nodes
+only appear on equalized bets and non-river streets; actor order mirrors engine rules.
+Performance: I keep arrays flat and indexes dense to minimize Python overhead during CFR
+iterations.
+"""
+
 from hunl.constants import EPS_SUM
 from typing import List, Dict, Any, Optional, Tuple, Callable
 import numpy as np

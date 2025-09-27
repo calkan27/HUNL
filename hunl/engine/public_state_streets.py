@@ -1,3 +1,24 @@
+"""
+I manage street-level policies: minimum raise sizing, dealing of future public cards,
+and transitions between preflop, flop, turn, and river. I also fast-forward when both
+players are all-in and bets are equalized.
+
+Key methods: _min_raise_size — compute the minimum legal increment from
+last_raise_increment and big blind; _deal_for_new_street — deterministically bring the
+board to 3/4/5 cards without collisions; _advance_street_if_closed — perform street
+advance or showdown; _fast_forward_to_showdown_if_allin_locked — run out the board
+safely.
+
+Inputs: the current PublicState fields (bets, stacks, board, flags). Outputs: in-place
+updates on a cloned PublicState from callers in actions mixin. Invariants: I reset
+per-street counters (bets, raise markers) on advance and preserve actor order (dealer
+first preflop, non-dealer postflop).
+
+Dependencies: DECK from poker_utils. Edge cases: the A-5 wheel and suit handling are
+irrelevant here; my guarantees are structural. Performance: dealing uses a simple scan
+avoiding used cards; it favors determinism for reproducibility across rollouts.
+"""
+
 from typing import Optional
 from hunl.engine.poker_utils import DECK
 

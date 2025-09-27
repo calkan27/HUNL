@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/cli/play_cli.py
+# hypothesis_version: 6.133.2
+
+[0.0, 0.25, 0.5, 0.8, 1.0, 1000.0, 100, 200, 400, 1000, '"', '+', ',', '--bb', '--bet-frac', '--dealer', '--depth', '--hands', '--iters', '--k1', '--k2', '--log', '--mode', '--sb', '--seed', '--stack', ':', 'K', '\\', 'a', 'acpc-client', 'action', 'b0', 'b1', 'baseline', 'bb', 'bet_fractions', 'bets', 'big_blind', 'board', 'board_cards', 'close', 'current_bets', 'current_player', 'current_round', 'dealer', 'decisions', 'depth_limit', 'diag', 'final_pot', 'hand', 'hunl-play', 'is_terminal', 'iterations', 'log', 'mode', 'none', 'player', 'policy', 'pot', 'pot_size', 'public_state', 'query', 'result', 'round', 's0', 's1', 'sb', 'self', 'solver_for_diag', 'stacks', 'stage', 'steps', 't_ms', 'terminal_utility', 'type', '{', '}']

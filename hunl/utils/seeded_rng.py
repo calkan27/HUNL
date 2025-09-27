@@ -1,3 +1,20 @@
+"""
+I provide a thin RNG wrapper that seeds Python, NumPy, and Torch (including CUDA)
+consistently, plus a couple of convenience draws. I also expose set_global_seed to
+initialize global libraries for reproducible tests, data generation, and solver
+randomness.
+
+Key classes/functions: SeededRNG — per-instance seeded generator with .rand, .randint,
+.choice; set_global_seed — one-shot seeding for global state.
+
+Inputs: integer seeds. Outputs: deterministic streams of random numbers through wrapped
+libraries. Invariants: I always coerce seeds to int and tolerate environments without
+CUDA; I report missing APIs with informational prints to avoid breaking tests.
+
+Dependencies: random, numpy, torch. Performance: initialization is cheap; callers should
+reuse instances to avoid reseeding global state mid-experiment.
+"""
+
 import random
 import numpy as _np
 import torch as _t

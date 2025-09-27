@@ -1,3 +1,28 @@
+"""
+I batch and serve value-network evaluations via a lightweight background worker that
+drains a request queue, collates inputs by stage, enforces outer zero-sum on outputs,
+and returns results through a thread-safe ResultHandle. I optionally scale predictions
+from pot-fraction to chip units using the caller’s total-initial stack size.
+
+Key class: ValueServer. Key methods: start/stop — manage worker lifecycle;
+query/query_many — enqueue a job and return a handle; get_counters — per-stage call
+counters. Worker internals: _process_batch — concatenates per-stage tensors on device,
+slices range windows, runs the model(s), applies enforce_zero_sum, updates residual
+statistics, and fulfills handles.
+
+Inputs: stage ("preflop"|"flop"|"turn"|"river"), input tensor shaped [N, 1+|board|+2K],
+flags scale_to_pot/as_numpy, and optional total_initial for scaling. Outputs: a tuple
+(v1, v2) as tensors or numpy arrays with outer zero-sum enforced per-sample.
+
+Internal dependencies: torch; hunl.utils.result_handle.ResultHandle. External
+dependencies: none.
+
+Invariants: predictions are adjusted so ⟨r1,f1⟩+⟨r2,f2⟩≈0 per request; device placement
+is preserved; handles are fulfilled exactly once; counters and residual stats are
+monotonically updated. Performance: micro-batching with a short wait window
+(max_wait_ms) reduces overhead and improves throughput without harming latency.
+"""
+
 import threading
 import queue
 import time

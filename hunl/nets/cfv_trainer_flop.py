@@ -1,3 +1,26 @@
+"""
+Specialized trainer for the flop CFV network with optional teacher–student targets from
+a turn network. It mirrors the core training loop but can replace ground-truth labels by
+depth-limited re-solves that query the provided turn net at the boundary, aligning with
+standard two-stage training.
+
+Key functions: train_flop_cfv (fit and checkpoint), default_turn_leaf_target_provider
+(generate flop targets via a turn model and solver), evaluation helpers
+_epoch_eval/_train_one_epoch, and utilities for batching, slicing range windows, and
+checkpointing. Metrics reported on the pot-fraction scale include Huber, MAE, and
+maximum zero-sum residual.
+
+Inputs: a flop model, train/val sample lists, optimization hyperparameters, optional
+checkpoint directory, and optional turn model/device or a custom target_provider
+callback. Outputs: dict with best_state and training history; optional on-disk
+checkpoints for best and per-epoch states.
+
+Invariants: zero-sum post-processing precedes loss; range slices align with K; teacher
+targets respect the same normalization; evaluation uses identical slicing and
+adjustment; device placement is explicit for both flop and turn nets.
+"""
+
+
 from hunl.constants import EPS_ZS
 import random
 import math

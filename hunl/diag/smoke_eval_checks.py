@@ -1,3 +1,24 @@
+"""
+I collect quick invariants and probes used in smoke tests and sanity evaluations. I
+confirm zero-sum residuals after model enforcement, range mass conservation at nodes,
+and non-negative pot deltas under sequences of legal actions. I also provide a
+stochastic pot-monotonicity walk and a zero-sum verification for network outputs.
+
+Key functions: zero_sum_residual_ok — check CFVs under ranges; mass_conservation_ok —
+sum of ranges ≈ 1; nonnegative_pot_deltas_ok — no illegal pot decreases after bet/call;
+pot_monotonicity_ok_sequence — random action walk that never reduces pot beyond
+tolerance; verify_outer_zero_sum_residual — Monte-Carlo probe of model zero-sum.
+
+Inputs: CFRSolver and GameNode (for value and range checks), PublicState (for pot
+checks), torch Tensors for model probes. Outputs: booleans and small dicts with summary
+stats.
+
+Dependencies: torch for network evaluation; engine for actions and updates. Invariants:
+all tolerances use EPS_ZS/EPS_MASS so I remain consistent with the rest of the system.
+Performance: functions are designed for CI and quick local runs; sample sizes and loops
+are capped to avoid GPU stalls.
+"""
+
 from hunl.constants import EPS_MASS, EPS_ZS, SEED_DEFAULT
 import random
 from typing import Dict, List

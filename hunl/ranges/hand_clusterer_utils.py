@@ -1,3 +1,27 @@
+"""
+Utility functions for clustering and range conversions: opponent signature hashing,
+deterministic seeds, preflop partitioning, distance/equality metrics, and bucket/hand
+transforms. This mixin complements the feature extractor to provide end-to-end
+clustering behavior with caching and drift detection.
+
+Key methods: get_cluster_ranges (uniform prior over K), hand_to_bucket and
+hands_to_bucket_range (map strings to cluster ids and compress distributions),
+bucket_range_to_hand_weights (expand), persist_mapping/load_mapping (freeze or restore
+cluster maps), _preflop_partition/_preflop_handtype (strategic types preflop),
+_opponent_range_signature (stable hash of an opponent PMF), _compute_drift (feature
+drift statistic), and deterministic seeds.
+
+Inputs: current cluster mapping, opponent and own ranges, feature snapshots for drift,
+and configuration for sampling caps. Outputs: normalized distributions over buckets or
+hands and stable signatures for caches.
+
+Invariants: probabilities remain non-negative and sum to one when normalized; hashing
+and seeding are deterministic; preflop categories cover all 169 types; drift computation
+uses aligned keys only. Performance: operations are linear in hands; optional sampling
+limits bound work in production profiles.
+"""
+
+
 import hashlib
 import random
 from typing import Any, Dict, List, Set, Tuple

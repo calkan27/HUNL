@@ -1,3 +1,28 @@
+"""
+I store per-node CFR accumulators and implement strategy construction, action pruning,
+and reassessment logic used by the solver. I maintain regret sums (including
+positive-only view), cumulative strategies, a working strategy vector, squared-regret
+sums for variance-aware tests, and a set of pruned actions per cluster.
+
+Key class: CFRValues. Key methods: compute_strategy — regret-matching(+) over non-pruned
+actions; update_strategy — accumulate average strategy; get_average_strategy —
+normalized average with uniform fallback on empty mass; prune_actions — one-sided
+pruning based on a normal-CDF test over mean regret/std-error; reassess_pruned_actions —
+re-enable actions when the evidence flips.
+
+Inputs: cluster_id, iteration counters, total_iterations, and alpha/min_iterations knobs
+inside pruning logic. Outputs: strategy/average-strategy vectors and updated internal
+tables.
+
+Internal dependencies: hunl.engine.action_type.ActionType; EPS constants from
+hunl.constants for numerical floors. External dependencies: math.
+
+Invariants: vector lengths align with |ActionType|; regret/strategy arrays remain
+non-negative where required; pruning is monotone within an iteration and reassessed only
+when iteration>1; std-error protects against division by zero. Performance: updates are
+O(|A|) per cluster; storage is O(|clusters|·|A|).
+"""
+
 from hunl.constants import EPS_MASS, EPS_ZS
 import math
 from collections import defaultdict

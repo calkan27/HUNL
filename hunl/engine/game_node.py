@@ -1,3 +1,22 @@
+"""
+I wrap a PublicState with player-range bookkeeping for solving and lookahead. I cache a
+stable public signature so nodes hash and compare by observable information rather than
+by identity. I also serialize actions into compact tuples for signatures.
+
+Key class: GameNode. Key methods: hash/eq — equality by public signature;
+_public_signature — tuple of board, street, bets, pot, current player, dealer, terminal
+flags, players-in-hand, serialized actions; _serialize_actions — project (player,
+action_type.value) pairs.
+
+Inputs: a PublicState and caller-managed player_ranges (two dicts mapping cluster id to
+probability). Outputs: hashable node instances suitable for dict keys and caching.
+
+Dependencies: hunl.engine.action_type and action classes through the PublicState.
+Invariants: I never include private cards in the signature; only public observables and
+prior action types are used. Performance: the signature is constructed lazily and stored
+once; repeated hashing in large trees remains cheap.
+"""
+
 class GameNode:
 	def __init__(self, public_state):
 		self.public_state = public_state

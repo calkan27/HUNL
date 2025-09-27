@@ -1,3 +1,22 @@
+"""
+I offer instrumentation and timing helpers for smoke evaluations. I wrap the solver’s
+prediction path to count per-stage invocations, measure average resolve time, and
+estimate preflop cache effectiveness over repeated identical states.
+
+Key functions: instrument_value_nets — monkey-patch predict_counterfactual_values to
+count stage calls; measure_resolve_time — average wall time across N resolves;
+preflop_cache_hit_rate — estimate hit rate and report cache stats; _make_initial_preflop
+— utility to build a clean preflop state.
+
+Inputs: CFRSolver and GameNode; trial counts; device-agnostic nets already resident in
+the solver. Outputs: counters, floats for timings, and dicts with cache
+hits/misses/puts/evictions.
+
+Dependencies: stdlib time/random and engine basics. Invariants: I restore original
+methods after instrumentation; timing excludes object construction. Performance: I avoid
+tensor reallocations and use minimal tree depth to keep measurements stable.
+"""
+
 import time
 import random
 from typing import Dict, Tuple

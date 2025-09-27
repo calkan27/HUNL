@@ -1,3 +1,25 @@
+"""
+Diagnostics and soundness-related summaries for the CFR solver. This mixin surfaces
+recent run metadata (depth, iterations, constraint mode), regret/entropy measures,
+zero-sum residual statistics, and preflop cache counters. It also aggregates opponent
+CFV upper bounds and worst-case values used in range gadgets.
+
+Key methods: get_last_diagnostics (emit dict with metrics and cache stats),
+set_soundness_constants (record k1/k2-style constants), internal helpers for regret L2
+norm, average strategy entropy, zero-sum residual magnitude over collected samples,
+mapping CFV vectors to per-cluster maxima, and extracting worst-case values from tracked
+constraints.
+
+Inputs: recent CFRValues state, range gadget tracking, zero-sum residual samples, and
+preflop cache stats. Outputs: serializable dicts suitable for logs and CLI displays.
+
+Invariants: numeric fields are floats/ints ready for JSON; absent data yields
+conservative zeros; upper-bound aggregations are monotone with respect to observed
+maxima. Performance: computations are linear in clusters/actions for the current node
+and designed to be negligible compared to re-solving iterations.
+"""
+
+
 from hunl.constants import EPS_MASS
 from typing import Dict, Any
 import math

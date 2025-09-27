@@ -1,3 +1,28 @@
+"""
+Strategy aggregation, range updates, legal menu projection, and mixed-action sampling
+used during CFR iterations and at action time. This mixin computes average strategies,
+masks per-state strategies against legal menus, updates posterior ranges via
+Bayes-consistent weights, and returns mixed distributions for sampling.
+
+Key methods: get_cumulative_strategy (aggregate across nodes), update_player_range
+(Bayes update conditioned on observed action index),
+_allowed_actions_agent/_allowed_actions_opponent (derive sparse legal menus with raise
+gating), _mask_strategy (project to allowed set and renormalize),
+_mixed_action_distribution (range-weighted mixture over clusters), plus small helpers.
+
+Inputs: current node with CFRValues and player ranges, PublicState legality and
+min-raise logic, configured sparse action schedule. Outputs: masked strategies, updated
+posteriors, and action probability vectors aligned with ActionType indices.
+
+Invariants: distributions are normalized; illegal actions receive zero probability;
+ALL_IN/raises are only offered when stacks and min-raise constraints permit; test
+profiles may tighten action sets. Performance: all operations are linear in actions and
+clusters at the current node and avoid allocations in hot loops.
+"""
+
+
+
+
 import os
 from collections import defaultdict
 from typing import Dict, List

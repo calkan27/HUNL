@@ -1,3 +1,26 @@
+"""
+I expose a practical API to run one-shot resolves at arbitrary public states and to
+collect diagnostics. I adapt bet-size modes, depth limits, and constraint handling, then
+call the internal CFR engine with a ValueServer leaf function. I return the root policy,
+tightened opponent CFV upper bounds, our CFV vector, and a diagnostic record.
+
+Key functions: resolve_at — return policy, updated upper bounds, and our CFVs;
+resolve_at_with_diag — same with a detailed diag dict; _build_lookahead_tree — construct
+a sparse public tree; _make_leaf_value_fn/_leaf_value_from_value_server — pot-fraction
+CFVs from the value server; _depth_and_bets_from_config — map stage to depth/bet sizes;
+_validate_root_policy_and_invariants — sanity checks.
+
+Inputs: PublicState, our range r, opp CFV upper bounds w, config (iterations,
+bet_size_mode), optional ValueServer. Outputs: dict policy (ActionType→prob), dict new
+bounds by cluster, dict our CFVs, and diagnostics (stage, iterations, zero-sum stats,
+cache info).
+
+Dependencies: ValueServer, LookaheadTreeBuilder, ActionType, model I/O helpers.
+Invariants: I normalize ranges to simplices, keep pot-fraction scaling, and never
+produce illegal actions. Performance: I batch model queries inside ValueServer and keep
+small action sets to meet interactive latency.
+"""
+
 from hunl.constants import EPS_SUM
 from typing import Dict, List, Tuple, Optional, Callable, Any
 import numpy as np

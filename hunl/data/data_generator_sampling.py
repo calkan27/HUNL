@@ -1,3 +1,24 @@
+"""
+I sample public situations and initialize ranges and clusters for data generation. I
+build flop and turn GameNode instances with legal board cards and hole cards, map hand
+probabilities to clusters, and ensure mass conservation before returning nodes.
+
+Key class: DataGeneratorSamplingMixin. Key methods:
+_sample_flop_situation/_sample_turn_situation — construct PublicState/GameNode with
+sampled board and hole cards; _sample_random_range — recursive split over cluster ids;
+sample_pot_size/pot_sampler_spec — pot distribution utilities; range_generator_spec —
+descriptor for provenance.
+
+Inputs: random.Random, DECK, num_clusters, and internal HandClusterer via the owning
+DataGenerator. Outputs: GameNode objects with player_ranges aligned to clusters and pot
+sizes sampled from bins.
+
+Dependencies: engine (PublicState/GameNode/DECK), ranges (HandClusterer),
+itertools/random for combinatorics. Invariants: no board collisions or duplicate cards;
+bucketed ranges are normalized; postflop actor parity follows dealer rules. Performance:
+I reuse clustered mappings and avoid quadratic scans by pre-filtering available cards.
+"""
+
 import random
 import itertools
 from typing import Dict, List

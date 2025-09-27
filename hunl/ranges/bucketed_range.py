@@ -1,3 +1,24 @@
+"""
+I am a lightweight container for hand→bucket mappings and conversions between hand-space
+and bucket-space distributions. I normalize probabilities, enforce single-bucket
+membership per hand, and expose helpers to move back and forth between spaces.
+
+Key class: BucketedRange. Key methods: buckets — list available bucket ids;
+hand_to_bucket/bucket_to_hands — mapping queries; from_hand_probs — compress a hand PMF
+into bucket probabilities; to_hand_probs — expand a bucket distribution evenly across
+member hands.
+
+Inputs: mapping {bucket_id → set(hands)} and optional explicit bucket count; hand
+strings are expected in canonical "R1S1 R2S2" form. Outputs: normalized bucket vectors
+or per-hand probability maps.
+
+Internal dependencies: none. External dependencies: none.
+
+Invariants: one hand maps to at most one bucket; output distributions are normalized
+when mass is positive; expansion divides bucket mass equally over its member hands.
+Performance: linear in number of hands; deterministic ordering for reproducible tests.
+"""
+
 class BucketedRange:
 	def __init__(self, bucket_mapping, num_buckets=None):
 		_bm = dict(bucket_mapping)

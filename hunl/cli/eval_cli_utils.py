@@ -1,3 +1,26 @@
+"""
+I supply helpers used by evaluation CLIs to build temporary solvers, derive policies
+from short re-solve bursts, and check invariants on transitions, range mass, and
+zero-sum residuals. I also provide a lightweight episode generator for AIVAT traces and
+simple sampling utilities.
+
+Key functions: _value_fn_from_solver — wrap solver.predict_counterfactual_values;
+_policy_from_resolve — derive a callable that runs a short resolve and returns
+ActionType→prob; _make_initial_preflop — construct a clean preflop PublicState;
+flop_turn_leaf_sanity — count net invocations by stage;
+is_range_mass_conserved/is_zero_sum_residual_ok/is_nonnegative_pot_delta — invariants;
+_chance_policy_uniform — chance policy; internal serialization/log helpers.
+
+Inputs: CFRSolver, GameNode/PublicState, iteration budgets, seeds, stacks, and deck.
+Outputs: policies, counters, small diagnostic dicts, and per-decision logs in dict form.
+
+Dependencies: engine (PublicState/GameNode/ActionType/Action/DECK), solver (CFRSolver),
+nets (ValueServer for AIVAT in eval_cli). Invariants: policies are normalized; range and
+pot checks use EPS tolerances; ACTION legality mirrors engine menus. Performance: I
+reuse solver templates, clear stateful caches only when required, and avoid expensive
+allocations in tight sampling loops.
+"""
+
 from hunl.constants import EPS_MASS, EPS_ZS, SEED_RIVER
 import random
 from functools import partial

@@ -1,3 +1,30 @@
+"""
+I wrap CFRSolver into a simple acting interface suitable for interactive play or
+integration tests. I own a solver, ensure devices are consistent, keep a HandClusterer
+reference, and expose convenience methods to act, observe opponent/chance, adjust
+latency profile, and load model bundles.
+
+Key class: Agent. Key methods: act — bucketize our private hand, build uniform opponent
+priors, run one re-solve, and return the chosen Action;
+observe_opponent_action/observe_chance — advance internal trackers and range gadgets;
+set_device — move solver nets; set_latency_profile — per-round iteration overrides;
+load_bundle — load a CFV bundle (models + mapping) via model_io and apply to the solver.
+
+Inputs: number of clusters, depth limit, optional iterations/device/profile/config; for
+act: a PublicState and our private cards. Outputs: chosen Action plus updated internal
+state; query/utility methods return small dicts or booleans.
+
+Internal dependencies: CFRSolver, HandClusterer, ResolveConfig,
+hunl.nets.model_io.load_cfv_bundle, engine primitives (GameNode/Action/ActionType).
+External dependencies: torch (for device selection).
+
+Invariants: num_clusters in Agent matches solver/clusterer; device consistency is
+maintained across stage nets; last_public_key caches the public signature after each
+act/observe call. Performance: per-decision compute is governed by round iteration
+schedule; preflop cache inside solver reduces repeated resolves on identical public
+states.
+"""
+
 import torch
 from hunl.engine.game_node import GameNode
 from hunl.engine.action import Action

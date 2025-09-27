@@ -1,3 +1,26 @@
+"""
+Preflop and computation caches and lightweight signatures for reuse within continual
+re-solving. This mixin encapsulates a content-addressed preflop cache, partition
+signatures for clusters, and helpers for efficient range sampling/equity proxies used by
+clustering and recursion.
+
+Key responsibilities: build stable preflop keys combining blinds/dealer/bets/pot/cluster
+partition and current bucketed ranges; LRU-style cache get/put with stats; cluster
+partition signature (count and FNV-like hash per cluster); compact state keys for
+tracking; fast equity sampling and recursive range splitting with board awareness.
+
+Inputs: a GameNode with PublicState and current player ranges; solver attributes such as
+num_clusters, clusters, and internal caches. Outputs: cache entries with normalized own
+range and opponent CFV upper vectors; updated cache statistics
+(hits/misses/puts/evictions).
+
+Invariants: signatures ignore private cards; range normalization occurs when rehydrating
+cache hits; negative or inconsistent counters are coerced to safe bounds. Performance:
+ordered dict with capacity limits, constant-time recency updates, and parameterized
+sampling (test vs production) to keep preflop latency low.
+"""
+
+
 import os
 import random
 import itertools

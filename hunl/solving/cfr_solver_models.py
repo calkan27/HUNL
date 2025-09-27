@@ -1,3 +1,27 @@
+"""
+Model lifecycle and feature construction for CFV prediction inside the solver. This
+mixin owns stage models, loading and zero-initialization, fallback sharing between
+flop/turn, and computation of input feature vectors for preflop and postflop states.
+
+Key methods: load_models (try common filenames, zero-init on miss), _load_stage_model
+(device-aware state load), _share_flop_turn_if_missing (copy weights when shapes match),
+calculate_input_size/calculate_input_size_preflop (feature dimensions),
+prepare_input_vector/prepare_input_vector_preflop (pot_norm + board one-hot + two
+ranges). Stage selection is handled by the solver proper.
+
+Inputs: GameNode with PublicState and bucketed player ranges; filesystem paths for
+optional weights. Outputs: tensors fed to CFV nets and ready-to-eval models with
+eval-mode set.
+
+Invariants: inputs are normalized (mass-conserved ranges, pot fraction in (0,1] with a
+safe floor), shapes match configured K and board size, and state_dict loads are strict
+or fall back to zeros. Performance: pure tensor construction; no unnecessary device
+hops; weight sharing avoids duplicate initialization cost.
+"""
+
+
+
+
 from typing import Dict, List, Tuple, Any
 import copy
 import os

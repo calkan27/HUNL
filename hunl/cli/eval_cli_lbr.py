@@ -1,3 +1,26 @@
+"""
+I run a limited best-response (LBR) probe against the agent’s policy to quantify
+exploitability pressure on early streets. I choose among a sparse action menu, simulate
+continuations with the agent’s internal re-solve, and summarize results across seeds
+with confidence intervals. I also log action frequencies to flag pathological behavior.
+
+Key functions: run_lbr_eval — single-seed evaluation (episodes, residual tracking, flop
+frequency log); run_lbr_acceptance — multi-seed acceptance with union CI;
+lbr_greedy_action — pick greedy LBR action on flop; _engine_policy_action — sample the
+agent’s resolve; _init_agent_solver/_init_episode_node — initialize solver and node;
+is_range_mass_conserved, is_nonnegative_pot_delta — invariants.
+
+Inputs: ResolveConfig (optional), episode count, seeds, iteration budgets before/after
+LBR, and stacks/blinds via the underlying engine. Outputs: dicts with mbb per game,
+CI95, acceptance flags, stage counters, residual maxima, and frequency histograms.
+
+Dependencies: CFRSolver (policies, CFVs), PublicState/GameNode, Action/ActionType, DECK,
+and numpy/torch via solver internals. Edge cases: illegal street jumps are guarded and
+reported; when menus are empty I default to CALL; if preflop cache is active, repeated
+nodes are fast. Performance: I bound rollouts, reuse solvers, and keep the action set
+sparse to reach thousands of hands efficiently.
+"""
+
 from hunl.constants import EPS_MASS, EPS_ZS, SEED_DEFAULT
 import math
 import random

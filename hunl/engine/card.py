@@ -1,3 +1,18 @@
+"""
+I implement a typed Card with rank and suit enums and two helpers: str for canonical
+two-character code and from_string to parse external tokens. I make instances hashable
+and immutable so they can be used in sets and maps if desired.
+
+Key class: Card (dataclass frozen). Key methods: str — render like AH or 9d depending on
+suit symbol mapping; from_string — robust parser that uppercases tokens and maps T to
+Ten.
+
+Inputs: Rank and Suit enums or raw two-character strings. Outputs: typed Card objects or
+canonical strings. Invariants: input must be well-formed; I raise via enum lookup if a
+character is invalid. Dependencies: engine.rank and engine.suit. Performance: constant
+time.
+"""
+
 from dataclasses import dataclass
 from hunl.engine.rank import Rank
 from hunl.engine.suit import Suit

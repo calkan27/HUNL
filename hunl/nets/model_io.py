@@ -1,3 +1,25 @@
+"""
+I save and load counterfactual-value bundles that package stage models, input layout
+metadata, and optional cluster mappings. I help the solver replace its nets and clusters
+at runtime without changing shapes by computing input slice boundaries and performing
+shape-aware state-dict filtering.
+
+Key functions: save_cfv_bundle — persist stage nets, meta (num_clusters,
+board_one_hot_dim, range layout), and optional mapping; load_cfv_bundle — load tensors
+and build CounterfactualValueNetwork or a CompatLinearCFV fallback;
+_compute_input_slices/_upgrade_input_meta — derive consistent input indices and meta
+fields.
+
+Inputs: dict of stage→nn.Module, mapping dict, input meta, output file path; or a path
+to load. Outputs: a file on disk (torch.save) or a dict {models, meta} suitable for
+CFRSolver.apply_cfv_bundle.
+
+Dependencies: torch; CounterfactualValueNetwork and CompatLinearCFV. Invariants: I never
+trust shapes blindly; I check strict compatibility, then try relaxed loads, then
+shape-filtered loads. Performance: I keep everything on CPU on load by default and let
+the caller move to a device; this avoids accidental GPU memory spikes.
+"""
+
 from hunl.constants import SEED_DEFAULT
 import os
 import time

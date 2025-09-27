@@ -1,3 +1,19 @@
+"""
+I iterate over line-oriented JSON shard files containing CFV training examples and yield
+parsed objects with minimal validation. I optionally verify the expected schema string,
+skipping mismatches without failing the stream.
+
+Key class: CFVShardDataset with iter that yields dict records. Expected fields: schema
+(e.g., cfv.v1), input_vector, target_v1, target_v2; optional meta captured upstream.
+
+Inputs: list of file paths, schema_version string, and verify flag. Outputs: dicts
+deserialized from each valid line.
+
+Dependencies: stdlib os/json. Invariants: I never raise on a malformed line; I print a
+short reason and continue so long training jobs do not stop on bad shards. Performance:
+I read sequentially and avoid buffering entire files in memory.
+"""
+
 import os
 import json
 

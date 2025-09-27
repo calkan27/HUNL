@@ -1,3 +1,23 @@
+"""
+I implement deck constants, card normalization, feature encodings, and fast rank
+evaluation for 5/6/7-card hands. I expose board_one_hot for model inputs and helpers to
+convert between text and integer representations used by a table-driven evaluator.
+
+Key components: LookupTable and Evaluator for rank lookups;
+_to_str_card/_normalize_cards for robust token handling;
+best_hand/hand_rank/evaluate_7card for ranking; board_one_hot/card_to_index for
+features; constants RANKS/SUITS/DECK and value maps.
+
+Inputs: card tokens as strings/tuples/lists, lists of public and private cards. Outputs:
+normalized codes, rank keys (higher is stronger), best 5-card selection, and 52-dim
+one-hot boards.
+
+Dependencies: stdlib itertools and small integer arithmetic. Invariants: I avoid
+duplicate cards and handle the A-5 wheel; Ten is represented as T; suits and ranks are
+uppercased consistently. Performance: rank tables are precomputed to keep evaluation
+tight in large simulations.
+"""
+
 from collections import Counter
 import itertools
 

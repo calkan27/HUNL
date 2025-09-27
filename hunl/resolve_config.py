@@ -1,3 +1,28 @@
+"""
+I centralize runtime configuration for the re-solver, value networks, and data
+generation. I expose ResolveConfig with typed fields and a from_env helper that builds a
+profile for fast tests or full runs. I let a caller specify depth_limit,
+total_iterations, num_clusters, bet_size_mode, and flags like enforce_zero_sum_outer and
+prefer_gpu.
+
+Key classes/functions: ResolveConfig — immutable config object; from_env — construct
+config with env-aware defaults; _env_flag/_env_int — parse environment booleans and
+ints.
+
+Inputs: optional overrides dict and environment variables FAST_TESTS, FAST_TEST_SEED,
+DEBUG_FAST_TESTS. Outputs: a populated ResolveConfig instance. Invariants: numeric
+fields are sane (non-negative, coerced types), and test profile collapses heavy settings
+to minimum viable values to meet latency gates.
+
+Internal dependencies: hunl.constants for default seeds. External dependencies: Python
+stdlib only. Side effects: none beyond reading environment variables.
+
+Edge cases: if a caller passes contradictory overrides (e.g., zero clusters with enabled
+features), I coerce to safe defaults where possible. Performance considerations: the
+test profile disables expensive features (e.g., CFV features in clustering, opponent
+sampling) and forces small iteration counts to keep smoke and CI runs predictable.
+"""
+
 from hunl.constants import SEED_DEFAULT
 from dataclasses import dataclass, field
 import os

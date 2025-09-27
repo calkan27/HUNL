@@ -487,9 +487,9 @@ def test_config_io_save_and_load_json_yaml(tmp_path: Path, monkeypatch):
     """test_config_io_save_and_load_json_yaml: save_config/load_config round-trip works for JSON and YAML; objects with attributes serialize to dicts."""
     import importlib, sys
 
-    if "hunl.config_io" in sys.modules:
-        del sys.modules["hunl.config_io"]
-    cfg = importlib.import_module("hunl.config_io")
+    if "hunl.utils.config_io" in sys.modules:
+        del sys.modules["hunl.utils.config_io"]
+    cfg = importlib.import_module("hunl.utils.config_io")
 
     d = {"a": 1, "b": 2}
     json_path = tmp_path / "cfg.json"
@@ -513,7 +513,8 @@ def test_config_io_save_and_load_json_yaml(tmp_path: Path, monkeypatch):
     assert loaded == {"x": 10, "y": "z"}
 
 def test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config(tmp_path: Path, monkeypatch):
-    """test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config: compose_resolve_config_from_yaml merges three YAMLs into a ResolveConfig, applies overrides/seed, and returns runtime overrides and bet fractions."""
+    """test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config: compose_resolve_config_from_yaml 
+		merges three YAMLs into a ResolveConfig, applies overrides/seed, and returns runtime overrides and bet fractions."""
     import types, sys, importlib
 
     fake_mod = types.ModuleType("resolve_config")
@@ -547,9 +548,9 @@ def test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config(tmp_
     sys.modules["resolve_config"] = fake_mod
     sys.modules["hunl.resolve_config"] = fake_mod
 
-    if "hunl.config_io" in sys.modules:
-        del sys.modules["hunl.config_io"]
-    cfg = importlib.import_module("hunl.config_io")
+    if "hunl.utils.config_io" in sys.modules:
+        del sys.modules["hunl.utils.config_io"]
+    cfg = importlib.import_module("hunl.utils.config_io")
 
     used_seeds = []
     def fake_sgs(seed):
