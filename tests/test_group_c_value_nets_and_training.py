@@ -1,5 +1,3 @@
-# TestSuite_GroupC_ValueNetsTraining
-# pytest -q
 import os
 import io
 import json
@@ -14,29 +12,20 @@ import pytest
 import torch
 from torch import nn
 
-# ----- Helpers ---------------------------------------------------------------
-
 def make_toy_samples(K: int, n: int) -> List[Dict]:
-    """
-    Build a list of CFV training samples with the layout:
-      input_vector = [pot_norm (1), board_one_hot (52), r1 (K), r2 (K)]
-      target_v1, target_v2 = length-K vectors (pot-fraction CFVs)
-    """
+    """make_toy_samples: helper to synthesize well-formed CFV training records (pot_norm + board(52) + r1 + r2, with zero-sum targets)."""
     samples = []
     for i in range(n):
-        pot_norm = float((i % 5) + 1) / 10.0  # 0.1 .. 0.5
-        board = [0.0] * 52  # keep simple/no board card for speed
+        pot_norm = float((i % 5) + 1) / 10.0
+        board = [0.0] * 52
         r1_raw = torch.rand(K).tolist()
         r2_raw = torch.rand(K).tolist()
-        # Normalize to probability vectors (not strictly required by code,
-        # but cleaner for tests)
         s1 = sum(r1_raw) or 1.0
         s2 = sum(r2_raw) or 1.0
         r1 = [x / s1 for x in r1_raw]
         r2 = [x / s2 for x in r2_raw]
-        # Targets (pot-fraction CFVs), arbitrary but bounded
         t1 = torch.linspace(-0.5, 0.5, steps=K).tolist()
-        t2 = [-x for x in t1]  # zero-sum compatible targets (not required)
+        t2 = [-x for x in t1]
         inp = [pot_norm] + board + r1 + r2
         assert len(inp) == 1 + 52 + 2 * K
         samples.append({
@@ -46,12 +35,9 @@ def make_toy_samples(K: int, n: int) -> List[Dict]:
         })
     return samples
 
-# -----------------------------------------------------------------------------
-# cfv_network.py
-# -----------------------------------------------------------------------------
-
 def test_cfv_network_forward_and_attributes():
-    import cfv_network as cn
+    """test_cfv_network_forward_and_attributes: CounterfactualValueNetwork builds with expected shapes and attributes; forward emits (B,K) tensors."""
+    import hunl.nets.cfv_network as cn
     K = 8
     model = cn.CounterfactualValueNetwork(input_size=1+52+2*K, num_clusters=K,
                                           input_layout={"pot": (0,1), "board": (1,53), "r1": (53,53+K), "r2": (53+K,53+2*K)})
@@ -65,8 +51,9 @@ def test_cfv_network_forward_and_attributes():
     assert p2.shape == (5, K)
 
 def test_enforce_zero_sum_residual_invariance_and_numerical_stability():
+    """test_enforce_zero_sum_residual_invariance_and_numerical_stability: enforce_zero_sum returns finite outputs; residual equals ~0 for any ranges; invariant to constant shifts."""
     import torch
-    import cfv_network as cn
+    import hunl.nets.cfv_network as cn
 
     K = 7
     model = cn.CounterfactualValueNetwork(input_size=1 + 52 + 2 * K, num_clusters=K)
@@ -99,7 +86,8 @@ def test_enforce_zero_sum_residual_invariance_and_numerical_stability():
     assert torch.allclose(f2, f2p, atol=1e-6)
 
 def test_predict_with_zero_sum_equivalence():
-    import cfv_network as cn
+    """test_predict_with_zero_sum_equivalence: predict_with_zero_sum matches manual forward + enforce_zero_sum."""
+    import hunl.nets.cfv_network as cn
     K = 5
     model = cn.CounterfactualValueNetwork(input_size=1+52+2*K, num_clusters=K)
     x = torch.randn(3, 1+52+2*K)
@@ -112,7 +100,8 @@ def test_predict_with_zero_sum_equivalence():
     assert torch.allclose(f2a, f2b, atol=1e-7)
 
 def test_builder_three_stage_and_make_network_device_and_shapes():
-    import cfv_network as cn
+    """test_builder_three_stage_and_make_network_device_and_shapes: factory helpers create {preflop,flop,turn} models on a device with consistent K."""
+    import hunl.nets.cfv_network as cn
     K = 6
     models = cn.build_three_stage_cfv(1+52+2*K, 1+52+2*K, 1+52+2*K, num_clusters=K, device=torch.device("cpu"))
     assert set(models.keys()) == {"preflop", "flop", "turn"}
@@ -123,14 +112,10 @@ def test_builder_three_stage_and_make_network_device_and_shapes():
     assert isinstance(m, nn.Module)
     assert m.num_clusters == K
 
-# -----------------------------------------------------------------------------
-# cfv_shard_dataset.py
-# -----------------------------------------------------------------------------
-
 def test_cfv_shard_dataset_schema_filter_and_missing(tmp_path: Path):
-    import cfv_shard_dataset as ds
+    """test_cfv_shard_dataset_schema_filter_and_missing: CFVShardDataset filters by schema, iterates all rows when verify_schema=False, and skips missing files."""
+    import hunl.nets.cfv_shard_dataset as ds
 
-    # Create two shards: one with matching schema, one mismatched
     good = tmp_path / "shard_good.jsonl"
     bad = tmp_path / "shard_bad.jsonl"
     with good.open("w") as f:
@@ -140,18 +125,13 @@ def test_cfv_shard_dataset_schema_filter_and_missing(tmp_path: Path):
         for i in range(2):
             f.write(json.dumps({"schema": "other", "input_vector": [0.0], "target_v1": [0.0], "target_v2": [0.0]}) + "\n")
 
-    # Include a nonexistent path to test the "continue on exception" path
     d = ds.CFVShardDataset([str(good), str(bad), str(tmp_path / "does_not_exist.jsonl")], schema_version="cfv.v1", verify_schema=True)
     rows = list(iter(d))
-    assert len(rows) == 3  # only good rows included
+    assert len(rows) == 3
 
     d2 = ds.CFVShardDataset([str(good), str(bad)], schema_version="cfv.v1", verify_schema=False)
     rows2 = list(iter(d2))
-    assert len(rows2) == 5  # both files included when verify=False
-
-# -----------------------------------------------------------------------------
-# cfv_stream_dataset.py
-# -----------------------------------------------------------------------------
+    assert len(rows2) == 5
 
 class _StubDG:
     def __init__(self, K):
@@ -168,12 +148,10 @@ class _StubDG:
         return {"name": "toy_range_gen", "params": {"K": self.num_clusters}}
 
     def generate_unique_boards(self, stage, num_boards):
-        # no-op; return a marker
         return [("dummy", stage, num_boards)]
 
     def generate_training_data(self, stage, progress=None):
         K = self.num_clusters
-        # emit more than needed to test capping at num_samples
         for _ in range(10):
             yield {
                 "input_vector": [0.2] + [0.0]*52 + ([1.0/K]*K) + ([1.0/K]*K),
@@ -182,12 +160,12 @@ class _StubDG:
             }
 
 def test_cfv_stream_dataset_iter_and_spec():
-    import cfv_stream_dataset as sd
+    """test_cfv_stream_dataset_iter_and_spec: CFVStreamDataset exposes a complete spec and yields exactly num_samples rows with correct input/target shapes."""
+    import hunl.nets.cfv_stream_dataset as sd
     K = 9
     dg = _StubDG(K)
     ds = sd.CFVStreamDataset(dg, stage="flop", num_samples=7, seed=1729, schema_version="cfv.v1",
                              shard_meta={"origin": "unit-test"})
-    # Spec recorded
     assert ds.spec["schema"] == "cfv.v1"
     assert ds.spec["seed"] == 1729
     assert ds.spec["stage"] == "flop"
@@ -196,7 +174,6 @@ def test_cfv_stream_dataset_iter_and_spec():
     assert ds.spec["range_generator"]["name"] == "toy_range_gen"
     assert ds.spec["origin"] == "unit-test"
 
-    # Iterator yields exactly num_samples
     rows = list(iter(ds))
     assert len(rows) == 7
     for r in rows:
@@ -206,14 +183,11 @@ def test_cfv_stream_dataset_iter_and_spec():
         assert len(r["target_v1"]) == K
         assert len(r["target_v2"]) == K
 
-# -----------------------------------------------------------------------------
-# cfv_trainer.py (generic trainer)
-# -----------------------------------------------------------------------------
-
 def test_train_cfv_network_zero_sum_before_loss_lr_drop_and_early_stop(monkeypatch):
+    """test_train_cfv_network_zero_sum_before_loss_lr_drop_and_early_stop: trainer runs, enforces zero-sum each step, drops LR at scheduled epoch, and early-stops on plateau."""
     import torch
-    import cfv_trainer as tr
-    import cfv_network as cn
+    import hunl.nets.cfv_trainer as tr
+    import hunl.nets.cfv_network as cn
     K = 6
     model = cn.CounterfactualValueNetwork(input_size=1 + 52 + 2 * K, num_clusters=K)
     def make_toy_samples(K, n):
@@ -266,10 +240,10 @@ def test_train_cfv_network_zero_sum_before_loss_lr_drop_and_early_stop(monkeypat
     assert called["train"] > 0
 
 def test_trainer_ranges_from_inputs_slices_correctly():
-    import cfv_trainer as tr
+    """test_trainer_ranges_from_inputs_slices_correctly: internal slice helper recovers r1/r2 blocks from concatenated inputs."""
+    import hunl.nets.cfv_trainer as tr
     K = 5
     x = torch.zeros(2, 1+52+2*K)
-    # Put sentinel values
     x[0, 1+52+0] = 0.1
     x[0, 1+52+K+0] = 0.2
     r1, r2 = tr._ranges_from_inputs(x, K)
@@ -278,18 +252,14 @@ def test_trainer_ranges_from_inputs_slices_correctly():
     assert float(r1[0, 0]) == pytest.approx(0.1)
     assert float(r2[0, 0]) == pytest.approx(0.2)
 
-# -----------------------------------------------------------------------------
-# cfv_trainer_flop.py
-# -----------------------------------------------------------------------------
-
 def test_flop_trainer_with_custom_target_provider_lr_drop_ckpts_and_zero_sum(monkeypatch, tmp_path: Path):
-    import cfv_trainer_flop as tf
-    import cfv_network as cn
+    """test_flop_trainer_with_custom_target_provider_lr_drop_ckpts_and_zero_sum: flop trainer honors custom target provider, LR schedule, zero-sum enforcement, and writes checkpoints."""
+    import hunl.nets.cfv_trainer_flop as tf
+    import hunl.nets.cfv_network as cn
 
     K = 6
     model = cn.CounterfactualValueNetwork(1+52+2*K, num_clusters=K)
 
-    # Simple custom target provider returns zeros (pot-fraction values)
     def target_provider(xb, y1b, y2b, turn_model):
         n = xb.shape[0]
         device = xb.device
@@ -298,7 +268,6 @@ def test_flop_trainer_with_custom_target_provider_lr_drop_ckpts_and_zero_sum(mon
     train = make_toy_samples(K, 12)
     val = make_toy_samples(K, 12)
 
-    # Spy LR schedule via Adam.step
     recorded_lrs = []
     orig_step = torch.optim.Adam.step
     def spy_step(self, *args, **kwargs):
@@ -307,7 +276,6 @@ def test_flop_trainer_with_custom_target_provider_lr_drop_ckpts_and_zero_sum(mon
         return orig_step(self, *args, **kwargs)
     monkeypatch.setattr(torch.optim.Adam, "step", spy_step, raising=True)
 
-    # Spy enforce_zero_sum call count
     called = {"count": 0}
     orig_ezs = model.enforce_zero_sum
     def spy_enforce(r1, r2, p1, p2):
@@ -329,29 +297,20 @@ def test_flop_trainer_with_custom_target_provider_lr_drop_ckpts_and_zero_sum(mon
         seed=7,
         ckpt_dir=str(tmp_path),
         save_best=True,
-        target_provider=target_provider,  # avoid default CFR dependency
+        target_provider=target_provider,
         turn_model=None,
     )
 
-    # Zero-sum must be used
     assert called["count"] > 0
-
-    # LR schedule applied
     assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)
     assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)
 
-    # Epoch checkpoint exists
     epoch_ckpts = list(tmp_path.glob("flop_cfv_epoch_*.pt"))
     assert len(epoch_ckpts) >= 1
 
 def test_default_turn_leaf_target_provider_with_stubbed_solver(monkeypatch):
-    """
-    Exercise cfv_trainer_flop.default_turn_leaf_target_provider by stubbing:
-      - CFRSolver (with flop_label_targets_using_turn_net)
-      - PublicState, GameNode
-      - turn_model (num_clusters + device contract)
-    """
-    import cfv_trainer_flop as tf
+    """test_default_turn_leaf_target_provider_with_stubbed_solver: default provider queries a stub solver/turn net and returns deterministic per-cluster targets."""
+    import hunl.nets.cfv_trainer_flop as tf
 
     K = 5
 
@@ -362,7 +321,6 @@ def test_default_turn_leaf_target_provider_with_stubbed_solver(monkeypatch):
             self.num_clusters = num_clusters
             self.total_iterations = None
         def flop_label_targets_using_turn_net(self, node):
-            # Return deterministic per-cluster values
             t1 = [float(i) for i in range(self.num_clusters)]
             t2 = [-float(i) for i in range(self.num_clusters)]
             return t1, t2
@@ -372,7 +330,6 @@ def test_default_turn_leaf_target_provider_with_stubbed_solver(monkeypatch):
             self.initial_stacks = list(initial_stacks)
             self.board_cards = list(board_cards)
             self.dealer = int(dealer)
-            # These get set after construction in the target provider:
             self.current_round = None
             self.current_bets = None
             self.pot_size = None
@@ -395,12 +352,10 @@ def test_default_turn_leaf_target_provider_with_stubbed_solver(monkeypatch):
         def parameters(self):
             return super().parameters()
 
-    # Monkeypatch imported symbols in the module
     monkeypatch.setattr(tf, "CFRSolver", FakeSolver, raising=True)
     monkeypatch.setattr(tf, "PublicState", FakePS, raising=True)
     monkeypatch.setattr(tf, "GameNode", FakeNode, raising=True)
 
-    # Construct xb with zeros one-hot; r1,r2 uniform; arbitrary pot_norm
     N = 3
     xb = torch.zeros(N, 1+52+2*K, dtype=torch.float32)
     xb[:, 0] = 0.25
@@ -413,13 +368,13 @@ def test_default_turn_leaf_target_provider_with_stubbed_solver(monkeypatch):
     tmodel = FakeTurnModel(K)
     t1, t2 = tf.default_turn_leaf_target_provider(xb, y1b, y2b, tmodel)
 
-    # Expect exactly values from FakeSolver.flop_label_targets_using_turn_net
     for i in range(N):
         assert t1[i].tolist() == [float(j) for j in range(K)]
         assert t2[i].tolist() == [-float(j) for j in range(K)]
 
 def test_flop_trainer_inline_ranges_slicing():
-    import cfv_trainer_flop as tf
+    """test_flop_trainer_inline_ranges_slicing: inline slice helper for flop trainer indexes r1/r2 correctly."""
+    import hunl.nets.cfv_trainer_flop as tf
     K = 4
     x = torch.zeros(2, 1+52+2*K)
     x[0, 1+52+1] = 0.7
@@ -428,20 +383,16 @@ def test_flop_trainer_inline_ranges_slicing():
     assert float(r1[0, 1]) == pytest.approx(0.7)
     assert float(r2[0, 2]) == pytest.approx(0.9)
 
-# -----------------------------------------------------------------------------
-# cfv_trainer_turn.py
-# -----------------------------------------------------------------------------
-
 def test_train_turn_cfv_zero_sum_lr_drop_and_ckpts(monkeypatch, tmp_path: Path):
-    import cfv_trainer_turn as tt
-    import cfv_network as cn
+    """test_train_turn_cfv_zero_sum_lr_drop_and_ckpts: turn trainer enforces zero-sum, applies LR drop, and emits best/epoch checkpoints."""
+    import hunl.nets.cfv_trainer_turn as tt
+    import hunl.nets.cfv_network as cn
 
     K = 6
     model = cn.CounterfactualValueNetwork(1+52+2*K, num_clusters=K)
     train = make_toy_samples(K, 12)
     val = make_toy_samples(K, 12)
 
-    # Spy LR values
     recorded_lrs = []
     orig_step = torch.optim.Adam.step
     def spy_step(self, *args, **kwargs):
@@ -450,7 +401,6 @@ def test_train_turn_cfv_zero_sum_lr_drop_and_ckpts(monkeypatch, tmp_path: Path):
         return orig_step(self, *args, **kwargs)
     monkeypatch.setattr(torch.optim.Adam, "step", spy_step, raising=True)
 
-    # Spy zero-sum usage
     called = {"n": 0}
     orig_ezs = model.enforce_zero_sum
     def spy_enforce(r1, r2, p1, p2):
@@ -478,21 +428,20 @@ def test_train_turn_cfv_zero_sum_lr_drop_and_ckpts(monkeypatch, tmp_path: Path):
     assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)
     assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)
 
-    # Both best and epoch checkpoints expected
     best = list(tmp_path.glob("turn_cfv_best.pt"))
     epochs = list(tmp_path.glob("turn_cfv_epoch_*.pt"))
     assert len(best) == 1
     assert len(epochs) >= 1
 
 def test_train_turn_cfv_streaming_pipeline_and_ckpts(monkeypatch, tmp_path: Path):
-    import cfv_trainer_turn as tt
-    import cfv_network as cn
+    """test_train_turn_cfv_streaming_pipeline_and_ckpts: streaming variant consumes generator iterators and persists checkpoints."""
+    import hunl.nets.cfv_trainer_turn as tt
+    import hunl.nets.cfv_network as cn
 
     K = 5
     model = cn.CounterfactualValueNetwork(1+52+2*K, num_clusters=K)
 
     def make_iter():
-        # build a fresh iterator each call
         def _gen():
             for _ in range(7):
                 yield {
@@ -502,7 +451,6 @@ def test_train_turn_cfv_streaming_pipeline_and_ckpts(monkeypatch, tmp_path: Path
                 }
         return _gen
 
-    # Spy LR values
     recorded_lrs = []
     orig_step = torch.optim.Adam.step
     def spy_step(self, *args, **kwargs):
@@ -527,45 +475,37 @@ def test_train_turn_cfv_streaming_pipeline_and_ckpts(monkeypatch, tmp_path: Path
         save_best=True,
     )
 
-    # LR schedule applied
     assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)
     assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)
 
-    # Best + epoch checkpoints expected
     best = list(tmp_path.glob("turn_cfv_best.pt"))
     epochs = list(tmp_path.glob("turn_cfv_epoch_*.pt"))
     assert len(best) == 1
     assert len(epochs) >= 1
 
-# -----------------------------------------------------------------------------
-# config_io.py
-# -----------------------------------------------------------------------------
-
 def test_config_io_save_and_load_json_yaml(tmp_path: Path, monkeypatch):
-    import importlib
+    """test_config_io_save_and_load_json_yaml: save_config/load_config round-trip works for JSON and YAML; objects with attributes serialize to dicts."""
+    import importlib, sys
 
-    # To ensure we import a fresh module each run
-    if "config_io" in sys.modules:
-        del sys.modules["config_io"]
-    cfg = importlib.import_module("config_io")
+    if "hunl.config_io" in sys.modules:
+        del sys.modules["hunl.config_io"]
+    cfg = importlib.import_module("hunl.config_io")
 
-    # save_config: dict
     d = {"a": 1, "b": 2}
     json_path = tmp_path / "cfg.json"
-    yml_path = tmp_path / "cfg.yml"
+    yml_path  = tmp_path / "cfg.yml"
     cfg.save_config(d, str(json_path))
     cfg.save_config(d, str(yml_path))
-    # load back
     dj = cfg.load_config(str(json_path))
     dy = cfg.load_config(str(yml_path))
     assert dj == d
     assert dy == d
 
-    # save_config: object with attributes
     class Obj:
         def __init__(self):
             self.x = 10
             self.y = "z"
+
     o = Obj()
     cfg_path = tmp_path / "obj.json"
     cfg.save_config(o, str(cfg_path))
@@ -573,12 +513,13 @@ def test_config_io_save_and_load_json_yaml(tmp_path: Path, monkeypatch):
     assert loaded == {"x": 10, "y": "z"}
 
 def test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config(tmp_path: Path, monkeypatch):
-    # Build a fake resolve_config with ResolveConfig.from_env
+    """test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config: compose_resolve_config_from_yaml merges three YAMLs into a ResolveConfig, applies overrides/seed, and returns runtime overrides and bet fractions."""
+    import types, sys, importlib
+
     fake_mod = types.ModuleType("resolve_config")
 
     class FakeResolveConfig:
         def __init__(self):
-            # provide attributes the function may set
             self.num_clusters = 1000
             self.tau_re = 0.0
             self.drift_sample_size = 0
@@ -598,103 +539,90 @@ def test_compose_resolve_config_from_yaml_with_monkeypatched_resolve_config(tmp_
         @classmethod
         def from_env(cls, overrides):
             inst = cls()
-            # absorb overrides
             for k, v in (overrides or {}).items():
                 setattr(inst, k, v)
             return inst
 
     fake_mod.ResolveConfig = FakeResolveConfig
     sys.modules["resolve_config"] = fake_mod
+    sys.modules["hunl.resolve_config"] = fake_mod
 
-    # Ensure config_io re-imports with our fake module present
-    if "config_io" in sys.modules:
-        del sys.modules["config_io"]
-    cfg = importlib.import_module("config_io")
+    if "hunl.config_io" in sys.modules:
+        del sys.modules["hunl.config_io"]
+    cfg = importlib.import_module("hunl.config_io")
 
-    # Monkeypatch set_global_seed to record the seed used
     used_seeds = []
     def fake_sgs(seed):
         used_seeds.append(int(seed))
     monkeypatch.setattr(cfg, "set_global_seed", fake_sgs, raising=True)
 
-    # Write three YAML files
     abst = tmp_path / "abst.yml"
     vnets = tmp_path / "vnets.yml"
-    solv = tmp_path / "solv.yml"
+    solv  = tmp_path / "solv.yml"
 
-    # Abstraction config: bucket_counts + extras
-    abst.write_text("""
-seed: 111
-bucket_counts:
-  turn: 77
-tau_re: 0.25
-drift_sample_size: 42
-use_cfv_in_features: true
-""")
-
-    # Value nets config: zero-sum and LR schedule + batch size
-    vnets.write_text("""
-seed: 222
-outer_zero_sum: true
-mc_samples_win: 13
-mc_samples_potential: 17
-lr_schedule:
-  initial: 0.003
-  after: 0.0005
-  drop_epoch: 5
-batch_size: 256
-""")
-
-    # Solver config: iterations + actions + bet fractions
-    solv.write_text("""
-seed: 333
-depth_limit: 3
-total_iterations: 999
-bet_size_mode: sparse
-profile: test
-iterations_per_round:
-  "1": 100
-  "3": 250
-round_actions:
-  "1": { half_pot: true, two_pot: false }
-  "3": { half_pot: true, two_pot: true }
-bet_fractions:
-  "1": [0.5, 1.0]
-  "2": [0.5, 1.0, 2.0]
-""")
+    abst.write_text(
+        "seed: 111\n"
+        "bucket_counts:\n"
+        "  turn: 77\n"
+        "tau_re: 0.25\n"
+        "drift_sample_size: 42\n"
+        "use_cfv_in_features: true\n"
+    )
+    vnets.write_text(
+        "seed: 222\n"
+        "outer_zero_sum: true\n"
+        "mc_samples_win: 13\n"
+        "mc_samples_potential: 17\n"
+        "lr_schedule:\n"
+        "  initial: 0.003\n"
+        "  after: 0.0005\n"
+        "  drop_epoch: 5\n"
+        "batch_size: 256\n"
+    )
+    solv.write_text(
+        "seed: 333\n"
+        "depth_limit: 3\n"
+        "total_iterations: 999\n"
+        "bet_size_mode: sparse\n"
+        "profile: test\n"
+        "iterations_per_round:\n"
+        '  "1": 100\n'
+        '  "3": 250\n'
+        "round_actions:\n"
+        '  "1": { half_pot: true, two_pot: false }\n'
+        '  "3": { half_pot: true, two_pot: true }\n'
+        "bet_fractions:\n"
+        '  "1": [0.5, 1.0]\n'
+        '  "2": [0.5, 1.0, 2.0]\n'
+    )
 
     out = cfg.compose_resolve_config_from_yaml(str(abst), str(vnets), str(solv), overrides={"custom": 1})
 
-    # Seed chosen from the first file with a 'seed' field encountered (abst here)
     assert out["seed"] == 111
     assert used_seeds and used_seeds[-1] == 111
 
     rc = out["config"]
-    # Abstraction-applied
     assert rc.num_clusters == 77
     assert rc.tau_re == 0.25
     assert rc.drift_sample_size == 42
     assert rc.use_cfv_in_features is True
 
-    # Value-nets-applied
     assert rc.enforce_zero_sum_outer is True
     assert rc.lr_initial == 0.003
     assert rc.lr_after == 0.0005
     assert rc.lr_drop_epoch == 5
     assert rc.batch_size == 256
 
-    # Solver-applied
     assert rc.depth_limit == 3
     assert rc.total_iterations == 999
     assert rc.bet_size_mode == "sparse"
     assert rc.profile == "test"
 
-    # Runtime overrides
     ro = out["runtime_overrides"]
     assert ro["_round_iters"] == {1: 100, 3: 250}
     assert ro["_round_actions"][1]["half_pot"] is True and ro["_round_actions"][1]["two_pot"] is False
     assert ro["_round_actions"][3]["half_pot"] is True and ro["_round_actions"][3]["two_pot"] is True
 
-    # Bet fractions stored in config
     assert rc.bet_fractions[1] == [0.5, 1.0]
     assert rc.bet_fractions[2] == [0.5, 1.0, 2.0]
+

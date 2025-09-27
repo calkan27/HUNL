@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/config_io.py
+# hypothesis_version: 6.133.2
+
+[0.5, 1.0, '+-', '-', '.', '.yaml', '.yml', '0', '1', 'FAST_TEST_SEED', '__dict__', '__int__', '_round_actions', '_round_iters', 'after', 'batch_size', 'bet_fractions', 'bet_size_mode', 'bucket_counts', 'config', 'depth_limit', 'drift_sample_size', 'drop_epoch', 'f', 'false', 'flop', 'half_pot', 'initial', 'iterations_per_round', 'lr_schedule', 'mc_samples_potential', 'mc_samples_win', 'n', 'no', 'num_clusters', 'off', 'on', 'outer_zero_sum', 'profile', 'r', 'round_actions', 'runtime_overrides', 'safe_dump', 'safe_load', 'seed', 't', 'tau_re', 'total_iterations', 'true', 'turn', 'two_pot', 'use_cfv_in_features', 'w', 'y', 'yes']

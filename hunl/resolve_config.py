@@ -1,3 +1,4 @@
+from hunl.constants import SEED_DEFAULT
 from dataclasses import dataclass, field
 import os
 from typing import Optional, Dict, Any, Literal
@@ -102,9 +103,9 @@ def _coerce_bool(x: Any, default: bool) -> bool:
 @dataclass
 class ResolveConfig:
 	profile: Literal["bot", "test"] = field(
-		default_factory=lambda: ("test" if os.getenv("FAST_TESTS") == "1" else "bot")
+	 default_factory=lambda: ("test" if os.getenv("FAST_TESTS") == "1" else "bot")
 	)
-	fast_test_seed: int = _env_int("FAST_TEST_SEED", 1729)
+	fast_test_seed: int = _env_int("FAST_TEST_SEED", SEED_DEFAULT)
 	debug_fast_tests: bool = _env_flag("DEBUG_FAST_TESTS", False)
 
 	depth_limit: int = 4
@@ -132,7 +133,7 @@ class ResolveConfig:
 
 	@staticmethod
 	def from_env(
-		overrides: Optional[Dict[str, Any]] = None
+	 overrides: Optional[Dict[str, Any]] = None
 	) -> "ResolveConfig":
 		cfg = ResolveConfig()
 

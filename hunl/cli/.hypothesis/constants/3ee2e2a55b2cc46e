@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/solving/aivat.py
+# hypothesis_version: 6.133.2
+
+[0.0, 'action', 'agent', 'aivat', 'chance', 'events', 'initial_node', 'is_terminal', 'num_terms', 'opponent', 'type']

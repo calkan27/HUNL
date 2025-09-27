@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_strategies.py
+# hypothesis_version: 6.133.2
+
+[0.0, 1.0, '_min_raise_size', '_priors_baseline', 'current_bets', 'current_player', 'current_round', 'get_average_strategy', 'half_pot', 'legal_actions', 'min_raise_size', 'player_ranges', 'round_idx', 'stack', 'stacks', 'two_pot', 'value']

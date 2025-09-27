@@ -1,0 +1,1320 @@
+{
+  "root": "/Users/cenkalkan/Downloads/HUNL",
+  "duplicate_function_names": {
+    "py_files": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/find_dup_funcs.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/project_dup_audit.py",
+        null
+      ]
+    ],
+    "main": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/find_dup_funcs.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor_token.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/project_dup_audit.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/review_finder_libcst.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/smoke_eval.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/cli/eval_cli.py",
+        null
+      ]
+    ],
+    "is_test_path": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor_token.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor.py",
+        null
+      ]
+    ],
+    "iter_py": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor_token.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor.py",
+        null
+      ]
+    ],
+    "rewrite_file": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor_token.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor.py",
+        null
+      ]
+    ],
+    "__init__": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_model_io.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_lookahead_tree.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_resolver_integration.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_d_clustering_and_features.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_integration_K_system_end_to_end.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_value_server.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/cfr_values.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/ranges/bucketed_range.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/ranges/hand_clusterer.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/review_finder_libcst.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/review_finder_libcst.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/endgame/river_endgame.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/utils/seeded_rng.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/utils/result_handle.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/river_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/value_server.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_stream_dataset.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_shard_dataset.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/compat_linear_cfv.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_network.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_core.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/lookahead_tree.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/agent.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/aivat.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/action.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/poker_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/poker_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/game_node.py",
+        null
+      ]
+    ],
+    "read_text": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tools/project_dup_audit.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/review_finder_libcst.py",
+        null
+      ]
+    ],
+    "forward": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_model_io.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_resolver_integration.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_value_server.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/river_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/compat_linear_cfv.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_network.py",
+        null
+      ]
+    ],
+    "enforce_zero_sum": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_model_io.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_resolver_integration.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_value_server.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/river_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/compat_linear_cfv.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_network.py",
+        null
+      ]
+    ],
+    "legal_actions": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_lookahead_tree.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_utils.py",
+        null
+      ]
+    ],
+    "_uniform_range": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_resolver_integration.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/agent.py",
+        null
+      ]
+    ],
+    "_player_wins": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_d_clustering_and_features.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_utils.py",
+        null
+      ]
+    ],
+    "compute_cluster_cfvs": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/endgame/river_endgame.py",
+        null
+      ]
+    ],
+    "_min_raise_size": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_streets.py",
+        null
+      ]
+    ],
+    "update_state": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_actions.py",
+        null
+      ]
+    ],
+    "_norm": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ]
+    ],
+    "_setter": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_value_server.py",
+        null
+      ]
+    ],
+    "_fake_build": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ]
+    ],
+    "terminal_utility": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_utils.py",
+        null
+      ]
+    ],
+    "test_generate_turn_dataset_writes_npz_and_calls_terminal_solver": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ]
+    ],
+    "cluster_hands": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/ranges/hand_clusterer.py",
+        null
+      ]
+    ],
+    "_ensure_sparse_schedule": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_utils.py",
+        null
+      ]
+    ],
+    "run_cfr": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver.py",
+        null
+      ]
+    ],
+    "predict_counterfactual_values": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_models.py",
+        null
+      ]
+    ],
+    "turn_label_targets_solve_to_terminal": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver.py",
+        null
+      ]
+    ],
+    "flop_label_targets_using_turn_net": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver.py",
+        null
+      ]
+    ],
+    "recursive_range_sampling": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_caching.py",
+        null
+      ]
+    ],
+    "_calculate_terminal_utility": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver.py",
+        null
+      ]
+    ],
+    "_push_prod": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ]
+    ],
+    "_pop_prod": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py",
+        null
+      ]
+    ],
+    "make_toy_samples": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ]
+    ],
+    "set_seed": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator_utils.py",
+        null
+      ]
+    ],
+    "pot_sampler_spec": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator_sampling.py",
+        null
+      ]
+    ],
+    "range_generator_spec": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator_sampling.py",
+        null
+      ]
+    ],
+    "generate_unique_boards": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator_datasets.py",
+        null
+      ]
+    ],
+    "generate_training_data": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator.py",
+        null
+      ]
+    ],
+    "spy_step": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ]
+    ],
+    "spy_enforce": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ]
+    ],
+    "from_env": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/resolve_config.py",
+        null
+      ]
+    ],
+    "wins_fn": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_models.py",
+        null
+      ]
+    ],
+    "_cluster_strength_score": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py",
+        null
+      ]
+    ],
+    "_make_initial_preflop": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/eval_cli_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/smoke_eval_utils.py",
+        null
+      ]
+    ],
+    "_sparse_menu": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/eval_cli_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/cli/eval_cli_lbr.py",
+        null
+      ]
+    ],
+    "_mass_conservation_ok_ranges": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/eval_cli_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/cli/eval_cli_lbr.py",
+        null
+      ]
+    ],
+    "_no_negative_pot_delta": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/eval_cli_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/cli/eval_cli_lbr.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/cli/eval_cli.py",
+        null
+      ]
+    ],
+    "hand_to_bucket": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/ranges/bucketed_range.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/ranges/hand_clusterer_utils.py",
+        null
+      ]
+    ],
+    "_stable_seed": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/ranges/hand_clusterer_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_utils.py",
+        null
+      ]
+    ],
+    "nonnegative_pot_deltas_ok": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/smoke_eval.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/diag/smoke_eval_checks.py",
+        null
+      ]
+    ],
+    "set_global_seed": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/utils/seeded_rng.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_trainer.py",
+        null
+      ]
+    ],
+    "predict_with_zero_sum": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/river_bucket_aux.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_network.py",
+        null
+      ]
+    ],
+    "__iter__": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_stream_dataset.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_shard_dataset.py",
+        null
+      ]
+    ],
+    "_load_stage_model": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/model_io.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_models.py",
+        null
+      ]
+    ],
+    "_cfv_batcher": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_trainer.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/nets/cfv_trainer_turn.py",
+        null
+      ]
+    ],
+    "compute_values_depth_limited": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_caching.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver.py",
+        null
+      ]
+    ],
+    "prepare_input_vector": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_models.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/data/data_generator.py",
+        null
+      ]
+    ],
+    "evaluate": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/solving/aivat.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/poker_utils.py",
+        null
+      ]
+    ],
+    "to_canonical": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_utils.py",
+        null
+      ]
+    ],
+    "symbol": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/suit.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/rank.py",
+        null
+      ]
+    ],
+    "board_one_hot": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/poker_utils.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_utils.py",
+        null
+      ]
+    ]
+  },
+  "duplicate_class_names": {
+    "_DummyCFVNet": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_resolver_integration.py",
+        22
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_value_server.py",
+        16
+      ]
+    ],
+    "_FakePS": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        122
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py",
+        227
+      ]
+    ],
+    "_LeafPS": [
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ],
+      [
+        "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py",
+        null
+      ]
+    ]
+  },
+  "magic_numbers": {
+    "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor_token.py": [
+      [
+        12,
+        "'1e-6': 'EPS_ZS',  '1E-6': 'EPS_ZS',  '1e-06': 'EPS_ZS',  '1E-06': 'EPS_ZS',"
+      ],
+      [
+        13,
+        "'1e-12': 'EPS_MASS','1E-12':'EPS_MASS','1e-012':'EPS_MASS','1E-012':'EPS_MASS',"
+      ],
+      [
+        14,
+        "'1e-9': 'EPS_SUM', '1E-9': 'EPS_SUM', '1e-09': 'EPS_SUM', '1E-09': 'EPS_SUM',"
+      ],
+      [
+        17,
+        "'\"1729\"': 'SEED_DEFAULT', \"'1729'\": 'SEED_DEFAULT',"
+      ],
+      [
+        18,
+        "'\"2027\"': 'SEED_RIVER',   \"'2027'\": 'SEED_RIVER',"
+      ],
+      [
+        130,
+        "# turn \"1729\" -> str(SEED_DEFAULT) without touching quotes elsewhere"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tools/apply_constants_refactor.py": [
+      [
+        6,
+        "- Replaces numeric literals: 1729, 2027, 1e-6, 1e-12, 1e-9"
+      ],
+      [
+        7,
+        "- Replaces string literals \"1729\", \"2027\" with str(SEED_DEFAULT/SEED_RIVER)"
+      ],
+      [
+        98,
+        "# Handle f-strings like f\"{1729}\" are rare here; skipping on purpose to avoid over-rewrites."
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tools/project_dup_audit.py": [
+      [
+        10,
+        "- Magic-number hotspots (1729, 2027, 1e-12/1e-9/1e-6)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_core.py": [
+      [
+        48,
+        "assert pytest.approx(s, rel=1e-9) == 1.0"
+      ],
+      [
+        50,
+        "assert all(pytest.approx(v, rel=1e-6) == u for v in pol.values())"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_public_state_engine_hunl.py": [
+      [
+        382,
+        "assert s2.pot_size + 1e-12 >= prev_pot - s2.last_refund_amount"
+      ],
+      [
+        404,
+        "assert s.pot_size + 1e-12 >= prev_pot - getattr(s, \"last_refund_amount\", 0.0)"
+      ],
+      [
+        448,
+        "assert abs(sum(u)) < 1e-9"
+      ],
+      [
+        463,
+        "assert abs(sum(u2)) < 1e-9"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_model_io.py": [
+      [
+        41,
+        "sum_r1 = torch.clamp(torch.sum(r1, dim=1, keepdim=True), min=1e-9)"
+      ],
+      [
+        42,
+        "sum_r2 = torch.clamp(torch.sum(r2, dim=1, keepdim=True), min=1e-9)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_resolver_integration.py": [
+      [
+        48,
+        "sum_r1 = torch.clamp(torch.sum(r1, dim=1, keepdim=True), min=1e-9)"
+      ],
+      [
+        49,
+        "sum_r2 = torch.clamp(torch.sum(r2, dim=1, keepdim=True), min=1e-9)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_group_d_clustering_and_features.py": [
+      [
+        262,
+        "assert pytest.approx(sum(r.values()), rel=1e-9) == 1.0"
+      ],
+      [
+        271,
+        "assert pytest.approx(sum(br.values()), rel=1e-9) == 1.0"
+      ],
+      [
+        282,
+        "assert pytest.approx(sum(hw.values()), rel=1e-9) == 1.0"
+      ],
+      [
+        314,
+        "assert pytest.approx(hist1.sum(), rel=1e-9) == 1.0"
+      ],
+      [
+        426,
+        "out1 = c._maybe_sample_items(items, seed=1729)"
+      ],
+      [
+        427,
+        "out2 = c._maybe_sample_items(items, seed=1729)"
+      ],
+      [
+        430,
+        "out3 = c._maybe_sample_items(items, seed=1729)"
+      ],
+      [
+        431,
+        "out4 = c._maybe_sample_items(items, seed=1729)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_cfr_resolving_and_range_gadget.py": [
+      [
+        287,
+        "assert pytest.approx(sum(out1.values()), rel=0, abs=1e-12) == total"
+      ],
+      [
+        310,
+        "assert pytest.approx(sum(r1), rel=0, abs=1e-9) == 1.0 or pytest.approx(sum(r1), rel=0, abs=1e-9) == 0.0"
+      ],
+      [
+        311,
+        "assert pytest.approx(sum(r2), rel=0, abs=1e-9) == 1.0 or pytest.approx(sum(r2), rel=0, abs=1e-9) == 0.0"
+      ],
+      [
+        328,
+        "assert pytest.approx(sum(r1), rel=0, abs=1e-9) == 1.0 or pytest.approx(sum(r1), rel=0, abs=1e-9) == 0.0"
+      ],
+      [
+        329,
+        "assert pytest.approx(sum(r2), rel=0, abs=1e-9) == 1.0 or pytest.approx(sum(r2), rel=0, abs=1e-9) == 0.0"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_group_f_resolver_value_server_hypothesis.py": [
+      [
+        345,
+        "assert pytest.approx(opp_cfv[i], rel=0, abs=1e-12) == opp_upper[i]"
+      ],
+      [
+        372,
+        "assert abs(s - 1.0) < 1e-9"
+      ],
+      [
+        491,
+        "assert abs(sum(pol.values()) - 1.0) < 1e-9"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_group_e_datagen_and_datasets.py": [
+      [
+        296,
+        "assert all(abs(x-0.1) < 1e-12 for x in t1)"
+      ],
+      [
+        297,
+        "assert all(abs(x+0.1) < 1e-12 for x in t2)"
+      ],
+      [
+        369,
+        "assert abs(s1 - 1.0) < 1e-9"
+      ],
+      [
+        370,
+        "assert abs(s2 - 1.0) < 1e-9"
+      ],
+      [
+        373,
+        "assert abs(sum(b[0]) - 1.0) < 1e-9"
+      ],
+      [
+        374,
+        "assert abs(sum(b[1]) - 1.0) < 1e-9"
+      ],
+      [
+        387,
+        "assert abs(sum(m1.values()) - 1.0) < 1e-9"
+      ],
+      [
+        467,
+        "assert abs(sum(r.values()) - 1.0) < 1e-9"
+      ],
+      [
+        624,
+        "ds = stream_mod.CFVStreamDataset(dg, stage=\"flop\", num_samples=4, seed=1729)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_integration_K_system_end_to_end.py": [
+      [
+        76,
+        "r1 = torch.rand(3, K); r1 = r1 / torch.clamp(r1.sum(dim=1, keepdim=True), min=1e-9)"
+      ],
+      [
+        77,
+        "r2 = torch.rand(3, K); r2 = r2 / torch.clamp(r2.sum(dim=1, keepdim=True), min=1e-9)"
+      ],
+      [
+        81,
+        "assert resid <= 1e-6"
+      ],
+      [
+        125,
+        "assert pol and abs(s - 1.0) < 1e-9"
+      ],
+      [
+        171,
+        "assert abs(sum(n.player_ranges[0].values()) - 1.0) < 1e-9"
+      ],
+      [
+        172,
+        "assert abs(sum(n.player_ranges[1].values()) - 1.0) < 1e-9"
+      ],
+      [
+        205,
+        "re = RiverEndgame(num_buckets=None, max_sample_per_cluster=5, seed=1729)"
+      ],
+      [
+        227,
+        "assert math.isclose(aggA, -aggB, rel_tol=0, abs_tol=1e-6)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_group_c_value_nets_and_training.py": [
+      [
+        81,
+        "assert torch.allclose(res, torch.zeros_like(res), atol=1e-6)"
+      ],
+      [
+        85,
+        "assert torch.allclose(f1, f1p, atol=1e-6)"
+      ],
+      [
+        86,
+        "assert torch.allclose(f2, f2p, atol=1e-6)"
+      ],
+      [
+        167,
+        "ds = sd.CFVStreamDataset(dg, stage=\"flop\", num_samples=7, seed=1729, schema_version=\"cfv.v1\","
+      ],
+      [
+        170,
+        "assert ds.spec[\"seed\"] == 1729"
+      ],
+      [
+        239,
+        "assert any(abs(lr - 5e-4) < 1e-12 for lr in recorded_lrs)"
+      ],
+      [
+        305,
+        "assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)"
+      ],
+      [
+        306,
+        "assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)"
+      ],
+      [
+        428,
+        "assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)"
+      ],
+      [
+        429,
+        "assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)"
+      ],
+      [
+        478,
+        "assert any(abs(l - 1e-3) < 1e-12 for l in recorded_lrs)"
+      ],
+      [
+        479,
+        "assert any(abs(l - 5e-4) < 1e-12 for l in recorded_lrs)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_group_G_river_endgame_and_bucket_aux.py": [
+      [
+        75,
+        "rng = rng or random.Random(2027)"
+      ],
+      [
+        128,
+        "assert torch.allclose(y_forward, y_pred, atol=1e-6)"
+      ],
+      [
+        207,
+        "assert math.isclose(ep + eo, 0.0, rel_tol=0, abs_tol=1e-9)"
+      ],
+      [
+        279,
+        "rng = random.Random(2027)"
+      ],
+      [
+        292,
+        "assert m <= 1.0 + 1e-6"
+      ],
+      [
+        311,
+        "re = RiverEndgame(num_buckets=B, max_sample_per_cluster=6, seed=1729)"
+      ],
+      [
+        334,
+        "assert math.isclose(outA[cid][0], outB[cid][0], rel_tol=0, abs_tol=1e-9)"
+      ],
+      [
+        363,
+        "re = RiverEndgame(num_buckets=(3 if use_buckets else None), max_sample_per_cluster=6, seed=2027)"
+      ],
+      [
+        369,
+        "assert math.isclose(agg1, agg2, rel_tol=0, abs_tol=1e-6)"
+      ],
+      [
+        528,
+        "assert abs(agg_u) <= 1.0 + 1e-6"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/tests/test_value_server.py": [
+      [
+        43,
+        "sum_r1 = torch.clamp(torch.sum(r1, dim=1, keepdim=True), min=1e-9)"
+      ],
+      [
+        44,
+        "sum_r2 = torch.clamp(torch.sum(r2, dim=1, keepdim=True), min=1e-9)"
+      ],
+      [
+        79,
+        "assert torch.allclose(res, torch.zeros_like(res), atol=1e-6)"
+      ]
+    ],
+    "/Users/cenkalkan/Downloads/HUNL/hunl/constants.py": [
+      [
+        1,
+        "SEED_DEFAULT = 1729"
+      ],
+      [
+        2,
+        "SEED_RIVER  = 2027"
+      ],
+      [
+        3,
+        "EPS_ZS   = 1e-6"
+      ],
+      [
+        4,
+        "EPS_MASS = 1e-12"
+      ],
+      [
+        5,
+        "EPS_SUM  = 1e-9"
+      ]
+    ]
+  },
+  "exact_duplicate_groups": [],
+  "near_duplicate_pairs": [],
+  "near_threshold": 0.9
+}

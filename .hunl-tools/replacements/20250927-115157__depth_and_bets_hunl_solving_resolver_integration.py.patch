@@ -1,0 +1,62 @@
+--- a/hunl/solving/resolver_integration.py
++++ b/hunl/solving/resolver_integration.py
+@@ -105,33 +105,33 @@
+ 
+ 
+ def _depth_and_bets(
+-	stage: str,
+-	user_depth: int,
+-	config: Dict[str, Any],
++        stage: str,
++        user_depth: int,
++        config: Dict[str, Any],
+ ) -> Tuple[int, List[float], bool, str]:
+-	if stage == "turn":
+-		depth_limit = 99
+-	else:
+-		depth_limit = int(user_depth)
+-
+-	if "bet_fractions" in config:
+-		bet_fractions = list(config["bet_fractions"])
+-	else:
+-		mode = str(config.get("bet_size_mode", "")).strip().lower()
+-		bet_fractions = _bet_fracs_from_mode(mode, stage)
+-
+-	include_all_in = True
+-	constraint_mode = str(
+-		config.get("constraint_mode", "sp")
+-	).strip().lower()
+-
+-	return (
+-		depth_limit,
+-		bet_fractions,
+-		include_all_in,
+-		constraint_mode,
+-	)
+-
++        if stage == "turn":
++                depth_limit = 99
++        else:
++                depth_limit = int(user_depth)
++        if "bet_fractions" in config:
++                bet_fractions = list(config["bet_fractions"])
++        else:
++                mode = str(config.get("bet_size_mode", "")).strip().lower()
++                if mode:
++                        bet_fractions = _bet_fracs_from_mode(mode, stage)
++                else:
++                        if stage == "turn":
++                                bet_fractions = [0.5, 1.0, 2.0]
++                        else:
++                                bet_fractions = [0.5, 1.0]
++        include_all_in = True
++        constraint_mode = str(config.get("constraint_mode", "sp")).strip().lower()
++        return (
++                depth_limit,
++                bet_fractions,
++                include_all_in,
++                constraint_mode,
++        )
+ 
+ def _build_root(
+ 	public_state,

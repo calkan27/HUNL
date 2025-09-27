@@ -1,33 +1,34 @@
+from hunl.constants import EPS_MASS, EPS_ZS, SEED_RIVER
 import random
 from functools import partial
 from typing import Callable, Dict, List, Tuple, Optional
 
-from public_state import PublicState
-from game_node import GameNode
-from action_type import ActionType
-from action import Action
-from poker_utils import DECK
-from cfr_solver import CFRSolver
-from data_generator import DataGenerator
+from hunl.engine.public_state import PublicState
+from hunl.engine.game_node import GameNode
+from hunl.engine.action_type import ActionType
+from hunl.engine.action import Action
+from hunl.engine.poker_utils import DECK
+from hunl.solving.cfr_solver import CFRSolver
+from hunl.data.data_generator import DataGenerator
 
 
 def _value_fn_apply(
-	solver: CFRSolver,
-	node: GameNode,
-	player: int,
+ solver: CFRSolver,
+ node: GameNode,
+ player: int,
 ) -> Dict[int, List[float]]:
 	return solver.predict_counterfactual_values(node, player)
 
 
 def _value_fn_from_solver(
-	solver: CFRSolver,
+ solver: CFRSolver,
 ) -> Callable[[GameNode, int], Dict[int, List[float]]]:
 	return partial(_value_fn_apply, solver)
 
 
 def _make_tmp_solver_from_template(
-	solver_template: CFRSolver,
-	iters: int,
+ solver_template: CFRSolver,
+ iters: int,
 ) -> CFRSolver:
 	if hasattr(solver_template, "_config"):
 		cfg = solver_template._config
@@ -38,8 +39,8 @@ def _make_tmp_solver_from_template(
 		tmp = CFRSolver(config=cfg)
 	else:
 		tmp = CFRSolver(
-			depth_limit=solver_template.depth_limit,
-			num_clusters=solver_template.num_clusters,
+		 depth_limit=solver_template.depth_limit,
+		 num_clusters=solver_template.num_clusters,
 		)
 
 	tmp.clusters = solver_template.clusters
@@ -51,17 +52,17 @@ def _make_tmp_solver_from_template(
 
 
 def _policy_from_resolve_apply(
-	solver_template: CFRSolver,
-	iters: int,
-	node: GameNode,
-	player: int,
+ solver_template: CFRSolver,
+ iters: int,
+ node: GameNode,
+ player: int,
 ) -> Dict[ActionType, float]:
 	tmp = _make_tmp_solver_from_template(solver_template, iters)
 
 	shadow = GameNode(node.public_state)
 	shadow.player_ranges = [
-		dict(node.player_ranges[0]),
-		dict(node.player_ranges[1]),
+	 dict(node.player_ranges[0]),
+	 dict(node.player_ranges[1]),
 	]
 
 	if hasattr(tmp, "cfr_values"):
@@ -103,14 +104,14 @@ def _policy_from_resolve_apply(
 
 
 def _policy_from_resolve(
-	solver_template: CFRSolver,
-	iters: int = 2,
+ solver_template: CFRSolver,
+ iters: int = 2,
 ) -> Callable[[GameNode, int], Dict[ActionType, float]]:
 	return partial(_policy_from_resolve_apply, solver_template, int(iters))
 
 
 def _sample_from_policy(
-	dist: Dict[ActionType, float],
+ dist: Dict[ActionType, float],
 ) -> ActionType:
 	r = random.random()
 	c = 0.0
@@ -127,15 +128,15 @@ def _sample_from_policy(
 
 
 def _make_initial_preflop(
-	stack: int,
-	seed: int,
+ stack: int,
+ seed: int,
 ) -> PublicState:
 	random.seed(seed)
 
 	ps = PublicState(
-		initial_stacks=[stack, stack],
-		board_cards=[],
-		dealer=0,
+	 initial_stacks=[stack, stack],
+	 board_cards=[],
+	 dealer=0,
 	)
 	ps.current_round = 0
 	ps.current_player = ps.dealer
@@ -144,11 +145,11 @@ def _make_initial_preflop(
 
 
 def _wrapped_predict_cfv_apply(
-	dg: DataGenerator,
-	counters: Dict[str, int],
-	orig_fn: Callable[[GameNode, int], Dict[int, List[float]]],
-	nd: GameNode,
-	pl: int,
+ dg: DataGenerator,
+ counters: Dict[str, int],
+ orig_fn: Callable[[GameNode, int], Dict[int, List[float]]],
+ nd: GameNode,
+ pl: int,
 ) -> Dict[int, List[float]]:
 	st = dg.cfr_solver.get_stage(nd)
 
@@ -164,24 +165,24 @@ def _wrapped_predict_cfv_apply(
 
 
 def flop_turn_leaf_sanity(
-	samples: int = 5,
-	seed: int = 2027,
+ samples: int = 5,
+ seed: int = SEED_RIVER,
 ) -> Dict[str, int]:
 	random.seed(seed)
 
 	dg = DataGenerator(
-		num_boards=samples,
-		num_samples_per_board=1,
-		player_stack=200,
-		num_clusters=6,
+	 num_boards=samples,
+	 num_samples_per_board=1,
+	 player_stack=200,
+	 num_clusters=6,
 	)
 
 	dg.cfr_solver.depth_limit = 1
 	dg.cfr_solver.total_iterations = 2
 
 	counters = {
-		"turn_leaf_calls": 0,
-		"flop_calls": 0,
+	 "turn_leaf_calls": 0,
+	 "flop_calls": 0,
 	}
 
 	orig = dg.cfr_solver.predict_counterfactual_values
@@ -202,14 +203,14 @@ def flop_turn_leaf_sanity(
 		print("flop_turn_leaf_sanity: turn_leaf_calls != 0")
 
 	return {
-		"samples": int(samples),
-		"turn_leaf_calls": int(counters["turn_leaf_calls"]),
-		"flop_calls": int(counters["flop_calls"]),
+	 "samples": int(samples),
+	 "turn_leaf_calls": int(counters["turn_leaf_calls"]),
+	 "flop_calls": int(counters["flop_calls"]),
 	}
 
 
 def _sparse_menu(
-	ps: PublicState,
+ ps: PublicState,
 ) -> List[ActionType]:
 	p = ps.current_player
 	o = (p + 1) % 2
@@ -253,10 +254,10 @@ def _sparse_menu(
 	return cands
 
 
-def _mass_conservation_ok_ranges(
-	r1: Dict[int, float],
-	r2: Dict[int, float],
-	tol: float = 1e-12,
+def is_range_mass_conserved(
+ r1: Dict[int, float],
+ r2: Dict[int, float],
+ tol: float = EPS_MASS,
 ) -> bool:
 	s1 = 0.0
 	for _, p in r1.items():
@@ -275,9 +276,9 @@ def _mass_conservation_ok_ranges(
 		return False
 
 
-def _zero_sum_residual_ok_from_solver(
-	solver: CFRSolver,
-	tol: float = 1e-6,
+def is_zero_sum_residual_ok(
+ solver: CFRSolver,
+ tol: float = EPS_ZS,
 ) -> bool:
 	d = solver.get_last_diagnostics()
 
@@ -292,23 +293,23 @@ def _zero_sum_residual_ok_from_solver(
 		return False
 
 
-def _no_negative_pot_delta(
-	prev_ps: PublicState,
-	next_ps: PublicState,
+def is_nonnegative_pot_delta(
+ prev_ps: PublicState,
+ next_ps: PublicState,
 ) -> bool:
-	if float(next_ps.pot_size) + 1e-12 >= float(prev_ps.pot_size):
+	if float(next_ps.pot_size) + EPS_MASS >= float(prev_ps.pot_size):
 		return True
 	else:
 		return False
 
 
 def _init_diag_solver(
-	ps: PublicState,
-	K: int,
-	depth: int,
-	iters: int,
-	k1: float,
-	k2: float,
+ ps: PublicState,
+ K: int,
+ depth: int,
+ iters: int,
+ k1: float,
+ k2: float,
 ) -> Tuple[Optional[CFRSolver], str]:
 	if K < 0:
 		print("diag: invalid K")
@@ -317,8 +318,8 @@ def _init_diag_solver(
 		pass
 
 	solver = CFRSolver(
-		depth_limit=int(depth),
-		num_clusters=int(K),
+	 depth_limit=int(depth),
+	 num_clusters=int(K),
 	)
 	solver.total_iterations = int(iters)
 
@@ -331,8 +332,8 @@ def _init_diag_solver(
 
 
 def _build_linear_clusters(
-	ps: PublicState,
-	K: int,
+ ps: PublicState,
+ K: int,
 ) -> Dict[int, set]:
 	used = set(ps.board_cards)
 	cards = []
@@ -360,11 +361,11 @@ def _build_linear_clusters(
 	return clusters
 
 
-def _prep_diag_node_with_ranges(
-	ps: PublicState,
-	K: int,
-	r_us: Dict[int, float],
-	r_opp: Dict[int, float],
+def _make_node_with_ranges(
+ ps: PublicState,
+ K: int,
+ r_us: Dict[int, float],
+ r_opp: Dict[int, float],
 ) -> GameNode:
 	node = GameNode(ps)
 
@@ -377,33 +378,33 @@ def _prep_diag_node_with_ranges(
 	return node
 
 
-def _diag_defaults(
-	depth: int,
-	iters: int,
-	k1: float,
-	k2: float,
+def _default_diag_spec(
+ depth: int,
+ iters: int,
+ k1: float,
+ k2: float,
 ) -> Dict[str, object]:
 	return {
-		"depth_limit": int(depth),
-		"iterations": int(iters),
-		"zero_sum_residual": 0.0,
-		"zero_sum_residual_mean": 0.0,
-		"regret_l2": 0.0,
-		"avg_strategy_entropy": 0.0,
-		"cfv_calls": {},
-		"constraint_mode": "",
-		"preflop_cache": {},
-		"k1": float(k1),
-		"k2": float(k2),
+	 "depth_limit": int(depth),
+	 "iterations": int(iters),
+	 "zero_sum_residual": 0.0,
+	 "zero_sum_residual_mean": 0.0,
+	 "regret_l2": 0.0,
+	 "avg_strategy_entropy": 0.0,
+	 "cfv_calls": {},
+	 "constraint_mode": "",
+	 "preflop_cache": {},
+	 "k1": float(k1),
+	 "k2": float(k2),
 	}
 
 
-def _pack_diag_from_solver(
-	diag: Dict[str, object],
-	depth: int,
-	iters: int,
-	k1: float,
-	k2: float,
+def _pack_solver_diag(
+ diag: Dict[str, object],
+ depth: int,
+ iters: int,
+ k1: float,
+ k2: float,
 ) -> Dict[str, object]:
 	out: Dict[str, object] = {}
 
@@ -411,11 +412,11 @@ def _pack_diag_from_solver(
 	out["iterations"] = int(diag.get("iterations", iters))
 	out["zero_sum_residual"] = float(diag.get("zero_sum_residual", 0.0))
 	out["zero_sum_residual_mean"] = float(
-		diag.get("zero_sum_residual_mean", 0.0)
+	 diag.get("zero_sum_residual_mean", 0.0)
 	)
 	out["regret_l2"] = float(diag.get("regret_l2", 0.0))
 	out["avg_strategy_entropy"] = float(
-		diag.get("avg_strategy_entropy", 0.0)
+	 diag.get("avg_strategy_entropy", 0.0)
 	)
 	out["cfv_calls"] = dict(diag.get("cfv_calls", {}))
 	out["constraint_mode"] = str(diag.get("constraint_mode", ""))
@@ -427,47 +428,47 @@ def _pack_diag_from_solver(
 
 
 def _diag_from_solver(
-	ps: PublicState,
-	K: int,
-	r_us: Dict[int, float],
-	r_opp: Dict[int, float],
-	depth: int = 1,
-	iters: int = 8,
-	k1: float = 0.0,
-	k2: float = 0.0,
+ ps: PublicState,
+ K: int,
+ r_us: Dict[int, float],
+ r_opp: Dict[int, float],
+ depth: int = 1,
+ iters: int = 8,
+ k1: float = 0.0,
+ k2: float = 0.0,
 ) -> Dict[str, object]:
 	solver, err = _init_diag_solver(ps, int(K), int(depth), int(iters), k1, k2)
 
 	if solver is None:
 		print(f"diag: init failed: {err}")
-		return _diag_defaults(depth, iters, k1, k2)
+		return _default_diag_spec(depth, iters, k1, k2)
 	else:
 		pass
 
 	clusters = _build_linear_clusters(ps, int(K))
 	solver.clusters = clusters
 
-	node = _prep_diag_node_with_ranges(ps, int(K), r_us, r_opp)
+	node = _make_node_with_ranges(ps, int(K), r_us, r_opp)
 
-	ok_mass = _mass_conservation_ok_ranges(
-		node.player_ranges[0],
-		node.player_ranges[1],
-		tol=1e-12,
+	ok_mass = is_range_mass_conserved(
+	 node.player_ranges[0],
+	 node.player_ranges[1],
+	 tol=EPS_MASS,
 	)
 
 	if ok_mass:
 		pass
 	else:
 		print("diag: mass conservation failed")
-		return _diag_defaults(depth, iters, k1, k2)
+		return _default_diag_spec(depth, iters, k1, k2)
 
 	_ = solver.run_cfr(node)
 
 	diag = solver.get_last_diagnostics()
 
 	if isinstance(diag, dict):
-		return _pack_diag_from_solver(diag, depth, iters, k1, k2)
+		return _pack_solver_diag(diag, depth, iters, k1, k2)
 	else:
 		print("diag: diagnostics missing or invalid")
-		return _diag_defaults(depth, iters, k1, k2)
+		return _default_diag_spec(depth, iters, k1, k2)
 

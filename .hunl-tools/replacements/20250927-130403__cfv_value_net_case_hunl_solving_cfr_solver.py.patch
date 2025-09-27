@@ -1,0 +1,39 @@
+--- a/hunl/solving/cfr_solver.py
++++ b/hunl/solving/cfr_solver.py
+@@ -763,20 +763,22 @@
+ 			return cf_values
+ 		return None
+ 
+-	def _cfv_value_net_case(self, node, player, depth, cache, node_key):
+-		stage = self.get_stage(node)
+-		if (depth >= self.depth_limit) and (stage in ("preflop", "flop")):
+-			preds = self.predict_counterfactual_values(node, player)
+-			sc = 1.0 if bool(getattr(self, "_label_pot_fraction", False)) else float(node.public_state.pot_size)
+-			scaled = {}
+-			for cid, vec in preds.items():
+-				if isinstance(vec, (list, tuple)):
+-					scaled[int(cid)] = [float(x) * sc for x in vec]
+-				else:
+-					scaled[int(cid)] = [float(vec) * sc] * len(ActionType)
+-			cache[node_key] = scaled
+-			return scaled
+-		return None
++    def _cfv_value_net_case(self, node, player, depth, cache, node_key):
++        stage = self.get_stage(node)
++        root = getattr(self, "_root_stage", stage)
++        cross_round_cut = (root in ("preflop", "flop")) and (stage != root)
++        if ((depth >= self.depth_limit) and (stage in ("preflop", "flop"))) or cross_round_cut:
++            preds = self.predict_counterfactual_values(node, player)
++            sc = 1.0 if bool(getattr(self, "_label_pot_fraction", False)) else float(node.public_state.pot_size)
++            scaled = {}
++            for cid, vec in preds.items():
++                if isinstance(vec, (list, tuple)):
++                    scaled[int(cid)] = [float(x) * sc for x in vec]
++                else:
++                    scaled[int(cid)] = [float(vec) * sc] * len(ActionType)
++            cache[node_key] = scaled
++            return scaled
++        return None
+ 
+ 	def _cfv_current_player_branch(self, node, player, depth):
+ 		counterfactual_values = defaultdict(lambda: [0.0] * len(ActionType))

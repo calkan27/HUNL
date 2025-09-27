@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/engine/public_state_actions.py
+# hypothesis_version: 6.133.2
+
+[0.0, 0.5, 2.0, 'EXOGENOUS_ALL_IN', 'EXOGENOUS_BET', 'EXOGENOUS_CHECK', 'legal_actions']

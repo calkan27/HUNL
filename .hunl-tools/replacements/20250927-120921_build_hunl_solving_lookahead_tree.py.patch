@@ -1,0 +1,319 @@
+--- a/hunl/solving/lookahead_tree.py
++++ b/hunl/solving/lookahead_tree.py
+@@ -115,174 +115,148 @@
+ 			else:
+ 				return []
+ 
+-	def build(
+-		self,
+-		public_state: PublicState
+-	) -> Dict[str, Any]:
+-		root = GameNode(public_state)
+-
+-		nodes: List[GameNode] = [root]
+-		parents: List[int] = [-1]
+-		edges: List[Any] = [None]
+-
+-		if int(public_state.current_player) == int(public_state.dealer):
+-			k0 = "our"
+-		else:
+-			k0 = "opp"
+-		kinds: List[str] = [k0]
+-
+-		depth_actions: List[int] = [0]
+-		menus: List[List[ActionType]] = [[]]
+-		stack: List[int] = [0]
+-
+-		stage_start = int(public_state.current_round)
+-
+-		while stack:
+-			ni = stack.pop()
+-			cur = nodes[ni]
+-			ps = cur.public_state
+-
+-			if bool(getattr(ps, "is_terminal", False)):
+-				kinds[ni] = "terminal"
+-				continue
+-
+-			if stage_start <= 1:
+-				if int(ps.current_round) != stage_start:
+-					kinds[ni] = "leaf"
+-					continue
+-
+-			if int(depth_actions[ni]) >= int(self.depth_limit):
+-				kinds[ni] = "leaf"
+-				continue
+-
+-			bets = tuple(getattr(ps, "current_bets", (0, 0))[:2])
+-			if (bets[0] == bets[1]) and (int(ps.current_round) < 3):
+-				kinds[ni] = "chance"
+-
+-				card_list = self._deal_next_card(ps)
+-
+-				i = 0
+-				while i < len(card_list):
+-					card = card_list[i]
+-
+-					if hasattr(ps, "clone"):
+-						ps2 = ps.clone()
+-					else:
+-						ps2 = ps
+-
+-					if int(ps2.current_round) == 1:
+-						if card not in ps2.board_cards:
+-							ps2.board_cards.append(card)
+-							ps2.current_round = 2
+-							ps2.current_bets = [0, 0]
+-							ps2.last_raiser = None
+-							ps2.current_player = (ps2.dealer + 1) % 2
+-					else:
+-						if int(ps2.current_round) == 2:
+-							if card not in ps2.board_cards:
+-								ps2.board_cards.append(card)
+-								ps2.current_round = 3
+-								ps2.current_bets = [0, 0]
+-								ps2.last_raiser = None
+-								ps2.current_player = (ps2.dealer + 1) % 2
+-
+-					child = GameNode(ps2)
+-					child.player_ranges = [
+-						dict(cur.player_ranges[0]),
+-						dict(cur.player_ranges[1]),
+-					]
+-
+-					nodes.append(child)
+-					parents.append(ni)
+-					edges.append(card)
+-
+-					if stage_start <= 1:
+-						kinds.append("leaf")
+-						depth_actions.append(depth_actions[ni])
+-						menus.append([])
+-					else:
+-						if int(ps2.current_player) == int(ps2.dealer):
+-							kinds.append("our")
+-						else:
+-							kinds.append("opp")
+-						depth_actions.append(depth_actions[ni])
+-						menus.append([])
+-						stack.append(len(nodes) - 1)
+-
+-					i += 1
+-
+-				continue
+-
+-			actor = int(getattr(ps, "current_player", 0))
+-			is_our = (actor == int(getattr(ps, "dealer", 0)))
+-
+-			menu = self._action_menu(
+-				ps=ps,
+-				for_player=is_our,
+-				pot_fracs=tuple(self.bet_fractions),
+-				is_root=bool(depth_actions[ni] == 0),
+-			)
+-
+-			menus[ni] = menu
+-
+-			if is_our:
+-				kinds[ni] = "our"
+-			else:
+-				kinds[ni] = "opp"
+-
+-			i = 0
+-			while i < len(menu):
+-				a = menu[i]
+-
+-				ps2 = ps.update_state(cur, Action(a))
+-
+-				child = GameNode(ps2)
+-				child.player_ranges = [
+-					dict(cur.player_ranges[0]),
+-					dict(cur.player_ranges[1]),
+-				]
+-
+-				nodes.append(child)
+-				parents.append(ni)
+-				edges.append(a)
+-
+-				if bool(getattr(ps2, "is_terminal", False)):
+-					kinds.append("terminal")
+-					depth_actions.append(depth_actions[ni] + 1)
+-					menus.append([])
+-					i += 1
+-					continue
+-
+-				if stage_start <= 1:
+-					if int(ps2.current_round) != stage_start:
+-						kinds.append("leaf")
+-						depth_actions.append(depth_actions[ni] + 1)
+-						menus.append([])
+-						i += 1
+-						continue
+-
+-				if int(ps2.current_player) == int(ps2.dealer):
+-					kinds.append("our")
+-				else:
+-					kinds.append("opp")
+-
+-				depth_actions.append(depth_actions[ni] + 1)
+-				menus.append([])
+-				stack.append(len(nodes) - 1)
+-
+-				i += 1
+-
+-		tree = {
+-			"nodes": nodes,
+-			"parents": parents,
+-			"edges": edges,
+-			"kinds": kinds,
+-			"depth_actions": depth_actions,
+-			"menus": menus,
+-			"stage_start": stage_start,
+-		}
+-
+-		return tree
++    def build(
++        self,
++        public_state: PublicState
++    ) -> Dict[str, Any]:
++        root = GameNode(public_state)
++        nodes: List[GameNode] = [root]
++        parents: List[int] = [-1]
++        edges: List[Any] = [None]
++        if int(public_state.current_player) == int(public_state.dealer):
++            k0 = "our"
++        else:
++            k0 = "opp"
++        kinds: List[str] = [k0]
++        depth_actions: List[int] = [0]
++        menus: List[List[ActionType]] = [[]]
++        stack: List[int] = [0]
++        stage_start = int(public_state.current_round)
++        while stack:
++            ni = stack.pop()
++            cur = nodes[ni]
++            ps = cur.public_state
++            if bool(getattr(ps, "is_terminal", False)):
++                kinds[ni] = "terminal"
++                continue
++            if stage_start <= 1:
++                if int(ps.current_round) != stage_start:
++                    kinds[ni] = "leaf"
++                    continue
++            if int(depth_actions[ni]) >= int(self.depth_limit):
++                kinds[ni] = "leaf"
++                continue
++            bets = tuple(getattr(ps, "current_bets", (0, 0))[:2])
++            at_root = (int(depth_actions[ni]) == 0)
++            if (bets[0] == bets[1]) and (int(ps.current_round) < 3) and not (at_root and (stage_start <= 1)):
++                kinds[ni] = "chance"
++                card_list = self._deal_next_card(ps)
++                i = 0
++                while i < len(card_list):
++                    card = card_list[i]
++                    if hasattr(ps, "clone"):
++                        ps2 = ps.clone()
++                    else:
++                        ps2 = ps
++                    if int(ps2.current_round) == 1:
++                        if card not in ps2.board_cards:
++                            ps2.board_cards.append(card)
++                            ps2.current_round = 2
++                            ps2.current_bets = [0, 0]
++                            ps2.last_raiser = None
++                            ps2.current_player = (ps2.dealer + 1) % 2
++                    else:
++                        if int(ps2.current_round) == 2:
++                            if card not in ps2.board_cards:
++                                ps2.board_cards.append(card)
++                                ps2.current_round = 3
++                                ps2.current_bets = [0, 0]
++                                ps2.last_raiser = None
++                                ps2.current_player = (ps2.dealer + 1) % 2
++                    child = GameNode(ps2)
++                    child.player_ranges = [
++                        dict(cur.player_ranges[0]),
++                        dict(cur.player_ranges[1]),
++                    ]
++                    nodes.append(child)
++                    parents.append(ni)
++                    edges.append(card)
++                    if stage_start <= 1:
++                        kinds.append("leaf")
++                        depth_actions.append(depth_actions[ni])
++                        menus.append([])
++                    else:
++                        if int(ps2.current_player) == int(ps2.dealer):
++                            kinds.append("our")
++                        else:
++                            kinds.append("opp")
++                        depth_actions.append(depth_actions[ni])
++                        menus.append([])
++                        stack.append(len(nodes) - 1)
++                    i += 1
++                continue
++            actor = int(getattr(ps, "current_player", 0))
++            is_our = (actor == int(getattr(ps, "dealer", 0)))
++            menu = self._action_menu(
++                ps=ps,
++                for_player=is_our,
++                pot_fracs=tuple(self.bet_fractions),
++                is_root=bool(depth_actions[ni] == 0),
++            )
++            menus[ni] = menu
++            if is_our:
++                kinds[ni] = "our"
++            else:
++                kinds[ni] = "opp"
++            i = 0
++            while i < len(menu):
++                a = menu[i]
++                ps2 = ps.update_state(cur, Action(a))
++                child = GameNode(ps2)
++                child.player_ranges = [
++                    dict(cur.player_ranges[0]),
++                    dict(cur.player_ranges[1]),
++                ]
++                nodes.append(child)
++                parents.append(ni)
++                edges.append(a)
++                if bool(getattr(ps2, "is_terminal", False)):
++                    kinds.append("terminal")
++                    depth_actions.append(depth_actions[ni] + 1)
++                    menus.append([])
++                    i += 1
++                    continue
++                if stage_start <= 1:
++                    if int(ps2.current_round) != stage_start:
++                        kinds.append("leaf")
++                        depth_actions.append(depth_actions[ni] + 1)
++                        menus.append([])
++                        i += 1
++                        continue
++                if int(ps2.current_player) == int(ps2.dealer):
++                    kinds.append("our")
++                else:
++                    kinds.append("opp")
++                depth_actions.append(depth_actions[ni] + 1)
++                menus.append([])
++                stack.append(len(nodes) - 1)
++                i += 1
++        tree = {
++            "nodes": nodes,
++            "parents": parents,
++            "edges": edges,
++            "kinds": kinds,
++            "depth_actions": depth_actions,
++            "menus": menus,
++            "stage_start": stage_start,
++        }
++        return tree
++
++
++
++
++
++
+ 
+ 	def propagate(
+ 		self,

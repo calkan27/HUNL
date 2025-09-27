@@ -1,6 +1,7 @@
+from hunl.constants import EPS_MASS, EPS_ZS
 import math
 from collections import defaultdict
-from action_type import ActionType
+from hunl.engine.action_type import ActionType
 
 
 class CFRValues:
@@ -20,11 +21,11 @@ class CFRValues:
 	@staticmethod
 	def _safe_std_err(iteration: int, mean_regret: float, sq_sum: float) -> float:
 		variance = (sq_sum / float(iteration)) - (mean_regret ** 2)
-		if variance < 1e-12:
-			variance = 1e-12
+		if variance < EPS_MASS:
+			variance = EPS_MASS
 		std_err = math.sqrt(variance) / math.sqrt(float(iteration))
 		if std_err <= 0.0:
-			std_err = 1e-6
+			std_err = EPS_ZS
 		return std_err
 
 	def compute_strategy(self, cluster_id):
@@ -89,12 +90,12 @@ class CFRValues:
 		return avg
 
 	def prune_actions(
-		self,
-		cluster_id,
-		iteration,
-		total_iterations,
-		min_iterations: int = 100,
-		alpha: float = 0.05,
+	 self,
+	 cluster_id,
+	 iteration,
+	 total_iterations,
+	 min_iterations: int = 100,
+	 alpha: float = 0.05,
 	):
 		num_actions = len(ActionType)
 
@@ -120,10 +121,10 @@ class CFRValues:
 			i += 1
 
 	def reassess_pruned_actions(
-		self,
-		cluster_id,
-		iteration,
-		alpha: float = 0.05,
+	 self,
+	 cluster_id,
+	 iteration,
+	 alpha: float = 0.05,
 	):
 		to_check = list(self.pruned_actions[cluster_id])
 

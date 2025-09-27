@@ -1,0 +1,131 @@
+--- a/hunl/solving/resolver_integration.py
++++ b/hunl/solving/resolver_integration.py
+@@ -149,72 +149,63 @@
+ 
+ 
+ def _leaf_value_core(
+-	vs: ValueServer,
+-	ps,
+-	pov_player: int,
+-	r1: List[float],
+-	r2: List[float],
++        vs: ValueServer,
++        ps,
++        pov_player: int,
++        r1: List[float],
++        r2: List[float],
+ ) -> torch.Tensor:
+-	if hasattr(ps, "initial_stacks"):
+-		total_initial = float(sum(getattr(ps, "initial_stacks", [200, 200])))
+-	else:
+-		total_initial = 1.0
+-
+-	if total_initial <= 0.0:
+-		total_initial = 1.0
+-
+-	if bool(getattr(ps, "is_terminal", False)):
+-		if hasattr(ps, "terminal_utility"):
+-			u = ps.terminal_utility()
+-		else:
+-			u = [0.0, 0.0]
+-
+-		if isinstance(u, (list, tuple)):
+-			if len(u) >= 2:
+-				val = float(u[int(pov_player)])
+-			else:
+-				val = 0.0
+-		else:
+-			val = 0.0
+-
+-		p = float(getattr(ps, "pot_size", 0.0))
+-
+-		if p > 0.0:
+-			out = val / p
+-		else:
+-			out = 0.0
+-
+-		return torch.tensor([out], dtype=torch.float32)
+-	else:
+-		cr_loc = int(getattr(ps, "current_round", 0))
+-
+-		if cr_loc >= 2:
+-			return torch.tensor([0.0], dtype=torch.float32)
+-		else:
+-			pot_norm = float(getattr(ps, "pot_size", 0.0)) / total_initial
+-			bvec = board_one_hot(list(getattr(ps, "board_cards", [])))
+-			x = [pot_norm] + list(bvec) + list(r1) + list(r2)
+-			xt = torch.tensor([x], dtype=torch.float32)
+-
+-			if cr_loc == 0:
+-				st = "flop"
+-			else:
+-				st = "turn"
+-
+-			v1, v2 = vs.query(
+-				st,
+-				xt,
+-				scale_to_pot=False,
+-				as_numpy=False,
+-			)
+-
+-			if int(pov_player) == 0:
+-				out = v1
+-			else:
+-				out = v2
+-
+-			return out[0]
+-
++        if hasattr(ps, "initial_stacks"):
++                total_initial = float(sum(getattr(ps, "initial_stacks", [200, 200])))
++        else:
++                total_initial = 1.0
++        if total_initial <= 0.0:
++                total_initial = 1.0
++        if bool(getattr(ps, "is_terminal", False)):
++                if hasattr(ps, "terminal_utility"):
++                        u = ps.terminal_utility()
++                else:
++                        u = [0.0, 0.0]
++                if isinstance(u, (list, tuple)):
++                        if len(u) >= 2:
++                                val = float(u[int(pov_player)])
++                        else:
++                                val = 0.0
++                else:
++                        val = 0.0
++                p = float(getattr(ps, "pot_size", 0.0))
++                if p > 0.0:
++                        out = val / p
++                else:
++                        out = 0.0
++                return torch.tensor([out], dtype=torch.float32)
++        else:
++                cr_loc = int(getattr(ps, "current_round", 0))
++                if cr_loc >= 2:
++                        return torch.tensor([0.0], dtype=torch.float32)
++                else:
++                        pot_norm = float(getattr(ps, "pot_size", 0.0)) / total_initial
++                        bvec = board_one_hot(list(getattr(ps, "board_cards", [])))
++                        x = [pot_norm] + list(bvec) + list(r1) + list(r2)
++                        xt = torch.tensor([x], dtype=torch.float32)
++                        if cr_loc == 0:
++                                st = "flop"
++                        else:
++                                if cr_loc == 1:
++                                        st = "flop"
++                                else:
++                                        st = "turn"
++                        v1, v2 = vs.query(
++                                st,
++                                xt,
++                                scale_to_pot=False,
++                                as_numpy=False,
++                        )
++                        if int(pov_player) == 0:
++                                out = v1
++                        else:
++                                out = v2
++                        return out[0]
+ 
+ def _make_leaf_value_fn(
+ 	vs: ValueServer

@@ -1,8 +1,9 @@
+from hunl.constants import SEED_DEFAULT
 import json
 import os
 import yaml
-from seeded_rng import set_global_seed
-from resolve_config import ResolveConfig
+from hunl.utils.seeded_rng import set_global_seed
+from hunl.resolve_config import ResolveConfig
 
 
 def _safe_int(x, default_val=None):
@@ -119,10 +120,10 @@ def load_config(path):
 
 
 def compose_resolve_config_from_yaml(
-	abstraction_yaml_path,
-	value_nets_yaml_path,
-	solver_yaml_path,
-	overrides=None,
+ abstraction_yaml_path,
+ value_nets_yaml_path,
+ solver_yaml_path,
+ overrides=None,
 ):
 	abst = load_config(abstraction_yaml_path) if abstraction_yaml_path else {}
 	vnets = load_config(value_nets_yaml_path) if value_nets_yaml_path else {}
@@ -147,9 +148,9 @@ def compose_resolve_config_from_yaml(
 	runtime_overrides = _extract_runtime_overrides(solv)
 
 	return {
-		"seed": int(seed),
-		"config": cfg,
-		"runtime_overrides": runtime_overrides,
+	 "seed": int(seed),
+	 "config": cfg,
+	 "runtime_overrides": runtime_overrides,
 	}
 
 
@@ -166,8 +167,8 @@ def _resolve_seed_from_dicts(abst, vnets, solv):
 						break
 
 	if seed is None:
-		env_seed = os.environ.get("FAST_TEST_SEED", "1729")
-		seed = _safe_int(env_seed, 1729)
+		env_seed = os.environ.get("FAST_TEST_SEED", str(SEED_DEFAULT))
+		seed = _safe_int(env_seed, SEED_DEFAULT)
 
 	return int(seed)
 
@@ -286,8 +287,8 @@ def _extract_runtime_overrides(solv: dict):
 						half_pot = _safe_bool(vv.get("half_pot", True), True)
 						two_pot = _safe_bool(vv.get("two_pot", False), False)
 						out[int(ri)] = {
-							"half_pot": bool(half_pot),
-							"two_pot": bool(two_pot),
+						 "half_pot": bool(half_pot),
+						 "two_pot": bool(two_pot),
 						}
 				if out:
 					runtime_overrides["_round_actions"] = out
@@ -338,9 +339,9 @@ def _apply_solver_to_cfg(cfg, solv: dict):
 
 def _small_sparse_bet_fractions():
 	return {
-		0: [0.5, 1.0],
-		1: [0.5, 1.0],
-		2: [0.5, 1.0],
-		3: [1.0],
+	 0: [0.5, 1.0],
+	 1: [0.5, 1.0],
+	 2: [0.5, 1.0],
+	 3: [1.0],
 	}
 
