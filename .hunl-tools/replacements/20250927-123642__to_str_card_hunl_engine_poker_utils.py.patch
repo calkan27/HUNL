@@ -1,0 +1,139 @@
+--- a/hunl/engine/poker_utils.py
++++ b/hunl/engine/poker_utils.py
+@@ -342,53 +342,89 @@
+ 
+ 
+ def _to_str_card(c):
+-	if type(c) is str:
+-		raw = c
+-	elif (type(c) is list) or (type(c) is tuple):
+-		raw = _concat_sequence_raw(c)
+-	else:
+-		raw = str(c)
+-	s0 = _strip_spaces_ascii(raw)
+-	s = _ascii_upper(s0)
+-	if (s and s[0:1]) and (s[1:2]):
+-		r0 = s[0]
+-		t0 = s[1]
+-		if (r0 in RANKS) and (t0 in SUITS):
+-			return r0 + t0
+-		if (r0 in SUITS) and (t0 in RANKS):
+-			return t0 + r0
+-	if (s and s[0:1] == "1") and (s[1:2] == "0") and (s[2:3] in SUITS):
+-		return "T" + s[2]
+-	r = None
+-	t = None
+-	try:
+-		it = iter(s)
+-	except Exception:
+-		it = iter(str(s))
+-	i = 0
+-	buf = []
+-	for ch in it:
+-		buf.append(ch)
+-		i += 1
+-	n = i
+-	i = 0
+-	while i < n:
+-		ch = buf[i]
+-		if r is None:
+-			if (ch == "1") and (i + 1 < n) and (buf[i + 1] == "0"):
+-				r = "T"
+-				i += 1
+-			elif ch in RANKS:
+-				r = ch
+-		if (t is None) and (ch in SUITS):
+-			t = ch
+-		if (r is not None) and (t is not None):
+-			break
+-		i += 1
+-	if (r is not None) and (t is not None):
+-		return r + t
+-	return s[:2]
+-
++        if isinstance(c, str):
++                raw = c
++        elif isinstance(c, (list, tuple)):
++                buf = []
++                i = 0
++                while i < len(c):
++                        buf.append(str(c[i]))
++                        i += 1
++                raw = "".join(buf)
++        else:
++                raw = str(c)
++        ws = {9, 10, 11, 12, 13, 32}
++        tmp = []
++        i = 0
++        while i < len(raw):
++                ch = raw[i]
++                ok = True
++                try:
++                        oc = ord(ch)
++                        if oc in ws:
++                                ok = False
++                except Exception:
++                        ok = True
++                if ok:
++                        tmp.append(ch)
++                i += 1
++        if tmp:
++                s = "".join(tmp)
++        else:
++                s = ""
++        up = []
++        i = 0
++        while i < len(s):
++                ch = s[i]
++                try:
++                        oc = ord(ch)
++                        if 97 <= oc <= 122:
++                                up.append(chr(oc - 32))
++                        else:
++                                up.append(ch)
++                except Exception:
++                        up.append(ch)
++                i += 1
++        su = "".join(up)
++        if len(su) >= 3:
++                if (su[0] == "1") and (su[1] == "0") and (su[2] in SUITS):
++                        return "T" + su[2]
++        if len(su) >= 2:
++                r0 = su[0]
++                t0 = su[1]
++                if (r0 in RANKS) and (t0 in SUITS):
++                        return r0 + t0
++                if (r0 in SUITS) and (t0 in RANKS):
++                        return t0 + r0
++        rank = None
++        suit = None
++        i = 0
++        while i < len(su):
++                ch = su[i]
++                if rank is None:
++                        if ch == "1":
++                                if (i + 1) < len(su):
++                                        if su[i + 1] == "0":
++                                                rank = "T"
++                                                i += 1
++                                        else:
++                                                pass
++                        else:
++                                if ch in RANKS:
++                                        rank = ch
++                if suit is None:
++                        if ch in SUITS:
++                                suit = ch
++                if (rank is not None) and (suit is not None):
++                        break
++                i += 1
++        if (rank is not None) and (suit is not None):
++                return rank + suit
++        if len(su) >= 2:
++                return su[:2]
++        return su
++
++gvim hunl/engine/poker_utils.py
+ 
+ def _normalize_cards(card_iterable):
+ 	if (type(card_iterable) is list) or (type(card_iterable) is tuple) or (type(card_iterable) is set):

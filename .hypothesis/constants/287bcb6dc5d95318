@@ -1,0 +1,4 @@
+# file: /Users/cenkalkan/Downloads/HUNL/hunl/solving/cfr_solver_caching.py
+# hypothesis_version: 6.133.2
+
+[0.0, 0.5, 100, 16777619, 2166136261, 4294967295, '-inf', '1', 'FAST_TESTS', 'PREFLOP_CACHE_V2', '_public_signature', '_state_key', 'actions', 'bet0', 'bet1', 'board_cards', 'bot', 'current_bets', 'current_player', 'current_round', 'dealer', 'evictions', 'hand_clusterer', 'hits', 'initial_stacks', 'is_showdown', 'is_terminal', 'misses', 'opp_cfv', 'own_range', 'pot_size', 'profile', 'public_state', 'puts', 'round_idx', 'test']

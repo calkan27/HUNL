@@ -1,0 +1,54 @@
+--- a/hunl/solving/cfr_solver_utils.py
++++ b/hunl/solving/cfr_solver_utils.py
+@@ -127,30 +127,27 @@
+ 				self.own_range_tracking[key][int(k)] = float(v)
+ 		return {0: dict(node.player_ranges[0]), 1: dict(node.player_ranges[1])}
+ 
+-	def apply_opponent_action_update(self, prev_node: GameNode, new_node: GameNode, observed_action_type: ActionType):
+-		if not hasattr(self, "opponent_cfv_upper_tracking"):
+-			self.opponent_cfv_upper_tracking = {}
+-		if not hasattr(self, "own_range_tracking"):
+-			self.own_range_tracking = {}
+-		get_key = getattr(self, "_state_key", None)
+-		if not callable(get_key):
+-			return
+-		prev_key = get_key(prev_node)
+-		next_key = get_key(new_node)
+-		prev_u = dict(self.opponent_cfv_upper_tracking.get(prev_key, {}))
+-		next_u = dict(self.opponent_cfv_upper_tracking.get(next_key, {}))
+-		merged = {}
+-		for k in set(list(prev_u.keys()) + list(next_u.keys())):
+-			a = float(prev_u.get(int(k), float("inf")))
+-			b = float(next_u.get(int(k), float("inf")))
+-			if a < b:
+-				merged[int(k)] = a
+-			else:
+-				merged[int(k)] = b
+-		self.opponent_cfv_upper_tracking[next_key] = merged
+-		prev_own = dict(self.own_range_tracking.get(prev_key, {}))
+-		if prev_own:
+-			self.own_range_tracking[next_key] = {int(k): float(v) for k, v in prev_own.items()}
++    def apply_opponent_action_update(self, prev_node: GameNode, new_node: GameNode, observed_action_type: ActionType):
++        if not hasattr(self, "opponent_cfv_upper_tracking"):
++            self.opponent_cfv_upper_tracking = {}
++        if not hasattr(self, "own_range_tracking"):
++            self.own_range_tracking = {}
++        get_key = getattr(self, "_state_key", None)
++        if not callable(get_key):
++            return
++        prev_key = get_key(prev_node)
++        next_key = get_key(new_node)
++        prev_u = dict(self.opponent_cfv_upper_tracking.get(prev_key, {}))
++        next_u = dict(self.opponent_cfv_upper_tracking.get(next_key, {}))
++        merged = {}
++        for k in set(list(prev_u.keys()) + list(next_u.keys())):
++            a = float(prev_u.get(int(k), float("-inf")))
++            b = float(next_u.get(int(k), float("-inf")))
++            merged[int(k)] = a if (a >= b) else b
++        self.opponent_cfv_upper_tracking[next_key] = merged
++        prev_own = dict(self.own_range_tracking.get(prev_key, {}))
++        if prev_own:
++            self.own_range_tracking[next_key] = {int(k): float(v) for k, v in prev_own.items()}
+ 
+ 	def update_tracking_on_own_action(self, node: GameNode, agent_player: int = 0, counterfactual_values: Dict[int, Dict[int, float]] = None):
+ 		if not hasattr(self, "own_range_tracking"):

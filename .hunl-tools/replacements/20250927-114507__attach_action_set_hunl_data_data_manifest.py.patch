@@ -1,0 +1,29 @@
+--- a/hunl/data/data_manifest.py
++++ b/hunl/data/data_manifest.py
+@@ -104,17 +104,15 @@
+ 
+ 
+ def _attach_action_set(spec: Dict[str, Any], data_generator) -> None:
+-	outer = _get_outer_zero_sum_flag(data_generator)
+-	bf = _get_bet_fractions(data_generator)
+-	flags = _get_round_flags(data_generator)
+-
+-	spec["outer_zero_sum"] = bool(outer)
+-	spec["action_set"] = {
+-		"bet_fractions": {int(k): [float(x) for x in v] for k, v in bf.items()},
+-		"round_flags": flags,
+-		"include_all_in": True,
+-	}
+-
++        outer = _get_outer_zero_sum_flag(data_generator)
++        bf = _get_bet_fractions(data_generator)
++        flags = _get_round_flags(data_generator)
++        spec["outer_zero_sum"] = bool(outer)
++        spec["action_set"] = {
++                "bet_fractions": {str(k): [float(x) for x in v] for k, v in bf.items()},
++                "round_flags": {str(k): {"half_pot": bool(v.get("half_pot", True)), "two_pot": bool(v.get("two_pot", False))} for k, v in flags.items()},
++                "include_all_in": True,
++        }
+ 
+ def _merge_extras(spec: Dict[str, Any], extras) -> None:
+ 	if isinstance(extras, dict):

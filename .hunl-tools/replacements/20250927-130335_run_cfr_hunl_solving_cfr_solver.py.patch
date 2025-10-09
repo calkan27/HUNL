@@ -1,0 +1,118 @@
+--- a/hunl/solving/cfr_solver.py
++++ b/hunl/solving/cfr_solver.py
+@@ -147,67 +147,54 @@
+ 		self._evaluate_hand_strength_cache = {}
+ 		self._recursive_range_sampling_cache = {}
+ 
+-	def run_cfr(self, node):
+-		self._ensure_sparse_schedule()
+-
+-		if getattr(self, "hand_clusterer", None) is not None:
+-			prof = str(getattr(self.hand_clusterer, "profile", ""))
+-			if prof == "test":
+-				ok_env = (os.getenv("FAST_TESTS") == "1")
+-				ok_cfg = bool(getattr(getattr(self, "_config", None), "debug_fast_tests", False))
+-				ok = ok_env or ok_cfg
+-				if not ok:
+-					print("FAST_TESTS not enabled in test profile; skipping run_cfr.")
+-					return None
+-
+-		ps = node.public_state
+-		agent_player = ps.current_player
+-		if agent_player not in (0, 1):
+-			return None
+-
+-		if not hasattr(self, "_soundness"):
+-			self._soundness = {}
+-
+-		self._diag_cfv_calls = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
+-		self._zs_residual_samples = []
+-
+-		cache_hit = False
+-		if ps.current_round == 0:
+-			key0 = self._preflop_signature(node)
+-			hit = self._preflop_cache_get(key0)
+-			if hit is not None:
+-				cache_hit = True
+-				self._apply_preflop_cache_hit(node, hit)
+-
+-		key = self._state_key(node) if hasattr(self, "_state_key") else None
+-
+-		if hasattr(self, "own_range_tracking"):
+-			if key in getattr(self, "own_range_tracking", {}):
+-				node.player_ranges[agent_player] = dict(self.own_range_tracking[key])
+-
+-		if hasattr(self, "opponent_cfv_upper_tracking"):
+-			if key in getattr(self, "opponent_cfv_upper_tracking", {}):
+-				pass
+-
+-		self._prepare_clusters_for_run_cfr(ps, node, agent_player)
+-		self._normalize_ranges_for_run_cfr(node, ps)
+-
+-		self.cfr_values = defaultdict(CFRValues)
+-		self.iteration = 0
+-
+-		self.apply_round_iteration_schedule(ps.current_round)
+-		if int(ps.current_round) == 0:
+-			self.total_iterations = 0
+-
+-		stage_name = self.get_stage(node)
+-		if not (isinstance(self._omit_prefix_iters, dict) and (stage_name in self._omit_prefix_iters)):
+-			self._omit_prefix_iters = {"preflop": 980, "flop": 500, "turn": 500, "river": 1000}
+-
+-		_ = self._range_gadget_begin(node)
+-		self._do_iterations_for_run_cfr(node, agent_player)
+-
+-		act = self._finalize_and_choose_action_for_run_cfr(node, agent_player, ps)
+-		return act
++    def run_cfr(self, node):
++        self._ensure_sparse_schedule()
++        if getattr(self, "hand_clusterer", None) is not None:
++            prof = str(getattr(self.hand_clusterer, "profile", ""))
++            if prof == "test":
++                ok_env = (os.getenv("FAST_TESTS") == "1")
++                ok_cfg = bool(getattr(getattr(self, "_config", None), "debug_fast_tests", False))
++                ok = ok_env or ok_cfg
++                if not ok:
++                    print("FAST_TESTS not enabled in test profile; skipping run_cfr.")
++                    return None
++        ps = node.public_state
++        agent_player = ps.current_player
++        if agent_player not in (0, 1):
++            return None
++        if not hasattr(self, "_soundness"):
++            self._soundness = {}
++        self._diag_cfv_calls = {"preflop": 0, "flop": 0, "turn": 0, "river": 0}
++        self._zs_residual_samples = []
++        cache_hit = False
++        if ps.current_round == 0:
++            key0 = self._preflop_signature(node)
++            hit = self._preflop_cache_get(key0)
++            if hit is not None:
++                cache_hit = True
++                self._apply_preflop_cache_hit(node, hit)
++        key = self._state_key(node) if hasattr(self, "_state_key") else None
++        if hasattr(self, "own_range_tracking"):
++            if key in getattr(self, "own_range_tracking", {}):
++                node.player_ranges[agent_player] = dict(self.own_range_tracking[key])
++        if hasattr(self, "opponent_cfv_upper_tracking"):
++            if key in getattr(self, "opponent_cfv_upper_tracking", {}):
++                pass
++        self._prepare_clusters_for_run_cfr(ps, node, agent_player)
++        self._normalize_ranges_for_run_cfr(node, ps)
++        self.cfr_values = defaultdict(CFRValues)
++        self.iteration = 0
++        self.apply_round_iteration_schedule(ps.current_round)
++        if int(ps.current_round) == 0:
++            self.total_iterations = 0
++        stage_name = self.get_stage(node)
++        if not (isinstance(self._omit_prefix_iters, dict) and (stage_name in self._omit_prefix_iters)):
++            self._omit_prefix_iters = {"preflop": 980, "flop": 500, "turn": 500, "river": 1000}
++        self._root_stage = self.get_stage(node)
++        _ = self._range_gadget_begin(node)
++        self._do_iterations_for_run_cfr(node, agent_player)
++        act = self._finalize_and_choose_action_for_run_cfr(node, agent_player, ps)
++        return act
+ 
+ 	def _calculate_counterfactual_values(self, node, player, depth=0, cache=None):
+ 		if cache is None:

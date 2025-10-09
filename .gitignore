@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+
+# pytest / hypothesis
+.pytest_cache/
+.hypothesis/
+
+# builds
+build/
+dist/
+
+# artifacts (prefer Releases or LFS)
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.onnx
+
+# logs
+logs/
+*.log

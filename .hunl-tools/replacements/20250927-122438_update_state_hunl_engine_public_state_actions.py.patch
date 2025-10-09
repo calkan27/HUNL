@@ -1,0 +1,117 @@
+--- a/hunl/engine/public_state_actions.py
++++ b/hunl/engine/public_state_actions.py
+@@ -2,56 +2,64 @@
+ 
+ 
+ class PublicStateActionsMixin:
+-	def update_state(self, node, action):
+-		legal = set(self.legal_actions()) if hasattr(self, "legal_actions") else set()
+-		if action.action_type not in legal:
+-			raise ValueError("IllegalAction")
+-		prev_pot = float(self.pot_size)
+-		prev_round = int(self.current_round)
+-		new_state = self.clone()
+-		player = new_state.current_player
+-		opponent = (player + 1) % 2
+-		if new_state.is_terminal:
+-			return new_state
+-		new_state.last_action = action
+-		to_call = new_state.current_bets[opponent] - new_state.current_bets[player]
+-		if to_call < 0:
+-			to_call = 0
+-		new_state._last_action_was_call_on_bet = False
+-		if action.action_type == ActionType.FOLD:
+-			self._apply_fold(new_state, player, prev_pot)
+-			ok_inv = bool(new_state._assert_invariants(prev_pot=prev_pot))
+-			if not ok_inv:
+-				return self
+-			new_state.actions.append((player, action))
+-			return new_state
+-		if action.action_type == ActionType.CALL:
+-			self._apply_call(new_state, player, to_call)
+-		elif action.action_type == ActionType.HALF_POT_BET:
+-			self._apply_half_pot_bet(new_state, player, to_call)
+-		elif action.action_type == ActionType.POT_SIZED_BET:
+-			self._apply_pot_sized_bet(new_state, player, to_call)
+-		elif action.action_type == ActionType.TWO_POT_BET:
+-			self._apply_two_pot_bet(new_state, player, to_call)
+-		elif action.action_type == ActionType.ALL_IN:
+-			self._apply_all_in(new_state, player, to_call)
+-		if not new_state.is_terminal:
+-			if int(new_state.current_round) == prev_round:
+-				new_state.current_player = (player + 1) % 2
+-		if new_state.players_in_hand.count(True) == 1:
+-			new_state.is_terminal = True
+-		if new_state.pot_size < 0:
+-			new_state.pot_size = 0
+-		for i in (0, 1):
+-			if new_state.stacks[i] > new_state.initial_stacks[i]:
+-				new_state.stacks[i] = new_state.initial_stacks[i]
+-			if new_state.current_bets[i] < 0:
+-				new_state.current_bets[i] = 0
+-		ok_inv = bool(new_state._assert_invariants(prev_pot=prev_pot))
+-		if not ok_inv:
+-			return self
+-		new_state.actions.append((player, action))
+-		return new_state
++    def update_state(self, node, action):
++        legal = set(self.legal_actions()) if hasattr(self, "legal_actions") else set()
++        if action.action_type not in legal:
++            if action.action_type == ActionType.FOLD:
++                raise ValueError("IllegalAction")
++            return self
++        prev_pot = float(self.pot_size)
++        prev_round = int(self.current_round)
++        new_state = self.clone()
++        player = new_state.current_player
++        opponent = (player + 1) % 2
++        if new_state.is_terminal:
++            return new_state
++        new_state.last_action = action
++        to_call = new_state.current_bets[opponent] - new_state.current_bets[player]
++        if to_call < 0:
++            to_call = 0
++        new_state._last_action_was_call_on_bet = False
++        if action.action_type == ActionType.FOLD:
++            self._apply_fold(new_state, player, prev_pot)
++            ok_inv = bool(new_state._assert_invariants(prev_pot=prev_pot))
++            if not ok_inv:
++                return self
++            new_state.actions.append((player, action))
++            return new_state
++        if action.action_type == ActionType.CALL:
++            self._apply_call(new_state, player, to_call)
++        elif action.action_type == ActionType.HALF_POT_BET:
++            self._apply_half_pot_bet(new_state, player, to_call)
++        elif action.action_type == ActionType.POT_SIZED_BET:
++            self._apply_pot_sized_bet(new_state, player, to_call)
++        elif action.action_type == ActionType.TWO_POT_BET:
++            self._apply_two_pot_bet(new_state, player, to_call)
++        elif action.action_type == ActionType.ALL_IN:
++            self._apply_all_in(new_state, player, to_call)
++        if not new_state.is_terminal:
++            if int(new_state.current_round) == prev_round:
++                new_state.current_player = (player + 1) % 2
++        if new_state.players_in_hand.count(True) == 1:
++            new_state.is_terminal = True
++        if new_state.pot_size < 0:
++            new_state.pot_size = 0
++        for i in (0, 1):
++            if new_state.stacks[i] > new_state.initial_stacks[i]:
++                new_state.stacks[i] = new_state.initial_stacks[i]
++            if new_state.current_bets[i] < 0:
++                new_state.current_bets[i] = 0
++        ok_inv = bool(new_state._assert_invariants(prev_pot=prev_pot))
++        if not ok_inv:
++            return self
++        new_state.actions.append((player, action))
++        return new_state
++
++
++
++
++
++
+ 
+ 	def _apply_fold(self, st, player, prev_pot):
+ 		st.players_in_hand[player] = False
