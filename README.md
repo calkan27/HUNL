@@ -150,12 +150,6 @@ pol, w_next, our_cfv = resolve_at(
 
 ---
 
-## License
-
-Add a license file (e.g., MIT/Apache-2.0). If omitted, all rights reserved by default.
-
----
-
 ## Acknowledgments
 
 DeepStack-style continual re-solving inspired the overall structure; this codebase packages a streamlined, testable reproduction with sparse actions and pot-fraction CFV targets.
